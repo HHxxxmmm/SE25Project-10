@@ -21,10 +21,10 @@ yarn-debug.log*
 yarn-error.log*
 
 # IntelliJ project files
-.idea
+.idea/
 *.iml
 out
 gen
 
 # VS Code project files
-.vscode
+.vscode/
