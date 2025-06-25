@@ -41,10 +41,11 @@
   bottom: 0;
   background: #fff;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+  --sider-width: 200px; /* Default width */
 }
 
 .app-content {
-  margin: 64px 0 0 200px;
+  margin: 64px 0 0 var(--sider-width, 200px);
   padding: 24px;
   min-height: calc(100vh - 64px);
   transition: all 0.2s;
