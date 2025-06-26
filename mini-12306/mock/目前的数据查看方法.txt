@@ -1,0 +1,3 @@
+项目根目录使用命令node -e "console.log(JSON.stringify(require('./mock/XXX.js')()))"
+可选择在后面加 > db.json将其转化为json文件，中文显示是乱码，但是实际数据没有问题。
+后续需要的时候可询问ai使用变量或数据的方法。
