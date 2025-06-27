@@ -11,7 +11,7 @@ import SubmitOrderPage from './pages/SubmitOrder';
 // import PaymentPage from './pages/Payment';
 // import OrderDetailPage from './pages/OrderDetail';
 // import TicketDetailPage from './pages/TicketDetail';
-// import ChangeTicketPage from './pages/ChangeTicket';
+import ChangeTicketPage from './pages/ChangeTicket';
 // import RefundPage from './pages/Refund';
 // import { Navigate } from 'react-router-dom';
 // import { useAuth } from './hooks/useAuth';
@@ -116,6 +116,14 @@ export const routes = [
         name: '提交订单',
       // requiresAuth: true
     },
+
+    {
+        path: '/change-ticket',
+        element: <ChangeTicketPage />,
+        name: '改签',
+        // requiresAuth: true
+    },
+
     /*
     {
       path: '/payment',

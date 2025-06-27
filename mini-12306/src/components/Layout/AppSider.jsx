@@ -7,16 +7,29 @@ import {
     TagsOutlined,
     OrderedListOutlined,
     FileTextOutlined,
-    UserOutlined
+    UserOutlined,
+    SwapOutlined
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './style.css';
 
 const { Sider } = Layout;
 
+// Define an object to map paths to menu keys
+const pathKeyMap = {
+    '/': '1',
+    '/trains': '2',
+    '/orders': '3',
+    '/my-tickets': '4',
+    '/profile': '5',
+    '/change-ticket': '6',
+    // Add more mappings if needed
+};
+
 export default function AppSider({ onCollapse }) {
     const [collapsed, setCollapsed] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
 
     const handleCollapse = (collapsed) => {
         setCollapsed(collapsed);
@@ -43,7 +56,7 @@ export default function AppSider({ onCollapse }) {
             <Menu
                 theme="light"
                 mode="inline"
-                defaultSelectedKeys={['1']}
+                selectedKeys={[pathKeyMap[location.pathname] || '1']} // Use pathKeyMap to determine selected key
                 onClick={({ key }) => {
                     switch(key) {
                         case '1': navigate('/'); break;
@@ -51,6 +64,7 @@ export default function AppSider({ onCollapse }) {
                         case '3': navigate('/orders'); break;
                         case '4': navigate('/my-tickets'); break;
                         case '5': navigate('/profile'); break;
+                        case '6': navigate('/change-ticket'); break;
                         default: navigate('/');
                     }
                 }}
@@ -60,6 +74,7 @@ export default function AppSider({ onCollapse }) {
                     { key: '3', icon: <OrderedListOutlined />, label: '我的订单' },
                     { key: '4', icon: <FileTextOutlined />, label: '本人车票' },
                     { key: '5', icon: <UserOutlined />, label: '个人中心' },
+                    { key: '6', icon: <SwapOutlined />, label: '改签' },
                 ]}
             />
         </Sider>

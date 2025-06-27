@@ -38,20 +38,29 @@ const SubmitOrder = () => {
 
         if (personData.news && personData.news.length > 0) {
             const user = personData.news[0];
-            const mainUserName = user.u_name;
-            const relatedNames = user.related_passenger_name || [];
-            const relatedIds = user.related_passenger_id || [];
+            // 如果用户有账户，则关联乘车人数量随机，取对应数量的关联乘车人
+            if (user.have_account) {
+                // 关联乘车人名单和身份证号
+                const relatedNames = user.related_passenger_name || [];
+                const relatedIds = user.related_passenger_id || [];
+                // 随机获取关联乘车人数量，最少1个，最多全部
+                const count = Math.min(relatedNames.length, Math.floor(Math.random() * relatedNames.length) + 1);
+                const selectedNames = relatedNames.slice(0, count);
+                const selectedIds = relatedIds.slice(0, count);
 
-            const allPassengers = [mainUserName, ...relatedNames];
-            setPassengersData(allPassengers);
+                setPassengersData(selectedNames);
 
-            // 姓名到身份证号映射
-            const idMap = {};
-            idMap[mainUserName] = user.u_id;
-            relatedNames.forEach((name, idx) => {
-                idMap[name] = relatedIds[idx] || '';
-            });
-            setPassengerIdMap(idMap);
+                // 姓名到身份证号映射
+                const idMap = {};
+                selectedNames.forEach((name, idx) => {
+                    idMap[name] = selectedIds[idx] || '';
+                });
+                setPassengerIdMap(idMap);
+            } else {
+                // 用户无账户，乘车人即为自己
+                setPassengersData([user.u_name]);
+                setPassengerIdMap({ [user.u_name]: user.u_id });
+            }
         }
 
         if (trainData.news && trainData.news.length > 0) {
