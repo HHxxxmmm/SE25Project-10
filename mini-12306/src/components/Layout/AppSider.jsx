@@ -14,23 +14,29 @@ import './style.css';
 
 const { Sider } = Layout;
 
-export default function AppSider() {
+export default function AppSider({ onCollapse }) {
     const [collapsed, setCollapsed] = useState(false);
     const navigate = useNavigate();
 
+    const handleCollapse = (collapsed) => {
+        setCollapsed(collapsed);
+        onCollapse(collapsed);
+    };
+
     return (
         <Sider
+            trigger={null}
             collapsible
             collapsed={collapsed}
-            onCollapse={setCollapsed}
+            onCollapse={handleCollapse}
+            className={`app-sider ${collapsed ? 'collapsed' : ''}`}
             width={200}
-            className="app-sider"
         >
             <div className="sider-toggle">
                 <Button
                     type="text"
                     icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-                    onClick={() => setCollapsed(!collapsed)}
+                    onClick={() => handleCollapse(!collapsed)}
                     style={{ width: '100%' }}
                 />
             </div>
@@ -41,7 +47,7 @@ export default function AppSider() {
                 onClick={({ key }) => {
                     switch(key) {
                         case '1': navigate('/'); break;
-                        case '2': navigate('/tickets'); break;
+                        case '2': navigate('/trains'); break;
                         case '3': navigate('/orders'); break;
                         case '4': navigate('/my-tickets'); break;
                         case '5': navigate('/profile'); break;

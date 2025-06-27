@@ -1,7 +1,7 @@
 // src/routes.js
 import React from 'react';
 import HomePage from './pages/Home';
-import TicketsPage from './pages/Tickets';
+import TrainsPage from './pages/Trains';
 import OrdersPage from './pages/Orders';
 import MyTicketsPage from './pages/MyTickets';
 import ProfilePage from './pages/Profile';
@@ -45,11 +45,11 @@ export const routes = [
         name: '首页'
     },
     {
-        path: '/tickets',
-        element: <TicketsPage />,
+        path: '/trains',
+        element: <TrainsPage />,
         // element: (
         //   <SearchRedirect>
-        //     <TicketsPage />
+        //     <TrainsPage />
         //   </SearchRedirect>
         // ),
         name: '车票预订'
