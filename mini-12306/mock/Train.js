@@ -8,7 +8,7 @@ module.exports = function() {
 
     for (var i = 0; i < 3; i++) {
 
-        let train_info = [];let seat_number = [];
+        let train_info = [];let seat_number = [];let seat_price = [];
         train_style = Random.pick(['G','K']);
 
         if(train_style === 'G') {
@@ -22,6 +22,11 @@ module.exports = function() {
         seat_number[1] = Random.integer(100,300);
         seat_number[2] = Random.integer(100,300);
         //席别库存
+
+        seat_price[0] = Random.integer(100,300);
+        seat_price[1] = Random.integer(100,300);
+        seat_price[2] = Random.integer(100,300);
+        //席别价格
 
         // 随机生成站点数
         const station_number = Random.integer(3, 5);
@@ -43,6 +48,7 @@ module.exports = function() {
             t_end_time: Random.datetime("yyyy-MM-dd HH:mm:ss"),//到达时间
             seat: train_info,//席别
             seat_number: seat_number,//不同席别的库存
+            seat_price: seat_price,//不同席别的价格
         })
     }
     return data;//返回json数据
