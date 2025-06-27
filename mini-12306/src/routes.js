@@ -7,14 +7,15 @@ import MyTicketsPage from './pages/MyTickets';
 import ProfilePage from './pages/Profile';
 // import LoginPage from './pages/Login';
 // import RegisterPage from './pages/Register';
-// import SubmitOrderPage from './pages/SubmitOrder';
+import SubmitOrderPage from './pages/SubmitOrder';
 // import PaymentPage from './pages/Payment';
 // import OrderDetailPage from './pages/OrderDetail';
 // import TicketDetailPage from './pages/TicketDetail';
-// import ChangeTicketPage from './pages/ChangeTicket';
+import ChangeTicketPage from './pages/ChangeTicket';
 // import RefundPage from './pages/Refund';
 // import { Navigate } from 'react-router-dom';
 // import { useAuth } from './hooks/useAuth';
+import AddPassengerPage from './pages/AddPassenger';
 
 /*
 // 封装需要登录的组件
@@ -53,6 +54,11 @@ export const routes = [
         //   </SearchRedirect>
         // ),
         name: '车票预订'
+    },
+    {
+        path: '/add-passenger',          // 新增路径
+        element: <AddPassengerPage />,   // 新增组件
+        name: '添加乘车人',
     },
     /*
     {
@@ -103,13 +109,22 @@ export const routes = [
         name: '个人中心',
         // requiresAuth: true
     },
-    /*
+
     {
-      path: '/submit-order',
-      element: <PrivateRoute element={<SubmitOrderPage />} />,
-      name: '提交订单',
+        path: '/submit-order',
+        element: <SubmitOrderPage />,
+        name: '提交订单',
       // requiresAuth: true
     },
+
+    {
+        path: '/change-ticket',
+        element: <ChangeTicketPage />,
+        name: '改签',
+        // requiresAuth: true
+    },
+
+    /*
     {
       path: '/payment',
       element: <PrivateRoute element={<PaymentPage />} />,
@@ -164,3 +179,4 @@ const handleCancelOrder = (isDetailPage) => {
   // navigate(isDetailPage ? '/orders' : -1);
 };
 */
+

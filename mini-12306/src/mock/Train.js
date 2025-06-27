@@ -1,7 +1,7 @@
 const Mock = require("mockjs");//引入mockjs模块
 let Random = Mock.Random;
 
-module.exports = function() {
+module.exports = function generateTrainData() {
     var data = {//定义等下要返回的json数据
         news: []
     };
@@ -9,7 +9,7 @@ module.exports = function() {
     for (var i = 0; i < 3; i++) {
 
         let train_info = [];let seat_number = [];let seat_price = [];
-        train_style = Random.pick(['G','K']);
+        let train_style = Random.pick(['G','K']);
 
         if(train_style === 'G') {
             train_info[0] = 1; train_info[1] = 2; train_info[2] = 3;//高铁有头等、商务、二等

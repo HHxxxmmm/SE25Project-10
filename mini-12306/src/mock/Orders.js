@@ -1,7 +1,7 @@
 const Mock = require("mockjs");//引入mockjs模块
 let Random = Mock.Random;
 
-module.exports = function() {
+module.exports = function generateOrdersData() {
     var data = {//定义等下要返回的json数据
         news: []
     };
