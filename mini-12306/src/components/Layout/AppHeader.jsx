@@ -12,7 +12,7 @@ export default function AppHeader() {
         name: '张三',
         avatar: process.env.PUBLIC_URL + '/default-avatar.jpg'
     };
-
+  
     return (
         <Header className="app-header">
             <div className="header-left">
