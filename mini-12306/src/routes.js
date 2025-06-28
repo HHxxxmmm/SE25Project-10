@@ -9,16 +9,12 @@ import LoginPage from './pages/Login';
 import RegisterPage from './pages/Register';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
-// import SubmitOrderPage from './pages/SubmitOrder';
-// import PaymentPage from './pages/Payment';
-// import OrderDetailPage from './pages/OrderDetail';
-// import TicketDetailPage from './pages/TicketDetail';
-// import ChangeTicketPage from './pages/ChangeTicket';
-// import RefundPage from './pages/Refund';
+import SubmitOrderPage from './pages/SubmitOrder';
+import ChangeTicketPage from './pages/ChangeTicket';
+import AddPassengerPage from './pages/AddPassenger';
 
 // 封装需要登录的组件
 const PrivateRoute = ({ element, redirectPath = '/login' }) => {
-  // 不使用useAuth的方式，直接从localStorage读取
   const checkAuthenticated = () => {
     try {
       const userData = localStorage.getItem('mini12306_user');
@@ -34,7 +30,6 @@ const PrivateRoute = ({ element, redirectPath = '/login' }) => {
   console.log('PrivateRoute checking auth (direct):', isAuth);
 
   if (!isAuth) {
-    // 未登录时，重定向到登录页面，并传递当前路径
     console.log('Not authenticated, redirecting to login with state:', { from: window.location.pathname });
     return <Navigate to={redirectPath} state={{ from: window.location.pathname }} replace />;
   }
@@ -42,7 +37,7 @@ const PrivateRoute = ({ element, redirectPath = '/login' }) => {
   return element;
 };
 
-//登录后重定向逻辑
+// 登录后重定向逻辑
 const LoginRedirectHandler = () => {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
@@ -50,7 +45,6 @@ const LoginRedirectHandler = () => {
 
   React.useEffect(() => {
     console.log('LoginRedirectHandler auth state:', isAuthenticated);
-    // 检查本地存储的登录时间戳，确保我们真正处于登录状态
     const loginTimestamp = localStorage.getItem('mini12306_login_time');
     
     if (isAuthenticated && loginTimestamp) {
@@ -63,7 +57,7 @@ const LoginRedirectHandler = () => {
   return <LoginPage />;
 };
 
-//注册后重定向逻辑
+// 注册后重定向逻辑
 const RegisterRedirectHandler = () => {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
@@ -71,16 +65,11 @@ const RegisterRedirectHandler = () => {
 
   React.useEffect(() => {
     if (isAuthenticated) {
-      // 如果已登录，从登录页来的应该回到登录页指定的from
-      // 否则回到首页
       const from = location.state?.from || '/';
-      
-      // 检查referrer是否是登录页
       const referrer = document.referrer;
       const isFromLoginPage = referrer && referrer.includes('/login');
       
       if (isFromLoginPage && location.state?.from) {
-        // 如果从登录页来且有指定跳转页，就跳到那个页
         navigate(location.state.from, { replace: true });
       } else {
         navigate(from, { replace: true });
@@ -108,7 +97,6 @@ const authRoutes = [
     element: <ProfilePage />,
     name: '个人中心',
   },
-  // 其他需要认证的路由...
 ];
 
 export const routes = [
@@ -132,7 +120,21 @@ export const routes = [
     element: <RegisterRedirectHandler />,
     name: '注册'
   },
-  // 使用map将所有需要认证的路由包装在PrivateRoute中
+  {
+    path: '/add-passenger',
+    element: <AddPassengerPage />,
+    name: '添加乘车人',
+  },
+  {
+    path: '/submit-order',
+    element: <SubmitOrderPage />,
+    name: '提交订单',
+  },
+  {
+    path: '/change-ticket',
+    element: <ChangeTicketPage />,
+    name: '改签',
+  },
   ...authRoutes.map(route => ({
     ...route,
     element: <PrivateRoute element={route.element} />,
@@ -173,3 +175,4 @@ const handleCancelOrder = (isDetailPage) => {
   // navigate(isDetailPage ? '/orders' : -1);
 };
 */
+

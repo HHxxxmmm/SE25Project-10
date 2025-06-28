@@ -27,6 +27,7 @@ export default function AppHeader() {
         }
         return { isAuthenticated: false, user: null };
     };
+
     
     // 添加状态以确保组件在localStorage变化时重新渲染
     const [authState, setAuthState] = React.useState(getUserAuthState());
@@ -74,6 +75,7 @@ export default function AppHeader() {
         window.location.reload(); // 强制刷新以确保状态更新
     };
     
+
     return (
         <Header className="app-header">
             <div className="header-left">

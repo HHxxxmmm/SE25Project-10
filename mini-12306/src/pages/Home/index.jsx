@@ -1,10 +1,14 @@
 import React from 'react';
 import { Carousel, Card, DatePicker, Input } from 'antd';
+import { useNavigate } from 'react-router-dom';
+import dayjs from 'dayjs'; // 引入 dayjs 方便日期计算
 import './style.css';
 
 const { Search } = Input;
 
 export default function HomePage() {
+    const navigate = useNavigate();
+
     const ads = [
         '/images/ads/ad01.jpg',
         '/images/ads/ad02.jpg',
@@ -14,7 +18,6 @@ export default function HomePage() {
         '/images/ads/ad06.jpg',
     ];
 
-    // 公告数据
     const announcements = [
         { id: 1, title: '公告1', content: '这里是公告1的内容摘要...' },
         { id: 2, title: '公告2', content: '这里是公告2的内容摘要...' },
@@ -23,18 +26,26 @@ export default function HomePage() {
         { id: 5, title: '公告5', content: '这里是公告5的内容摘要...' },
     ];
 
-    // 功能按钮
     const actionButtons = [
         { id: 1, name: '用户须知', link: '/user-guide' },
         { id: 2, name: '购票指南', link: '/ticket-guide' },
         { id: 3, name: '联系反馈', link: '/contact' },
     ];
 
+    const handleSearch = () => {
+        navigate('/trains');
+    };
+
+    // 限制日期选择：只能选择今天至15天后的日期
+    const disabledDate = (current) => {
+        const today = dayjs().startOf('day');
+        const maxDate = dayjs().add(15, 'day').endOf('day');
+        return current && (current.isBefore(today, 'day') || current.isAfter(maxDate, 'day'));
+    };
+
     return (
         <div className="home-page">
-            {/* 轮播图部分 */}
             <div className="ad-carousel-container">
-                {/* 查询窗口 */}
                 <div className="search-overlay">
                     <div className="search-panel">
                         <h2 className="search-title">车票查询</h2>
@@ -58,9 +69,10 @@ export default function HomePage() {
                                 <DatePicker
                                     className="search-date"
                                     style={{ width: '100%' }}
+                                    disabledDate={disabledDate}
                                 />
                             </div>
-                            <button className="search-button">
+                            <button className="search-button" onClick={handleSearch}>
                                 查询车票
                             </button>
                         </div>
@@ -89,11 +101,9 @@ export default function HomePage() {
                 </Carousel>
             </div>
 
-            {/* 公告栏部分 */}
             <div className="announcement-container">
                 <Card className="announcement-card">
                     <div className="announcement-content">
-                        {/* 左侧公告列表 */}
                         <div className="announcement-list">
                             <h2 className="announcement-title">最新公告</h2>
                             <ul>
@@ -106,7 +116,6 @@ export default function HomePage() {
                             </ul>
                         </div>
 
-                        {/* 右侧功能按钮 */}
                         <div className="action-buttons">
                             {actionButtons.map(button => (
                                 <button
