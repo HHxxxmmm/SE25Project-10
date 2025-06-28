@@ -7,7 +7,7 @@ import generateOrdersData from '../../mock/Orders';
 
 const { Text } = Typography;
 
-const ChangeTicketPage = () => {
+const ReturnTicketPage = () => {
     const [order, setOrder] = useState(null);
     const [selectedTickets, setSelectedTickets] = useState([]);
     const trainInfoCardRef = useRef(null);
@@ -36,7 +36,7 @@ const ChangeTicketPage = () => {
         );
     };
 
-    const onSelectAllChange = (e) => {
+    const onSelectAllReturn = (e) => {
         if (e.target.checked) {
             setSelectedTickets(order.passengers.map((_, idx) => idx));
         } else {
@@ -48,8 +48,8 @@ const ChangeTicketPage = () => {
 
     return (
         <>
-            <Card className="change-ticket-card" bordered={false} bodyStyle={{ padding: 0 }}>
-                <div className="card-title">改签</div>
+            <Card className="return-ticket-card" bordered={false} bodyStyle={{ padding: 0 }}>
+                <div className="card-title">退票</div>
 
                 <Row justify="space-between" className="info-row">
                     <Text type="secondary" className="order-info-text">
@@ -92,7 +92,7 @@ const ChangeTicketPage = () => {
                                 <Checkbox
                                     indeterminate={indeterminate}
                                     checked={allSelected}
-                                    onChange={onSelectAllChange}
+                                    onChange={onSelectAllReturn}
                                 />
                             </th>
                             <th style={{ width: '5%' }}>序号</th>
@@ -141,7 +141,7 @@ const ChangeTicketPage = () => {
 
                 <div className="button-row">
                     <Button type="primary" className="btn-blue">
-                        确认改签 ({selectedTickets.length})
+                        确认退票 ({selectedTickets.length})
                     </Button>
                     <Button className="btn-white">取消</Button>
                 </div>
@@ -159,4 +159,4 @@ const ChangeTicketPage = () => {
     );
 };
 
-export default ChangeTicketPage;
+export default ReturnTicketPage;
