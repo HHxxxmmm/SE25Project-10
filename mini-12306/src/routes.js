@@ -1,149 +1,145 @@
 // src/routes.js
 import React from 'react';
 import HomePage from './pages/Home';
-import TrainsPage from './pages/Trains';
+import TicketsPage from './pages/Tickets';
 import OrdersPage from './pages/Orders';
 import MyTicketsPage from './pages/MyTickets';
 import ProfilePage from './pages/Profile';
-// import LoginPage from './pages/Login';
-// import RegisterPage from './pages/Register';
+import LoginPage from './pages/Login';
+import RegisterPage from './pages/Register';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from './hooks/useAuth';
 import SubmitOrderPage from './pages/SubmitOrder';
-// import PaymentPage from './pages/Payment';
-// import OrderDetailPage from './pages/OrderDetail';
-// import TicketDetailPage from './pages/TicketDetail';
 import ChangeTicketPage from './pages/ChangeTicket';
-// import RefundPage from './pages/Refund';
-// import { Navigate } from 'react-router-dom';
-// import { useAuth } from './hooks/useAuth';
 import AddPassengerPage from './pages/AddPassenger';
 
-/*
 // 封装需要登录的组件
 const PrivateRoute = ({ element, redirectPath = '/login' }) => {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated ? element : <Navigate to={redirectPath} state={{ from: window.location.pathname }} replace />;
+  const checkAuthenticated = () => {
+    try {
+      const userData = localStorage.getItem('mini12306_user');
+      const loginTimestamp = localStorage.getItem('mini12306_login_time');
+      return !!(userData && loginTimestamp);
+    } catch (e) {
+      console.error("Error checking auth state", e);
+      return false;
+    }
+  };
+
+  const isAuth = checkAuthenticated();
+  console.log('PrivateRoute checking auth (direct):', isAuth);
+
+  if (!isAuth) {
+    console.log('Not authenticated, redirecting to login with state:', { from: window.location.pathname });
+    return <Navigate to={redirectPath} state={{ from: window.location.pathname }} replace />;
+  }
+  
+  return element;
 };
 
-// 封装登录后重定向逻辑
+// 登录后重定向逻辑
 const LoginRedirectHandler = () => {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
-  if (isAuthenticated) {
-    const from = location.state?.from || '/';
-    navigate(from, { replace: true });
-  }
+  React.useEffect(() => {
+    console.log('LoginRedirectHandler auth state:', isAuthenticated);
+    const loginTimestamp = localStorage.getItem('mini12306_login_time');
+    
+    if (isAuthenticated && loginTimestamp) {
+      const from = location.state?.from || '/';
+      console.log('Already authenticated, redirecting to:', from);
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, location, navigate]);
 
   return <LoginPage />;
 };
-*/
+
+// 注册后重定向逻辑
+const RegisterRedirectHandler = () => {
+  const { isAuthenticated } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      const from = location.state?.from || '/';
+      const referrer = document.referrer;
+      const isFromLoginPage = referrer && referrer.includes('/login');
+      
+      if (isFromLoginPage && location.state?.from) {
+        navigate(location.state.from, { replace: true });
+      } else {
+        navigate(from, { replace: true });
+      }
+    }
+  }, [isAuthenticated, location, navigate]);
+
+  return <RegisterPage />;
+};
+
+// 封装所有需要认证的路由
+const authRoutes = [
+  {
+    path: '/orders',
+    element: <OrdersPage />,
+    name: '我的订单',
+  },
+  {
+    path: '/my-tickets',
+    element: <MyTicketsPage />,
+    name: '我的车票',
+  },
+  {
+    path: '/profile',
+    element: <ProfilePage />,
+    name: '个人中心',
+  },
+];
 
 export const routes = [
-    {
-        path: '/',
-        element: <HomePage />,
-        name: '首页'
-    },
-    {
-        path: '/trains',
-        element: <TrainsPage />,
-        // element: (
-        //   <SearchRedirect>
-        //     <TrainsPage />
-        //   </SearchRedirect>
-        // ),
-        name: '车票预订'
-    },
-    {
-        path: '/add-passenger',          // 新增路径
-        element: <AddPassengerPage />,   // 新增组件
-        name: '添加乘车人',
-    },
-    /*
-    {
-      path: '/login',
-      element: <LoginRedirectHandler />,
-      name: '登录'
-    },
-    {
-      path: '/register',
-      element: <RegisterPage />,
-      name: '注册'
-    },
-    */
-    {
-        path: '/orders',
-        element: <OrdersPage />,
-        // element: <PrivateRoute element={<OrdersPage />} />,
-        name: '我的订单',
-        // requiresAuth: true
-    },
-    /*
-    {
-      path: '/orders/:id',
-      element: <PrivateRoute element={<OrderDetailPage />} />,
-      name: '订单详情',
-      // requiresAuth: true
-    },
-    */
-    {
-        path: '/my-tickets',
-        element: <MyTicketsPage />,
-        // element: <PrivateRoute element={<MyTicketsPage />} />,
-        name: '我的车票',
-        // requiresAuth: true
-    },
-    /*
-    {
-      path: '/my-tickets/:id',
-      element: <PrivateRoute element={<TicketDetailPage />} />,
-      name: '车票详情',
-      // requiresAuth: true
-    },
-    */
-    {
-        path: '/profile',
-        element: <ProfilePage />,
-        // element: <PrivateRoute element={<ProfilePage />} />,
-        name: '个人中心',
-        // requiresAuth: true
-    },
-
-    {
-        path: '/submit-order',
-        element: <SubmitOrderPage />,
-        name: '提交订单',
-      // requiresAuth: true
-    },
-
-    {
-        path: '/change-ticket',
-        element: <ChangeTicketPage />,
-        name: '改签',
-        // requiresAuth: true
-    },
-
-    /*
-    {
-      path: '/payment',
-      element: <PrivateRoute element={<PaymentPage />} />,
-      name: '支付',
-      // requiresAuth: true
-    },
-    {
-      path: '/change-ticket',
-      element: <PrivateRoute element={<ChangeTicketPage />} />,
-      name: '改签',
-      // requiresAuth: true
-    },
-    {
-      path: '/refund',
-      element: <PrivateRoute element={<RefundPage />} />,
-      name: '退票',
-      // requiresAuth: true
-    }
-    */
+  {
+    path: '/',
+    element: <HomePage />,
+    name: '首页'
+  },
+  {
+    path: '/tickets',
+    element: <TicketsPage />,
+    name: '车票预订'
+  },
+  {
+    path: '/login',
+    element: <LoginRedirectHandler />,
+    name: '登录'
+  },
+  {
+    path: '/register',
+    element: <RegisterRedirectHandler />,
+    name: '注册'
+  },
+  {
+    path: '/add-passenger',
+    element: <AddPassengerPage />,
+    name: '添加乘车人',
+  },
+  {
+    path: '/submit-order',
+    element: <SubmitOrderPage />,
+    name: '提交订单',
+  },
+  {
+    path: '/change-ticket',
+    element: <ChangeTicketPage />,
+    name: '改签',
+  },
+  ...authRoutes.map(route => ({
+    ...route,
+    element: <PrivateRoute element={route.element} />,
+    requiresAuth: true
+  }))
 ];
 
 /*
