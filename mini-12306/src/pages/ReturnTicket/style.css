@@ -15,7 +15,7 @@ body {
 }
 
 /* Card container */
-.change-ticket-card {
+.return-ticket-card {
     width: 100%;
     max-width: 1200px;
     margin: 20px auto;
@@ -274,7 +274,7 @@ body {
 
 /* Responsive styles */
 @media (max-width: 992px) {
-    .change-ticket-card,
+    .return-ticket-card,
     .button-row,
     .tip-wrapper {
         max-width: 95%;

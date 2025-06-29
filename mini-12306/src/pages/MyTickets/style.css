@@ -1,0 +1,206 @@
+/* 本人车票页样式 */
+
+/* 容器和卡片 */
+.my-tickets-card {
+    width: 100%;
+    max-width: 1200px;
+    margin: 20px auto;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    padding-bottom: 16px;
+    font-family: "Microsoft YaHei", sans-serif;
+    color: #333;
+}
+
+/* 标题 */
+.ticket-card-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    padding: 16px 24px;
+    border-bottom: 1px solid #e8e8e8;
+}
+
+/* 乘客信息 */
+.passenger-info {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    padding: 16px 24px;
+    font-size: 1rem;
+    color: #333;
+    cursor: default !important;
+}
+
+.passenger-item {
+    margin-bottom: 0; /* 行内显示无底部间距 */
+    cursor: default !important;
+}
+
+/* 过滤导航 - 左对齐方块按钮 */
+.filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 16px 24px; /* 与乘客信息左右内边距保持一致 */
+}
+
+.filter-btn {
+    width: 80px;
+    height: 32px;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    background-color: white;
+    cursor: pointer;
+    font-weight: 500;
+    color: #000;
+    transition: all 0.3s ease;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.filter-btn:hover {
+    border-color: #1890ff;
+    color: #1890ff;
+}
+
+.filter-btn.active {
+    background-color: #1890ff;
+    color: white;
+    border-color: #1890ff;
+}
+
+/* 车票列表 */
+.tickets-list {
+    padding: 16px 24px;
+}
+
+/* 单个车票项 */
+.ticket-item {
+    border: 1px solid #e8e8e8;
+    border-radius: 4px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    user-select: none;
+}
+
+.ticket-item:hover,
+.ticket-item:focus {
+    background-color: #f0f5ff;
+    outline: none;
+}
+
+/* 车票头部信息 */
+.ticket-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    color: #333;
+}
+
+/* 车次详细信息 */
+.train-details {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+}
+
+.train-details span {
+    white-space: nowrap;
+}
+
+/* 加粗大字体 */
+.bold-text {
+    font-weight: bold;
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+/* 小字体 */
+.small-text {
+    font-size: 0.85rem;
+    line-height: 1;
+    font-weight: normal;
+}
+
+/* 票状态标签 */
+.ant-tag {
+    font-weight: 600;
+    padding: 0 8px;
+    height: 24px;
+    line-height: 22px;
+    border-radius: 2px;
+    user-select: none;
+}
+
+/* 车票详情信息 */
+.ticket-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 1rem;
+    color: #333;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .my-tickets-card {
+        margin: 12px 8px;
+        padding-bottom: 12px;
+    }
+    .ticket-card-title {
+        font-size: 1.25rem;
+        padding: 12px 16px;
+    }
+    .passenger-info {
+        padding: 12px 16px 0;
+    }
+    .filter-bar {
+        margin: 12px 16px;
+        gap: 8px;
+    }
+    .filter-btn {
+        width: 70px;
+        height: 28px;
+        font-size: 0.9rem;
+    }
+    .tickets-list {
+        padding: 12px 16px;
+    }
+    .ticket-item {
+        padding: 10px 12px;
+    }
+    .ticket-header {
+        font-size: 0.95rem;
+    }
+    .ticket-details {
+        font-size: 0.95rem;
+        gap: 12px;
+    }
+    .bold-text {
+        font-size: 1.1rem;
+    }
+    .small-text {
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .train-details {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+    }
+    .filter-bar {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+}
