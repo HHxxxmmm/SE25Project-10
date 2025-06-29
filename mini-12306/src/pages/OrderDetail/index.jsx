@@ -45,6 +45,10 @@ const OrderDetailPage = () => {
         navigate('/orders');
     };
 
+    const onPayOrder = () => {
+        navigate(`/payment?orderId=${order.order_id}`);
+    };
+
     return (
         <>
             <Card className="order-detail-card" bordered={false} bodyStyle={{ padding: 0 }}>
@@ -134,7 +138,7 @@ const OrderDetailPage = () => {
                 <div className="button-row">
                     {order.o_status === 1 && (
                         <>
-                            <Button type="primary" className="btn-blue" onClick={() => { /* 支付逻辑无跳转 */ }}>
+                            <Button type="primary" className="btn-blue" onClick={onPayOrder}>
                                 去支付
                             </Button>
                             <Button className="btn-white" onClick={onCancelOrder}>

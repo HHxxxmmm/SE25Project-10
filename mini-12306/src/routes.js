@@ -15,6 +15,7 @@ import AddPassengerPage from './pages/AddPassenger';
 import ReturnTicketPage from './pages/ReturnTicket';
 import OrderDetailPage from './pages/OrderDetail';
 import TicketDetailPage from './pages/TicketDetail';
+import PaymentPage from './pages/Payment';
 
 // 封装需要登录的组件
 const PrivateRoute = ({ element, redirectPath = '/login' }) => {
@@ -156,6 +157,11 @@ export const routes = [
     path: '/ticket-detail',
     element: <TicketDetailPage />,
     name: '车票详情'
+  },
+  {
+    path: '/payment',
+    element: <PaymentPage />,
+    name: '订单支付'
   },
   ...authRoutes.map(route => ({
     ...route,
