@@ -50,6 +50,20 @@ body {
     background-color: #fff;
 }
 
+/* Train details */
+.train-details {
+    padding-bottom: 10px;
+}
+
+.train-details .bold-text {
+    font-weight: bold;
+    font-size: 1.25rem; /* 放大字体 */
+}
+
+.train-details .small-text {
+    font-size: 0.85rem; /* 缩小字体 */
+}
+
 /* Passenger search input */
 .passenger-search {
     padding: 6px 10px;
@@ -72,7 +86,7 @@ hr {
 
 /* Text elements */
 .train-details,
-.ticket-info,
+.ticket-info-seat,
 .passenger-label,
 .price-note,
 .passenger-item {
@@ -80,13 +94,10 @@ hr {
     color: #333;
 }
 
-.train-details {
-    padding-bottom: 10px;
-}
-
-.ticket-info {
+.ticket-info-seat {
     padding-bottom: 15px;
     line-height: 1.6;
+    text-align: left; /* 让内容居左 */
 }
 
 .price-note {
@@ -408,4 +419,3 @@ hr {
         margin: 0 8px 25px 8px;
     }
 }
-

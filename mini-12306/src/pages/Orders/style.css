@@ -496,21 +496,25 @@
     .orders-page .search-item {
         min-width: auto;
         width: 100%;
+
     }
     .orders-page .order-item {
         padding: 16px;
         margin-bottom: 12px;
         overflow-x: visible;
     }
+
     .orders-page .order-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 8px;
     }
+
     .orders-page .train-header {
         flex-wrap: wrap;
         gap: 8px;
     }
+
     .orders-page .order-details {
         display: flex;
         flex-wrap: wrap;
@@ -518,25 +522,30 @@
         min-width: auto;
         gap: 16px;
     }
+
     .orders-page .route-info {
         flex-direction: column;
         gap: 12px;
         width: 100%;
     }
+
     .orders-page .journey-line {
         transform: rotate(90deg);
         width: 40px;
         margin: 8px 0;
     }
+
     .orders-page .passenger-item {
         flex-direction: column;
         align-items: flex-start;
         gap: 8px;
     }
+
     .orders-page .passenger-ticket {
         width: 100%;
         justify-content: space-between;
     }
+
     .orders-page .order-footer {
         overflow-x: visible;
         min-width: auto;
@@ -553,3 +562,4 @@
         padding: 12px;
     }
 }
+

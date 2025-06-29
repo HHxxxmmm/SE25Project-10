@@ -1,17 +1,20 @@
 // src/routes.js
 import React from 'react';
 import HomePage from './pages/Home';
-import TicketsPage from './pages/Tickets';
+import TrainsPage from './pages/Trains';
 import OrdersPage from './pages/Orders';
 import MyTicketsPage from './pages/MyTickets';
 import ProfilePage from './pages/Profile';
 import LoginPage from './pages/Login';
-import RegisterPage from './pages/Register';
+//import RegisterPage from './pages/Register';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import SubmitOrderPage from './pages/SubmitOrder';
 import ChangeTicketPage from './pages/ChangeTicket';
 import AddPassengerPage from './pages/AddPassenger';
+import ReturnTicketPage from './pages/ReturnTicket';
+import OrderDetailPage from './pages/OrderDetail';
+import TicketDetailPage from './pages/TicketDetail';
 
 // 封装需要登录的组件
 const PrivateRoute = ({ element, redirectPath = '/login' }) => {
@@ -56,7 +59,7 @@ const LoginRedirectHandler = () => {
 
   return <LoginPage />;
 };
-
+/*
 // 注册后重定向逻辑
 const RegisterRedirectHandler = () => {
   const { isAuthenticated } = useAuth();
@@ -79,6 +82,8 @@ const RegisterRedirectHandler = () => {
 
   return <RegisterPage />;
 };
+*/
+
 
 // 封装所有需要认证的路由
 const authRoutes = [
@@ -106,8 +111,8 @@ export const routes = [
     name: '首页'
   },
   {
-    path: '/tickets',
-    element: <TicketsPage />,
+    path: '/trains',
+    element: <TrainsPage />,
     name: '车票预订'
   },
   {
@@ -115,11 +120,13 @@ export const routes = [
     element: <LoginRedirectHandler />,
     name: '登录'
   },
+    /*
   {
     path: '/register',
     element: <RegisterRedirectHandler />,
     name: '注册'
   },
+  */
   {
     path: '/add-passenger',
     element: <AddPassengerPage />,
@@ -134,6 +141,21 @@ export const routes = [
     path: '/change-ticket',
     element: <ChangeTicketPage />,
     name: '改签',
+  },
+  {
+    path: '/return-ticket',
+    element: <ReturnTicketPage />,
+    name: '退票',
+  },
+  {
+    path: '/order-detail',
+    element: <OrderDetailPage />,
+    name: '订单详情',
+  },
+  {
+    path: '/ticket-detail',
+    element: <TicketDetailPage />,
+    name: '车票详情'
   },
   ...authRoutes.map(route => ({
     ...route,
