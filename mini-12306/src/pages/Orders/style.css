@@ -118,6 +118,7 @@
     background: #fff;
     overflow-x: auto; /* 默认允许横向滚动 */
     max-width: 100%;
+
 }
 
 .orders-page .order-item:hover {
@@ -164,6 +165,7 @@
     display: flex;
     gap: 24px;
     margin-bottom: 16px;
+
     min-width: 600px; /* 基础最小宽度，防止内容过度压缩 */
     flex-wrap: nowrap;
     overflow-x: auto;
@@ -173,6 +175,7 @@
     flex: 1;
     min-width: 300px;
     flex-shrink: 0; /* 禁止缩小 */
+
 }
 
 .orders-page .train-header {
@@ -246,6 +249,7 @@
     flex: 1;
     min-width: 300px;
     flex-shrink: 0; /* 禁止缩小 */
+
 }
 
 .orders-page .passengers-header {
@@ -317,6 +321,7 @@
     border-top: 1px solid #f0f0f0;
     min-width: 600px; /* 防止底部内容过度压缩 */
     overflow-x: auto;
+
 }
 
 .orders-page .order-summary {
@@ -411,6 +416,7 @@
     color: #1890ff;
 }
 
+
 /* 响应式设计 */
 
 /* 大屏：>992px */
@@ -460,6 +466,7 @@
     .orders-page .order-footer {
         overflow-x: visible;
         min-width: auto;
+
         flex-direction: column;
         align-items: flex-start;
         gap: 12px;
@@ -501,15 +508,18 @@
         margin-bottom: 12px;
         overflow-x: visible;
     }
+
     .orders-page .order-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 8px;
     }
+
     .orders-page .train-header {
         flex-wrap: wrap;
         gap: 8px;
     }
+
     .orders-page .order-details {
         display: flex;
         flex-wrap: wrap;
@@ -517,25 +527,30 @@
         min-width: auto;
         gap: 16px;
     }
+
     .orders-page .route-info {
         flex-direction: column;
         gap: 12px;
         width: 100%;
     }
+
     .orders-page .journey-line {
         transform: rotate(90deg);
         width: 40px;
         margin: 8px 0;
     }
+
     .orders-page .passenger-item {
         flex-direction: column;
         align-items: flex-start;
         gap: 8px;
     }
+
     .orders-page .passenger-ticket {
         width: 100%;
         justify-content: space-between;
     }
+
     .orders-page .order-footer {
         overflow-x: visible;
         min-width: auto;
@@ -552,3 +567,4 @@
         padding: 12px;
     }
 }
+

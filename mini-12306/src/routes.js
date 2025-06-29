@@ -16,7 +16,6 @@ import ReturnTicketPage from './pages/ReturnTicket';
 import OrderDetailPage from './pages/OrderDetail';
 import TicketDetailPage from './pages/TicketDetail';
 
-
 // 封装需要登录的组件
 const PrivateRoute = ({ element, redirectPath = '/login' }) => {
   const checkAuthenticated = () => {

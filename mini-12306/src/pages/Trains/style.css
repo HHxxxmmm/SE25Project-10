@@ -118,6 +118,7 @@
     background: #fff;
     overflow-x: auto; /* 默认允许横向滚动 */
     max-width: 100%;
+
 }
 
 .trains-page .train-item:hover {
@@ -178,6 +179,7 @@
     min-width: 600px; /* 基础最小宽度，防止内容过度压缩 */
     overflow-x: auto;
 }
+
 
 .trains-page .time-info {
     display: flex;
@@ -265,6 +267,7 @@
     border-top: 1px solid #f0f0f0;
     min-width: 600px; /* 防止底部内容过度压缩 */
     overflow-x: auto;
+
 }
 
 .trains-page .route-stations {
@@ -402,6 +405,7 @@
     .trains-page .train-footer {
         overflow-x: visible;
         min-width: auto;
+
         flex-direction: column;
         align-items: flex-start;
         gap: 12px;
@@ -443,15 +447,18 @@
         margin-bottom: 12px;
         overflow-x: visible;
     }
+
     .trains-page .train-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 8px;
     }
+
     .trains-page .train-info {
         flex-wrap: wrap;
         gap: 8px;
     }
+
     .trains-page .train-details {
         display: flex;
         flex-wrap: wrap;
@@ -459,27 +466,32 @@
         min-width: auto;
         gap: 16px;
     }
+
     .trains-page .time-info {
         flex-direction: column;
         gap: 12px;
         width: 100%;
     }
+
     .trains-page .journey-line {
         transform: rotate(90deg);
         width: 40px;
         margin: 8px 0;
     }
+
     .trains-page .seats-info {
         flex-direction: column;
         gap: 8px;
         width: 100%;
     }
+
     .trains-page .seat-item {
         flex-direction: row;
         justify-content: space-between;
         min-width: auto;
         width: 100%;
     }
+
     .trains-page .train-footer {
         overflow-x: visible;
         min-width: auto;
