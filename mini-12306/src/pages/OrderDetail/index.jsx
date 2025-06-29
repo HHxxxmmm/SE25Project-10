@@ -1,88 +1,73 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Card, Typography, Divider, Checkbox, Button, Row } from 'antd';
-
-import { useNavigate } from 'react-router-dom';
-
+import React, { useState, useEffect } from 'react';
+import { Card, Typography, Divider, Button, Row } from 'antd';
+import { Link, useNavigate } from 'react-router-dom';
 import './style.css';
-
-// 这里假设 mock 数据生成函数路径和结构一致
 import generateOrdersData from '../../mock/Orders';
 
 const { Text } = Typography;
 
-const ChangeTicketPage = () => {
+const OrderDetailPage = () => {
     const [order, setOrder] = useState(null);
-    const [selectedTickets, setSelectedTickets] = useState([]);
-    const trainInfoCardRef = useRef(null);
-
     const navigate = useNavigate();
-
 
     useEffect(() => {
         const data = generateOrdersData();
-        // 假设o_status===2是已支付订单
-        const paidOrders = data.news.filter(order => order.o_status === 2);
-
-        if (paidOrders.length > 0) {
-            setOrder(paidOrders[0]);
-            setSelectedTickets(paidOrders[0].passengers.map((_, idx) => idx));
+        if (data.news.length > 0) {
+            const randomIndex = Math.floor(Math.random() * data.news.length);
+            setOrder(data.news[randomIndex]);
         }
     }, []);
 
     if (!order) {
-        return <div>加载中</div>;
+        return <div>加载中...</div>;
     }
 
-    const allSelected = selectedTickets.length === order.passengers.length;
-    const indeterminate = selectedTickets.length > 0 && !allSelected;
-
-    const toggleSelect = (index) => {
-        setSelectedTickets((prev) =>
-            prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
-        );
+    const statusMap = {
+        1: { text: '待支付', colorClass: 'status-pending' },
+        2: { text: '已支付', colorClass: 'status-paid' },
+        3: { text: '已完成', colorClass: 'status-completed' },
     };
 
-    const onSelectAllChange = (e) => {
-        if (e.target.checked) {
-            setSelectedTickets(order.passengers.map((_, idx) => idx));
-        } else {
-            setSelectedTickets([]);
-        }
+    // 跳转处理函数
+    const onTicketClick = () => {
+        navigate('/ticket-detail');
     };
 
-
-    const totalPrice = order.passengers.reduce((sum, passenger) => sum + passenger.price, 0);
-
-    // 确认改签按钮点击处理
-    const handleConfirmChange = () => {
-        if (selectedTickets.length > 0) {
-            navigate('/trains'); // 跳转到车票页
-        }
+    const onReturnTicket = () => {
+        navigate('/return-ticket');
     };
 
-    // 取消按钮点击处理
-    const handleCancel = () => {
-        navigate(-1); // 返回上一级
+    const onChangeTicket = () => {
+        navigate('/change-ticket');
     };
 
+    const onCancelOrder = () => {
+        navigate('/orders');
+    };
 
     return (
         <>
-            <Card className="change-ticket-card" bordered={false} bodyStyle={{ padding: 0 }}>
-                <div className="card-title">改签</div>
+            <Card className="order-detail-card" bordered={false} bodyStyle={{ padding: 0 }}>
+                <div className="card-title">
+                    <Link to="/orders" className="back-link">返回</Link>
+                    订单详情
+                </div>
 
-                <Row justify="space-between" className="info-row">
+                <Row justify="space-between" align="middle" className="info-row">
                     <Text type="secondary" className="order-info-text">
                         订单号: {order.order_id}
                     </Text>
                     <Text type="secondary" className="order-info-text">
                         下单时间: {order.o_time.slice(0, 16)}
                     </Text>
+                    <div className={`order-status ${statusMap[order.o_status]?.colorClass || ''}`}>
+                        {statusMap[order.o_status]?.text || '未知状态'}
+                    </div>
                 </Row>
 
                 <Divider />
 
-                <div className="train-info-card" ref={trainInfoCardRef}>
+                <div className="train-info-card">
                     <div className="train-date">{order.t_time.slice(0, 16)}</div>
                     <div className="train-route">
                         <div className="station-block">
@@ -108,13 +93,6 @@ const ChangeTicketPage = () => {
                     <table className="ticket-table">
                         <thead>
                         <tr>
-                            <th style={{ width: '5%' }}>
-                                <Checkbox
-                                    indeterminate={indeterminate}
-                                    checked={allSelected}
-                                    onChange={onSelectAllChange}
-                                />
-                            </th>
                             <th style={{ width: '5%' }}>序号</th>
                             <th style={{ width: '12%' }}>姓名</th>
                             <th style={{ width: '22%' }}>身份证号</th>
@@ -128,16 +106,10 @@ const ChangeTicketPage = () => {
                         {order.passengers.map((ticket, index) => (
                             <tr
                                 key={index}
-                                className={selectedTickets.includes(index) ? 'selected' : ''}
-                                onClick={() => toggleSelect(index)}
+                                style={{ cursor: 'pointer' }}
+                                onClick={onTicketClick}
+                                title="点击查看车票详情"
                             >
-                                <td>
-                                    <Checkbox
-                                        checked={selectedTickets.includes(index)}
-                                        onClick={e => e.stopPropagation()}
-                                        onChange={() => toggleSelect(index)}
-                                    />
-                                </td>
                                 <td>{index + 1}</td>
                                 <td>{ticket.name}</td>
                                 <td>{ticket.id}</td>
@@ -156,29 +128,35 @@ const ChangeTicketPage = () => {
                 <Divider />
 
                 <Row justify="space-between" align="middle" className="footer-row">
-                    <div>订单总价: ¥{totalPrice}</div>
+                    <div>订单总价: ¥{order.passengers.reduce((sum, passenger) => sum + passenger.price, 0)}</div>
                 </Row>
 
                 <div className="button-row">
-
-                    <Button type="primary" className="btn-blue" onClick={handleConfirmChange}>
-                        确认改签 ({selectedTickets.length})
-                    </Button>
-                    <Button className="btn-white" onClick={handleCancel}>取消</Button>
-
+                    {order.o_status === 1 && (
+                        <>
+                            <Button type="primary" className="btn-blue" onClick={() => { /* 支付逻辑无跳转 */ }}>
+                                去支付
+                            </Button>
+                            <Button className="btn-white" onClick={onCancelOrder}>
+                                取消订单
+                            </Button>
+                        </>
+                    )}
+                    {order.o_status === 2 && (
+                        <>
+                            <Button type="primary" className="btn-blue" onClick={onReturnTicket}>
+                                退票
+                            </Button>
+                            <Button className="btn-white" onClick={onChangeTicket}>
+                                改签
+                            </Button>
+                        </>
+                    )}
+                    {/* o_status === 3 不显示按钮 */}
                 </div>
             </Card>
-
-            <div className="tip-wrapper">
-                <div className="tip-content">
-                    <p>温馨提示：</p>
-                    <p>退票可能会产生一定费用，请提前了解退票政策。</p>
-                    <p>确认退票后，车票将无法恢复，请谨慎操作。</p>
-                    <p>退票后，退款将按原支付方式退回，到账时间以银行处理为准。</p>
-                </div>
-            </div>
         </>
     );
 };
 
-export default ChangeTicketPage;
+export default OrderDetailPage;

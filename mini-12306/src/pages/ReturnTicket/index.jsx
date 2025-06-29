@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, Typography, Divider, Checkbox, Button, Row } from 'antd';
+
+import { useNavigate } from 'react-router-dom';
 import './style.css';
 
-// 这里假设 mock 数据生成函数路径和结构一致
+// 假设 mock 数据生成函数路径和结构一致
+
 import generateOrdersData from '../../mock/Orders';
 
 const { Text } = Typography;
@@ -11,6 +14,9 @@ const ReturnTicketPage = () => {
     const [order, setOrder] = useState(null);
     const [selectedTickets, setSelectedTickets] = useState([]);
     const trainInfoCardRef = useRef(null);
+
+    const navigate = useNavigate(); // 引入 useNavigate 用于导航
+
 
     useEffect(() => {
         const data = generateOrdersData();
@@ -44,7 +50,20 @@ const ReturnTicketPage = () => {
         }
     };
 
-    const totalPrice = selectedTickets.reduce((sum, idx) => sum + order.passengers[idx].price, 0);
+
+    const totalPrice = order.passengers.reduce((sum, passenger) => sum + passenger.price, 0);
+
+    // 确认退票按钮点击处理函数
+    const handleConfirmReturn = () => {
+        if (selectedTickets.length > 0) {
+            navigate('/orders'); // 跳转到“我的订单”页面（假设路径为 /my-orders）
+        }
+    };
+
+    // 取消按钮点击处理函数
+    const handleCancel = () => {
+        navigate(-1); // 返回上一级页面
+    };
 
     return (
         <>
@@ -140,10 +159,12 @@ const ReturnTicketPage = () => {
                 </Row>
 
                 <div className="button-row">
-                    <Button type="primary" className="btn-blue">
+
+                    <Button type="primary" className="btn-blue" onClick={handleConfirmReturn}>
                         确认退票 ({selectedTickets.length})
                     </Button>
-                    <Button className="btn-white">取消</Button>
+                    <Button className="btn-white" onClick={handleCancel}>取消</Button>
+
                 </div>
             </Card>
 
