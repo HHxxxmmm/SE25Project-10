@@ -142,12 +142,12 @@ const SubmitOrder = () => {
         } catch (e) {
             console.error('无法保存订单ID:', e);
         }
-        
+
         // 模拟提交订单延迟
         setTimeout(() => {
             setSubmitting(false);
             console.log('准备跳转到支付页面, URL:', `/payment?orderId=${orderId}`);
-            
+          
             // 使用直接的window.location导航，绕过可能的路由问题
             window.location.href = `/payment?orderId=${orderId}`;
         }, 1000);
@@ -339,9 +339,11 @@ const SubmitOrder = () => {
                         >
                             上一步
                         </button>
+
                         <button 
                             className="btn btn-blue" 
                             type="button" 
+
                             onClick={handleSubmitOrder}
                             disabled={submitting || selectedPassengers.length === 0}
                         >

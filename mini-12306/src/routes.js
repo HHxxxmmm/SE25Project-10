@@ -6,7 +6,6 @@ import OrdersPage from './pages/Orders';
 import MyTicketsPage from './pages/MyTickets';
 import ProfilePage from './pages/Profile';
 import LoginPage from './pages/Login';
-//import RegisterPage from './pages/Register';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import SubmitOrderPage from './pages/SubmitOrder';

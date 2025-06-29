@@ -101,7 +101,8 @@
     margin-bottom: 4px;
 }
 
-.payment-card .departure-time, 
+
+.payment-card .departure-time,
 .payment-card .arrival-time {
     font-size: 12px;
     color: #888;
@@ -313,3 +314,60 @@
 .payment-content .ant-row {
     row-gap: 8px !important; /* 减少行间距 */
 }
+
+@media (max-width: 768px) {
+    .payment-card {
+        margin: 10px;
+        max-width: 100%;
+    }
+
+    .payment-content {
+        padding: 12px;
+    }
+
+    .train-info-card, .passengers-detail {
+        padding: 12px;
+    }
+
+    .payment-methods {
+        flex-direction: column;
+    }
+
+    .payment-method-option {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    .payment-action {
+        flex-direction: column;
+    }
+
+    .pay-button, .cancel-button {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .card-title {
+        font-size: 16px;
+        padding: 0 16px;
+    }
+
+    .station-name, .station-time {
+        font-size: 14px;
+    }
+
+    .payment-notice h3 {
+        font-size: 14px;
+    }
+
+    .payment-notice ul {
+        font-size: 12px;
+    }
+
+    .train-info-card, .passengers-detail {
+        padding: 8px;
+    }
+}
+

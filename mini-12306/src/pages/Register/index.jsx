@@ -78,6 +78,7 @@ export default function RegisterPage({ visible = true, onCancel }) {
   };
 
   return (
+
     <Modal
         title={<div className="modalTitle">用户注册</div>}
         open={visible}  // 将 visible 修改为 open

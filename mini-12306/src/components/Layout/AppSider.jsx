@@ -23,8 +23,6 @@ const pathKeyMap = {
     '/orders': '3',
     '/my-tickets': '4',
     '/profile': '5',
-    '/order-detail': '6',
-    '/ticket-detail': '7',
     // Add more mappings if needed
 };
 
@@ -66,8 +64,6 @@ export default function AppSider({ onCollapse }) {
                         case '3': navigate('/orders'); break;
                         case '4': navigate('/my-tickets'); break;
                         case '5': navigate('/profile'); break;
-                        case '6': navigate('/order-detail'); break;
-                        case '7': navigate('/ticket-detail'); break;
                         default: navigate('/');
                     }
                 }}
@@ -77,8 +73,6 @@ export default function AppSider({ onCollapse }) {
                     { key: '3', icon: <OrderedListOutlined />, label: '我的订单' },
                     { key: '4', icon: <FileTextOutlined />, label: '本人车票' },
                     { key: '5', icon: <UserOutlined />, label: '个人中心' },
-                    { key: '6', icon: <OrderedListOutlined />, label: '订单详情' },
-                    { key: '7', icon: <FileTextOutlined />, label: '车票详情' },
                 ]}
             />
         </Sider>
