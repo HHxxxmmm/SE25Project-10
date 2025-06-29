@@ -1,0 +1,31 @@
+.profile-page-container {
+  padding: 24px;
+  background-color: #f0f2f5;
+  min-height: calc(100vh - 64px - 48px); /* Adjust height based on header and content padding */
+}
+
+.profile-card {
+  margin-bottom: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
+}
+
+.card-title {
+  margin-bottom: 24px;
+  font-size: 20px;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.ant-descriptions-item-label {
+  font-weight: bold;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.related-passengers-card .ant-descriptions {
+  margin-bottom: 16px;
+}
+
+.related-passengers-card p {
+  text-align: center;
+  color: rgba(0, 0, 0, 0.45);
+} 
