@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AddPassenger from '../AddPassenger';
 import './style.css';
 
@@ -24,6 +25,7 @@ const seatTypeMap = {
 };
 
 const SubmitOrder = () => {
+    const navigate = useNavigate();
     const [searchText, setSearchText] = useState('');
     const [selectedPassengers, setSelectedPassengers] = useState([]);
     const [passengerDetails, setPassengerDetails] = useState({});
@@ -38,26 +40,21 @@ const SubmitOrder = () => {
 
         if (personData.news && personData.news.length > 0) {
             const user = personData.news[0];
-            // 如果用户有账户，则关联乘车人数量随机，取对应数量的关联乘车人
             if (user.have_account) {
-                // 关联乘车人名单和身份证号
                 const relatedNames = user.related_passenger_name || [];
                 const relatedIds = user.related_passenger_id || [];
-                // 随机获取关联乘车人数量，最少1个，最多全部
                 const count = Math.min(relatedNames.length, Math.floor(Math.random() * relatedNames.length) + 1);
                 const selectedNames = relatedNames.slice(0, count);
                 const selectedIds = relatedIds.slice(0, count);
 
                 setPassengersData(selectedNames);
 
-                // 姓名到身份证号映射
                 const idMap = {};
                 selectedNames.forEach((name, idx) => {
                     idMap[name] = selectedIds[idx] || '';
                 });
                 setPassengerIdMap(idMap);
             } else {
-                // 用户无账户，乘车人即为自己
                 setPassengersData([user.u_name]);
                 setPassengerIdMap({ [user.u_name]: user.u_id });
             }
@@ -72,7 +69,6 @@ const SubmitOrder = () => {
         name.includes(searchText)
     );
 
-    // 只保留有票的席别，格式 "席别（¥价格元）"
     const seatOptions = trainInfo?.seat?.map((code, idx) => {
         if (trainInfo.seat_number[idx] > 0) {
             const seatName = seatTypeMap[code] || '未知席别';
@@ -136,10 +132,20 @@ const SubmitOrder = () => {
                     {trainInfo && trainInfo.t_start_time && trainInfo.t_end_time ? (
                         <>
                             <div className="train-details">
-                                {formatDate(trainInfo.t_start_time)} {trainInfo.train_id}次 {trainInfo.t_from}（{formatTime(trainInfo.t_start_time)}开）—{trainInfo.t_to}（{formatTime(trainInfo.t_end_time)}到）
+                                <span className="bold-text">{formatDate(trainInfo.t_start_time)}</span> &nbsp;
+                                <span>{trainInfo.train_id}</span>
+                                <span className="small-text">次</span> &nbsp;
+                                {trainInfo.t_from} &nbsp;
+                                <span className="small-text">（</span>
+                                <span className="bold-text">{formatTime(trainInfo.t_start_time)}</span>
+                                <span className="small-text">开）</span> &nbsp;
+                                — {trainInfo.t_to} &nbsp;
+                                <span className="small-text">（</span>
+                                <span className="bold-text">{formatTime(trainInfo.t_end_time)}</span>
+                                <span className="small-text">到）</span>
                             </div>
                             <hr />
-                            <div className="ticket-info">
+                            <div className="ticket-info-seat">
                                 {trainInfo.seat.map((seatTypeCode, idx) => {
                                     const hasTicket = trainInfo.seat_number[idx] > 0;
                                     return (
@@ -227,7 +233,7 @@ const SubmitOrder = () => {
                                 <tr>
                                     <th>序号</th>
                                     <th>票种</th>
-                                    <th>席别</th>
+                                    <th style={{ textAlign: 'left' }}>席别</th>
                                     <th>姓名</th>
                                     <th>证件类型</th>
                                     <th>证件号码</th>
@@ -248,7 +254,7 @@ const SubmitOrder = () => {
                                                 ))}
                                             </select>
                                         </td>
-                                        <td>
+                                        <td style={{ textAlign: 'left' }}>
                                             <select
                                                 value={passengerDetails[name]?.seatType || seatOptions[0] || ''}
                                                 onChange={e => updateDetail(name, 'seatType', e.target.value)}
@@ -295,7 +301,13 @@ const SubmitOrder = () => {
                     )}
 
                     <div className="button-row">
-                        <button className="btn btn-white" type="button">上一步</button>
+                        <button
+                            className="btn btn-white"
+                            type="button"
+                            onClick={() => navigate(-1)}
+                        >
+                            上一步
+                        </button>
                         <button className="btn btn-blue" type="button">提交订单</button>
                     </div>
 

@@ -1,0 +1,554 @@
+/* 订单页面样式 */
+
+/* 页面容器 */
+.orders-page {
+    width: 100%;
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 0 20px;
+    box-sizing: border-box;
+    font-family: "Microsoft YaHei", sans-serif;
+    color: #333;
+}
+
+/* 卡片样式 */
+.orders-card {
+    width: 100%;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    font-family: "Microsoft YaHei", sans-serif;
+    color: #333;
+}
+
+/* 卡片标题 */
+.orders-card .card-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    padding: 16px 24px;
+    border-bottom: 1px solid #e8e8e8;
+    display: flex;
+    align-items: center;
+}
+
+/* 搜索区域 */
+.orders-page .search-section {
+    padding: 24px;
+    background: #fafafa;
+    border-radius: 4px;
+    margin: 16px 24px;
+}
+
+.orders-page .search-form {
+    width: 100%;
+}
+
+.orders-page .search-row {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.orders-page .search-item {
+    flex: 1;
+    min-width: 200px;
+}
+
+.orders-page .search-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+    font-size: 0.9rem;
+}
+
+.orders-page .search-input,
+.orders-page .search-date,
+.orders-page .search-select {
+    width: 100%;
+}
+
+.orders-page .search-input .ant-input {
+    border-radius: 4px;
+    border: 1px solid #d9d9d9;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+}
+
+.orders-page .search-input .ant-input:hover {
+    border-color: #40a9ff;
+}
+
+.orders-page .search-input .ant-input:focus {
+    border-color: #1890ff;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.orders-page .search-date .ant-picker {
+    width: 100%;
+    border-radius: 4px;
+}
+
+.orders-page .search-select .ant-select-selector {
+    border-radius: 4px;
+    border: 1px solid #d9d9d9;
+}
+
+.orders-page .search-button {
+    height: 40px;
+    padding: 0 24px;
+    font-weight: 500;
+    border-radius: 4px;
+}
+
+/* 订单列表 */
+.orders-page .orders-list {
+    padding: 0 24px;
+}
+
+/* 单个订单项 */
+.orders-page .order-item {
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: #fff;
+    overflow-x: auto; /* 默认允许横向滚动 */
+    max-width: 100%;
+}
+
+.orders-page .order-item:hover {
+    border-color: #1890ff;
+    box-shadow: 0 4px 12px rgba(24, 144, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+.orders-page .order-item:focus {
+    outline: none;
+    border-color: #1890ff;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* 订单头部 */
+.orders-page .order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.orders-page .order-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.orders-page .order-number {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1890ff;
+}
+
+.orders-page .order-time {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+/* 订单详情 */
+.orders-page .order-details {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 16px;
+    min-width: 600px; /* 基础最小宽度，防止内容过度压缩 */
+    flex-wrap: nowrap;
+    overflow-x: auto;
+}
+
+.orders-page .train-info {
+    flex: 1;
+    min-width: 300px;
+    flex-shrink: 0; /* 禁止缩小 */
+}
+
+.orders-page .train-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.orders-page .train-number {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1890ff;
+}
+
+.orders-page .train-duration {
+    display: flex;
+    align-items: center;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* 路线信息 */
+.orders-page .route-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.orders-page .departure,
+.orders-page .arrival {
+    text-align: center;
+    min-width: 80px;
+}
+
+.orders-page .time {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.orders-page .station {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.orders-page .journey-line {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    position: relative;
+}
+
+.orders-page .line {
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(to right, #1890ff, #52c41a);
+    margin-bottom: 8px;
+}
+
+.orders-page .arrow {
+    color: #1890ff;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+/* 乘车人信息 */
+.orders-page .passengers-info {
+    flex: 1;
+    min-width: 300px;
+    flex-shrink: 0; /* 禁止缩小 */
+}
+
+.orders-page .passengers-header {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 12px;
+    font-size: 1rem;
+}
+
+.orders-page .passengers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.orders-page .passenger-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border: 1px solid #f0f0f0;
+    border-radius: 4px;
+    background: #fafafa;
+}
+
+.orders-page .passenger-basic {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.orders-page .passenger-name {
+    font-weight: 600;
+    color: #333;
+    font-size: 0.95rem;
+}
+
+.orders-page .passenger-id,
+.orders-page .passenger-phone {
+    font-size: 0.8rem;
+    color: #666;
+}
+
+.orders-page .passenger-ticket {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.orders-page .ticket-type {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.orders-page .ticket-price {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #f5222d;
+}
+
+/* 订单底部 */
+.orders-page .order-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid #f0f0f0;
+    min-width: 600px; /* 防止底部内容过度压缩 */
+    overflow-x: auto;
+}
+
+.orders-page .order-summary {
+    display: flex;
+    gap: 16px;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.orders-page .order-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* 无订单状态 */
+.orders-page .no-orders {
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.orders-page .no-orders-content {
+    color: #999;
+}
+
+.orders-page .no-orders-content p {
+    margin: 8px 0;
+    font-size: 1rem;
+}
+
+/* 温馨提示 */
+.orders-page .tips {
+    margin: 24px;
+    padding: 16px;
+    background: #f6ffed;
+    border: 1px solid #b7eb8f;
+    border-radius: 4px;
+    color: #333;
+}
+
+.orders-page .tips p {
+    margin: 0 0 8px 0;
+    font-weight: 500;
+    color: #52c41a;
+}
+
+.orders-page .tips ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.orders-page .tips li {
+    margin: 4px 0;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+/* 标签样式 - 限定在Orders页面内 */
+.orders-page .ant-tag {
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+/* 按钮样式 - 限定在Orders页面内 */
+.orders-page .ant-btn-primary {
+    background: #1890ff;
+    border-color: #1890ff;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.orders-page .ant-btn-primary:hover {
+    background: #40a9ff;
+    border-color: #40a9ff;
+}
+
+/* 分页样式 - 限定在Orders页面内 */
+.orders-page .ant-pagination {
+    margin-top: 24px;
+}
+
+.orders-page .ant-pagination-item {
+    border-radius: 4px;
+}
+
+.orders-page .ant-pagination-item-active {
+    border-color: #1890ff;
+}
+
+.orders-page .ant-pagination-item-active a {
+    color: #1890ff;
+}
+
+/* 响应式设计 */
+
+/* 大屏：>992px */
+@media (min-width: 993px) {
+    .orders-page .order-item {
+        overflow-x: visible;
+    }
+    .orders-page .order-details {
+        flex-wrap: nowrap;
+        overflow-x: visible;
+        min-width: auto;
+    }
+    .orders-page .order-footer {
+        overflow-x: visible;
+        min-width: auto;
+    }
+}
+
+/* 过渡区1：768px ~ 992px，启用滚动 */
+@media (min-width: 768px) and (max-width: 992px) {
+    .orders-page .order-item {
+        overflow-x: auto;
+    }
+    .orders-page .order-details {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        min-width: 700px; /* 视内容调整 */
+    }
+    .orders-page .order-footer {
+        overflow-x: auto;
+        min-width: 700px;
+    }
+}
+
+/* 中屏：540px ~ 767px，关闭滚动，堆叠布局 */
+@media (min-width: 540px) and (max-width: 767px) {
+    .orders-page .order-item {
+        overflow-x: visible;
+    }
+    .orders-page .order-details {
+        display: flex;
+        flex-wrap: wrap;
+        overflow-x: visible;
+        min-width: auto;
+    }
+    .orders-page .order-footer {
+        overflow-x: visible;
+        min-width: auto;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+}
+
+/* 过渡区2：480px ~ 539px，启用滚动 */
+@media (min-width: 480px) and (max-width: 539px) {
+    .orders-page .order-item {
+        overflow-x: auto;
+    }
+    .orders-page .order-details {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        min-width: 500px; /* 视内容调整 */
+    }
+    .orders-page .order-footer {
+        overflow-x: auto;
+        min-width: 500px;
+    }
+}
+
+/* 小屏：<480px，关闭滚动，堆叠布局 */
+@media (max-width: 479px) {
+    .orders-page {
+        margin: 12px 8px;
+        padding: 0 8px;
+    }
+    .orders-page .search-row {
+        flex-direction: column;
+        gap: 12px;
+    }
+    .orders-page .search-item {
+        min-width: auto;
+    }
+    .orders-page .order-item {
+        padding: 16px;
+        margin-bottom: 12px;
+        overflow-x: visible;
+    }
+    .orders-page .order-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    .orders-page .train-header {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .orders-page .order-details {
+        display: flex;
+        flex-wrap: wrap;
+        overflow-x: visible;
+        min-width: auto;
+        gap: 16px;
+    }
+    .orders-page .route-info {
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+    }
+    .orders-page .journey-line {
+        transform: rotate(90deg);
+        width: 40px;
+        margin: 8px 0;
+    }
+    .orders-page .passenger-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    .orders-page .passenger-ticket {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .orders-page .order-footer {
+        overflow-x: visible;
+        min-width: auto;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .orders-page .order-summary {
+        flex-direction: column;
+        gap: 8px;
+    }
+    .orders-page .tips {
+        margin: 16px 12px;
+        padding: 12px;
+    }
+}
