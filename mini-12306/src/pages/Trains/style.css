@@ -1,0 +1,453 @@
+/* 车票查询页面样式 */
+
+/* 页面容器 */
+.trains-page {
+    width: 100%;
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 0 20px;
+    box-sizing: border-box;
+    font-family: "Microsoft YaHei", sans-serif;
+    color: #333;
+}
+
+/* 卡片样式 */
+.trains-card {
+    width: 100%;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    font-family: "Microsoft YaHei", sans-serif;
+    color: #333;
+}
+
+/* 卡片标题 */
+.trains-card .card-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    padding: 16px 24px;
+    border-bottom: 1px solid #e8e8e8;
+    display: flex;
+    align-items: center;
+}
+
+/* 搜索区域 */
+.trains-page .search-section {
+    padding: 24px;
+    background: #fafafa;
+    border-radius: 4px;
+    margin: 16px 24px;
+}
+
+.trains-page .search-form {
+    width: 100%;
+}
+
+.trains-page .search-row {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.trains-page .search-item {
+    flex: 1;
+    min-width: 200px;
+}
+
+.trains-page .search-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+    font-size: 0.9rem;
+}
+
+.trains-page .search-input,
+.trains-page .search-date,
+.trains-page .search-select {
+    width: 100%;
+}
+
+.trains-page .search-input .ant-input {
+    border-radius: 4px;
+    border: 1px solid #d9d9d9;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+}
+
+.trains-page .search-input .ant-input:hover {
+    border-color: #40a9ff;
+}
+
+.trains-page .search-input .ant-input:focus {
+    border-color: #1890ff;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.trains-page .search-date .ant-picker {
+    width: 100%;
+    border-radius: 4px;
+}
+
+.trains-page .search-select .ant-select-selector {
+    border-radius: 4px;
+    border: 1px solid #d9d9d9;
+}
+
+.trains-page .search-button {
+    height: 40px;
+    padding: 0 24px;
+    font-weight: 500;
+    border-radius: 4px;
+}
+
+/* 车次列表 */
+.trains-page .trains-list {
+    padding: 0 24px;
+}
+
+/* 单个车次项 */
+.trains-page .train-item {
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: #fff;
+}
+
+.trains-page .train-item:hover {
+    border-color: #1890ff;
+    box-shadow: 0 4px 12px rgba(24, 144, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+.trains-page .train-item:focus {
+    outline: none;
+    border-color: #1890ff;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* 车次头部 */
+.trains-page .train-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.trains-page .train-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.trains-page .train-number {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #1890ff;
+}
+
+.trains-page .train-duration {
+    display: flex;
+    align-items: center;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.trains-page .train-route {
+    display: flex;
+    align-items: center;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* 车次详情 */
+.trains-page .train-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    gap: 24px;
+}
+
+/* 时间信息 */
+.trains-page .time-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+}
+
+.trains-page .departure,
+.trains-page .arrival {
+    text-align: center;
+    min-width: 80px;
+}
+
+.trains-page .time {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.trains-page .station {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.trains-page .journey-line {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    position: relative;
+}
+
+.trains-page .line {
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(to right, #1890ff, #52c41a);
+    margin-bottom: 8px;
+}
+
+.trains-page .arrow {
+    color: #1890ff;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+/* 座位信息 */
+.trains-page .seats-info {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    min-width: 300px;
+}
+
+.trains-page .seat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 12px;
+    border: 1px solid #f0f0f0;
+    border-radius: 4px;
+    background: #fafafa;
+    min-width: 80px;
+}
+
+.trains-page .seat-count {
+    font-size: 0.8rem;
+    color: #666;
+}
+
+.trains-page .seat-price {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #f5222d;
+}
+
+/* 车次底部 */
+.trains-page .train-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.trains-page .route-stations {
+    font-size: 0.85rem;
+    color: #666;
+    flex: 1;
+}
+
+/* 无车次状态 */
+.trains-page .no-trains {
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.trains-page .no-trains-content {
+    color: #999;
+}
+
+.trains-page .no-trains-content p {
+    margin: 8px 0;
+    font-size: 1rem;
+}
+
+/* 温馨提示 */
+.trains-page .tips {
+    margin: 24px;
+    padding: 16px;
+    background: #f6ffed;
+    border: 1px solid #b7eb8f;
+    border-radius: 4px;
+    color: #333;
+}
+
+.trains-page .tips p {
+    margin: 0 0 8px 0;
+    font-weight: 500;
+    color: #52c41a;
+}
+
+.trains-page .tips ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.trains-page .tips li {
+    margin: 4px 0;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+/* 标签样式 - 限定在Trains页面内 */
+.trains-page .ant-tag {
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+/* 按钮样式 - 限定在Trains页面内 */
+.trains-page .ant-btn-primary {
+    background: #1890ff;
+    border-color: #1890ff;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.trains-page .ant-btn-primary:hover {
+    background: #40a9ff;
+    border-color: #40a9ff;
+}
+
+/* 分页样式 - 限定在Trains页面内 */
+.trains-page .ant-pagination {
+    margin-top: 24px;
+}
+
+.trains-page .ant-pagination-item {
+    border-radius: 4px;
+}
+
+.trains-page .ant-pagination-item-active {
+    border-color: #1890ff;
+}
+
+.trains-page .ant-pagination-item-active a {
+    color: #1890ff;
+}
+
+/* 响应式设计 - 限定在Trains页面内 */
+@media (max-width: 768px) {
+    .trains-page {
+        margin: 12px 8px;
+        padding: 0 8px;
+    }
+    
+    .trains-page .search-row {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .trains-page .search-item {
+        min-width: auto;
+    }
+    
+    .trains-page .train-details {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+    
+    .trains-page .seats-info {
+        min-width: auto;
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .trains-page .train-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .trains-page .route-stations {
+        font-size: 0.8rem;
+    }
+    
+    .trains-page .tips {
+        margin: 16px 12px;
+        padding: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .trains-page .trains-card {
+        margin: 8px 4px;
+    }
+    
+    .trains-page .card-title {
+        font-size: 1.25rem;
+        padding: 12px 16px;
+    }
+    
+    .trains-page .search-section {
+        margin: 12px 16px;
+        padding: 16px;
+    }
+    
+    .trains-page .trains-list {
+        padding: 0 16px;
+    }
+    
+    .trains-page .train-item {
+        padding: 16px;
+        margin-bottom: 12px;
+    }
+    
+    .trains-page .train-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .trains-page .train-info {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .trains-page .time-info {
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+    }
+    
+    .trains-page .journey-line {
+        transform: rotate(90deg);
+        width: 40px;
+        margin: 8px 0;
+    }
+    
+    .trains-page .seats-info {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .trains-page .seat-item {
+        flex-direction: row;
+        justify-content: space-between;
+        min-width: auto;
+        width: 100%;
+    }
+}
