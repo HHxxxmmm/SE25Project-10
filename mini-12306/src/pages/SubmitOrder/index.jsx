@@ -131,11 +131,11 @@ const SubmitOrder = () => {
         }
 
         setSubmitting(true);
-
+        
         // 生成订单号 - 简单模拟
         const orderId = 'ORD' + Date.now().toString().slice(-8) + Math.floor(Math.random() * 1000);
         console.log('生成订单号:', orderId);
-
+        
         // 设置本地存储，确保导航后能获取到这个订单
         try {
             localStorage.setItem('current_order_id', orderId);
@@ -147,7 +147,7 @@ const SubmitOrder = () => {
         setTimeout(() => {
             setSubmitting(false);
             console.log('准备跳转到支付页面, URL:', `/payment?orderId=${orderId}`);
-
+          
             // 使用直接的window.location导航，绕过可能的路由问题
             window.location.href = `/payment?orderId=${orderId}`;
         }, 1000);
@@ -339,9 +339,11 @@ const SubmitOrder = () => {
                         >
                             上一步
                         </button>
-                        <button
-                            className="btn btn-blue"
-                            type="button"
+
+                        <button 
+                            className="btn btn-blue" 
+                            type="button" 
+
                             onClick={handleSubmitOrder}
                             disabled={submitting || selectedPassengers.length === 0}
                         >

@@ -157,14 +157,11 @@ export const routes = [
     element: <TicketDetailPage />,
     name: '车票详情'
   },
-
   {
     path: '/payment',
     element: <PaymentPage />,
     name: '订单支付'
   },
-
-
   ...authRoutes.map(route => ({
     ...route,
     element: <PrivateRoute element={route.element} />,
