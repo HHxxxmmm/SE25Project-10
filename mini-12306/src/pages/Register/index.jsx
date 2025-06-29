@@ -80,10 +80,10 @@ export default function RegisterPage({ visible = true, onCancel }) {
   return (
       <Modal
           title={<div className="modalTitle">用户注册</div>}
-          visible={visible}
+          open={visible}  // 将 visible 修改为 open
           onCancel={onCancel}
           footer={null}
-          destroyOnClose
+          destroyOnHidden={true}  // 将 destroyOnClose 修改为 destroyOnHidden
           maskClosable={false}
           centered
       >

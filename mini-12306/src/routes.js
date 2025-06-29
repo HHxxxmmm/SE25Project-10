@@ -6,7 +6,6 @@ import OrdersPage from './pages/Orders';
 import MyTicketsPage from './pages/MyTickets';
 import ProfilePage from './pages/Profile';
 import LoginPage from './pages/Login';
-//import RegisterPage from './pages/Register';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import SubmitOrderPage from './pages/SubmitOrder';
@@ -15,6 +14,7 @@ import AddPassengerPage from './pages/AddPassenger';
 import ReturnTicketPage from './pages/ReturnTicket';
 import OrderDetailPage from './pages/OrderDetail';
 import TicketDetailPage from './pages/TicketDetail';
+import PaymentPage from './pages/Payment';
 
 // 封装需要登录的组件
 const PrivateRoute = ({ element, redirectPath = '/login' }) => {
@@ -157,6 +157,14 @@ export const routes = [
     element: <TicketDetailPage />,
     name: '车票详情'
   },
+
+  {
+    path: '/payment',
+    element: <PaymentPage />,
+    name: '订单支付'
+  },
+
+
   ...authRoutes.map(route => ({
     ...route,
     element: <PrivateRoute element={route.element} />,

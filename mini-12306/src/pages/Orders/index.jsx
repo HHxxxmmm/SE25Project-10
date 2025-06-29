@@ -130,8 +130,8 @@ export default function OrdersPage() {
 
     const handlePayOrder = (order, e) => {
         e.stopPropagation();
-        // 这里可以添加支付逻辑
-        console.log('支付订单:', order.order_id);
+        // 跳转到支付页面
+        navigate(`/payment?orderId=${order.order_id}`);
     };
 
     const handleCancelOrder = (order, e) => {
