@@ -62,8 +62,11 @@ export default function AppHeader() {
         localStorage.removeItem('mini12306_user');
         localStorage.removeItem('mini12306_login_time');
         setAuthState({ isAuthenticated: false, user: null });
-        navigate('/');
-        window.location.reload();
+        navigate('/login');
+    };
+
+    const handleProfileClick = () => {
+        navigate('/profile');
     };
 
     return (
@@ -82,7 +85,14 @@ export default function AppHeader() {
                     <span className="greeting">您好，</span>
                     {isAuthenticated ? (
                         <div className="user-info">
-                            <span className="user-name">{user?.username || user?.name || '用户'}</span>
+                            <Button
+                                type="link"
+                                className="user-name-btn"
+                                onClick={handleProfileClick}
+                                style={{ padding: 0, fontSize: '14px', color: 'rgba(0, 0, 0, 0.85)' }}
+                            >
+                                {user?.username || user?.name || '用户'}
+                            </Button>
                             <span className="separator" style={{ margin: '0 8px', color: '#ccc' }}>|</span>
                             <Button
                                 type="link"
