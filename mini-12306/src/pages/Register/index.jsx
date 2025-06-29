@@ -62,6 +62,7 @@ export default function RegisterPage({ visible = true, onCancel }) {
       await register(values);
       message.success('注册成功，请登录');
       if (onCancel) onCancel(); // 关闭弹窗
+
       // 跳转登录页面，保持原有跳转逻辑
       const referrer = document.referrer;
       const isFromLoginPage = referrer && referrer.includes('/login');
@@ -80,7 +81,7 @@ export default function RegisterPage({ visible = true, onCancel }) {
 
   return (
       <Modal
-          title="用户注册"
+          title={<div className="modalTitle">用户注册</div>}
           visible={visible}
           onCancel={onCancel}
           footer={null}

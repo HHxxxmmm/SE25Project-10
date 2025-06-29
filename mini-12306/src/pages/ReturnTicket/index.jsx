@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, Typography, Divider, Checkbox, Button, Row } from 'antd';
-
 import { useNavigate } from 'react-router-dom';
 import './style.css';
 
 // 假设 mock 数据生成函数路径和结构一致
-
 import generateOrdersData from '../../mock/Orders';
 
 const { Text } = Typography;
@@ -14,9 +12,7 @@ const ReturnTicketPage = () => {
     const [order, setOrder] = useState(null);
     const [selectedTickets, setSelectedTickets] = useState([]);
     const trainInfoCardRef = useRef(null);
-
     const navigate = useNavigate(); // 引入 useNavigate 用于导航
-
 
     useEffect(() => {
         const data = generateOrdersData();
@@ -49,7 +45,6 @@ const ReturnTicketPage = () => {
             setSelectedTickets([]);
         }
     };
-
 
     const totalPrice = order.passengers.reduce((sum, passenger) => sum + passenger.price, 0);
 
@@ -159,12 +154,10 @@ const ReturnTicketPage = () => {
                 </Row>
 
                 <div className="button-row">
-
                     <Button type="primary" className="btn-blue" onClick={handleConfirmReturn}>
                         确认退票 ({selectedTickets.length})
                     </Button>
                     <Button className="btn-white" onClick={handleCancel}>取消</Button>
-
                 </div>
             </Card>
 

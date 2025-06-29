@@ -48,6 +48,12 @@ body {
     font-weight: 600;
     cursor: pointer;
     user-select: none;
+    transition: color 0.3s;
+}
+
+.back-link:hover {
+    color: #1890ff; /* 悬停时变蓝色 */
+
 }
 
 .ticket-status {

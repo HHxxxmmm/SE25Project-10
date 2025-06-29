@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, Typography, Divider, Checkbox, Button, Row } from 'antd';
-
 import { useNavigate } from 'react-router-dom';
-
 import './style.css';
 
 // 这里假设 mock 数据生成函数路径和结构一致
@@ -14,10 +12,8 @@ const ChangeTicketPage = () => {
     const [order, setOrder] = useState(null);
     const [selectedTickets, setSelectedTickets] = useState([]);
     const trainInfoCardRef = useRef(null);
-
     const navigate = useNavigate();
-
-
+  
     useEffect(() => {
         const data = generateOrdersData();
         // 假设o_status===2是已支付订单
@@ -50,7 +46,6 @@ const ChangeTicketPage = () => {
         }
     };
 
-
     const totalPrice = order.passengers.reduce((sum, passenger) => sum + passenger.price, 0);
 
     // 确认改签按钮点击处理
@@ -64,7 +59,6 @@ const ChangeTicketPage = () => {
     const handleCancel = () => {
         navigate(-1); // 返回上一级
     };
-
 
     return (
         <>
@@ -165,7 +159,6 @@ const ChangeTicketPage = () => {
                         确认改签 ({selectedTickets.length})
                     </Button>
                     <Button className="btn-white" onClick={handleCancel}>取消</Button>
-
                 </div>
             </Card>
 
