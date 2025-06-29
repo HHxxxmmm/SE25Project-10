@@ -93,6 +93,13 @@ export function AuthProvider({ children }) {
     return { success: true };
   };
 
+  // 更新用户数据逻辑
+  const updateUser = (newUserData) => {
+    const updatedUser = { ...user, ...newUserData };
+    localStorage.setItem('mini12306_user', JSON.stringify(updatedUser));
+    setUser(updatedUser);
+  };
+
   // 登出逻辑
   const logout = () => {
     localStorage.removeItem('mini12306_user');
@@ -103,7 +110,7 @@ export function AuthProvider({ children }) {
 
   // 提供认证上下文给整个应用
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
