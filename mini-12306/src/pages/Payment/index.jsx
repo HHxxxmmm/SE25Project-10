@@ -259,7 +259,7 @@ const PaymentPage = () => {
                         loading={loading}
                         className="pay-button"
                     >
-                        确认支付 ¥{calculateTotalPrice(order)}
+                        立即支付
                     </Button>
                     
                     <Button 
