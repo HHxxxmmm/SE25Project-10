@@ -98,15 +98,15 @@ const ProfilePage = () => {
             <Card
                 className="profile-card"
                 title={<Title level={4} className="card-title">个人信息</Title>}
-                extra={
-                    <Button type="primary" onClick={showEditModal}>修改</Button>
-                }
             >
                 <Descriptions bordered column={1}>
                     <Descriptions.Item label="姓名">{personInfo.u_name}</Descriptions.Item>
                     <Descriptions.Item label="身份证号">{personInfo.u_id}</Descriptions.Item>
                     <Descriptions.Item label="手机号码">{personInfo.u_phone || '未提供'}</Descriptions.Item>
                 </Descriptions>
+                <div style={{ textAlign: 'center', marginTop: '24px' }}>
+                    <Button type="primary" onClick={showEditModal} className="edit-profile-button">修改</Button>
+                </div>
             </Card>
 
             <Divider />
