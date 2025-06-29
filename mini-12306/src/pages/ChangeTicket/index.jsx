@@ -13,7 +13,7 @@ const ChangeTicketPage = () => {
     const [selectedTickets, setSelectedTickets] = useState([]);
     const trainInfoCardRef = useRef(null);
     const navigate = useNavigate();
-  
+
     useEffect(() => {
         const data = generateOrdersData();
         // 假设o_status===2是已支付订单
@@ -154,7 +154,6 @@ const ChangeTicketPage = () => {
                 </Row>
 
                 <div className="button-row">
-
                     <Button type="primary" className="btn-blue" onClick={handleConfirmChange}>
                         确认改签 ({selectedTickets.length})
                     </Button>
