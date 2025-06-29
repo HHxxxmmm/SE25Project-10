@@ -15,7 +15,7 @@ body {
 }
 
 /* Card container */
-.change-ticket-card {
+.order-detail-card {
     width: 100%;
     max-width: 1200px;
     margin: 20px auto;
@@ -37,6 +37,19 @@ body {
     user-select: none;
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
+    position: relative;
+}
+
+/* Back link */
+.back-link {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #fff;
+    font-size: 0.875rem; /* 调小字体 */
+    text-decoration: none;
+    font-weight: 600;
 }
 
 /* Order info row */
@@ -49,6 +62,32 @@ body {
 
 .order-info-text {
     color: #666;
+}
+
+/* Order status */
+.order-status {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    user-select: none;
+    white-space: nowrap;
+}
+
+/* 状态颜色 */
+.status-pending {
+    background-color: #ffd6d6; /* 淡红色背景 */
+    color: #a8071a; /* 深红色文字 */
+}
+
+.status-paid {
+    background-color: #fff7e6; /* 浅黄色背景 */
+    color: #ad8b00; /* 暗黄色文字 */
+}
+
+.status-completed {
+    background-color: #e6f7ff; /* 淡蓝色背景 */
+    color: #096dd9; /* 深蓝色文字 */
 }
 
 /* Train info card */
@@ -163,7 +202,6 @@ body {
     text-align: center;
     vertical-align: middle;
     white-space: nowrap;
-    cursor: pointer;
     user-select: none;
     font-size: 0.95rem;
 }
@@ -180,15 +218,6 @@ body {
 .ticket-table td:nth-child(7) {
     color: #1890ff;
     font-weight: 600;
-}
-
-/* Hover and selected row styles */
-.ticket-table tbody tr:hover {
-    background-color: #f0f7ff;
-}
-
-.ticket-table tbody tr.selected {
-    background-color: #d6eaff;
 }
 
 /* Footer row */
@@ -250,33 +279,10 @@ body {
     border-color: #40a9ff;
 }
 
-/* 温馨提示框 */
-.tip-wrapper {
-    background-color: #f5f5f5;
-    border-radius: 8px;
-    padding: 16px 24px;
-    color: #555;
-    font-size: 1rem;
-    max-width: 1200px;
-    margin: 0 auto 40px auto;
-    box-sizing: border-box;
-}
-
-.tip-content p {
-    margin: 0 0 8px 0;
-    line-height: 1.5;
-}
-
-.tip-content p:first-child {
-    font-weight: 600;
-    margin-bottom: 12px;
-}
-
 /* Responsive styles */
 @media (max-width: 992px) {
-    .change-ticket-card,
-    .button-row,
-    .tip-wrapper {
+    .order-detail-card,
+    .button-row {
         max-width: 95%;
         margin: 20px auto;
         padding: 0 10px;
@@ -366,13 +372,6 @@ body {
         font-size: 1rem;
         padding: 12px 0;
     }
-
-    .tip-wrapper {
-        max-width: 100%;
-        margin: 0 10px 30px 10px;
-        font-size: 0.9rem;
-        padding: 14px 16px;
-    }
 }
 
 @media (max-width: 480px) {
@@ -422,11 +421,5 @@ body {
     .btn {
         font-size: 0.85rem;
         padding: 10px 0;
-    }
-
-    .tip-wrapper {
-        font-size: 0.85rem;
-        padding: 12px 14px;
-        margin: 0 8px 25px 8px;
     }
 }

@@ -1,0 +1,310 @@
+/* Reset and base styles */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: "Microsoft YaHei", sans-serif;
+    background-color: #f4f4f4;
+    color: #333;
+    line-height: 1.5;
+}
+
+.ticket-detail-card {
+    width: 100%;
+    max-width: 1200px;
+    margin: 20px auto;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    background: #fff;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.card-title {
+    background-color: #1890ff;
+    color: #fff;
+    font-size: 1.25rem;
+    font-weight: 500;
+    text-align: center;
+    padding: 12px 20px;
+    user-select: none;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    position: relative;
+}
+
+.back-link {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+}
+
+.ticket-status {
+    padding: 6px 16px;
+    border-radius: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.status-pending {
+    background-color: #ffd6d6;
+    color: #a8071a;
+}
+
+.status-completed {
+    background-color: #e6f7ff;
+    color: #096dd9;
+}
+
+.train-info-card {
+    max-width: 600px;
+    background: #f0f5ff;
+    border-radius: 10px;
+    box-shadow: 0 1px 6px rgba(24, 144, 255, 0.2);
+    padding: 16px 24px;
+    margin: 20px auto;
+    position: relative;
+    overflow-x: auto;
+}
+
+.train-date {
+    position: absolute;
+    top: 6px;
+    left: 24px;
+    color: #595959;
+    font-weight: 500;
+    font-size: 0.85rem;
+    user-select: none;
+}
+
+.train-route {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 48px;
+    padding-top: 24px;
+    white-space: nowrap;
+}
+
+.station-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 120px;
+}
+
+.station-name {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #001529;
+    user-select: none;
+}
+
+.station-time {
+    font-size: 1rem;
+    color: #595959;
+    margin-top: 6px;
+    user-select: none;
+}
+
+.arrow-block {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 200px;
+    user-select: none;
+}
+
+.train-number {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1890ff;
+    margin-bottom: -10px;
+}
+
+.arrow {
+    font-size: 3rem;
+    color: #1890ff;
+    line-height: 1;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.ticket-info {
+    padding: 16px 24px;
+    max-width: 900px;
+    margin: 24px auto;
+    font-size: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+    user-select: text;
+    justify-content: center;  /* 居中对齐 */
+}
+
+.ticket-info > div {
+    flex: 1 1 calc(50% - 12px);
+    min-width: 200px;
+    text-align: left;
+}
+
+.ticket-info strong {
+    font-weight: 600;
+}
+
+.warm-tips {
+    max-width: 900px;
+    margin: 0 auto 24px auto;
+    padding: 0 24px 20px;
+    color: #595959;
+    font-size: 0.95rem;
+    user-select: text;
+}
+
+.warm-tips h3 {
+    margin-bottom: 12px;
+    color: #1890ff;
+    font-weight: 600;
+}
+
+.warm-tips ul {
+    list-style: disc inside;
+    padding-left: 0;
+    margin: 0;
+}
+
+.warm-tips li {
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+/* Responsive styles */
+@media (max-width: 992px) {
+    .ticket-detail-card {
+        max-width: 95%;
+        margin: 0 auto;
+    }
+
+    .train-info-card {
+        max-width: 100%;
+        padding: 16px 20px;
+    }
+
+    .ticket-info {
+        max-width: 100%;
+    }
+
+    .warm-tips {
+        max-width: 100%;
+        padding: 0 16px 16px;
+    }
+}
+
+@media (max-width: 768px) {
+    .card-title {
+        font-size: 1.1rem;
+        padding: 10px 15px;
+    }
+
+    .train-date {
+        font-size: 0.8rem;
+        top: 4px;
+        left: 16px;
+    }
+
+    .station-name {
+        font-size: 1.5rem;
+    }
+
+    .station-time {
+        font-size: 0.9rem;
+    }
+
+    .train-route {
+        gap: 32px;
+        padding-top: 16px;
+    }
+
+    .arrow {
+        font-size: 2rem;
+    }
+
+    .train-number {
+        font-size: 0.9rem;
+        margin-bottom: 0;
+    }
+
+    .ticket-info > div {
+        flex: 1 1 100%;
+        min-width: auto;
+    }
+
+    .warm-tips {
+        padding: 0 12px 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .card-title {
+        font-size: 1rem;
+        padding: 10px 12px;
+    }
+
+    .train-date {
+        font-size: 0.75rem;
+        top: 2px;
+        left: 12px;
+    }
+
+    .station-name {
+        font-size: 1.25rem;
+    }
+
+    .station-time {
+        font-size: 0.85rem;
+    }
+
+    .train-route {
+        gap: 24px;
+        padding-top: 12px;
+    }
+
+    .arrow {
+        font-size: 1.5rem;
+    }
+
+    .train-number {
+        font-size: 0.8rem;
+        margin-bottom: 0;
+    }
+
+    .ticket-info {
+        font-size: 0.9rem;
+        padding: 0;
+    }
+
+    .ticket-info > div {
+        flex: 1 1 100%;
+        min-width: auto;
+    }
+
+    .warm-tips {
+        padding: 0 10px 10px;
+    }
+}

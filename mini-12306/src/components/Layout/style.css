@@ -2,12 +2,25 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 24px;
+    padding: 0 16px; /* 缩小左右padding，让两端更靠近 */
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px; /* 左侧元素间距 */
+    flex-shrink: 0; /* 防止缩小时被压缩 */
 }
 
 .header-right {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
+    gap: 8px; /* 右侧元素间距 */
+    flex-shrink: 0;
 }
 
 .greeting {

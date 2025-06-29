@@ -3,16 +3,16 @@ import { Card, Typography, Divider, Checkbox, Button, Row } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import './style.css';
 
-// 这里假设 mock 数据生成函数路径和结构一致
+// 假设 mock 数据生成函数路径和结构一致
 import generateOrdersData from '../../mock/Orders';
 
 const { Text } = Typography;
 
-const ChangeTicketPage = () => {
+const ReturnTicketPage = () => {
     const [order, setOrder] = useState(null);
     const [selectedTickets, setSelectedTickets] = useState([]);
     const trainInfoCardRef = useRef(null);
-    const navigate = useNavigate();
+    const navigate = useNavigate(); // 引入 useNavigate 用于导航
 
     useEffect(() => {
         const data = generateOrdersData();
@@ -38,7 +38,7 @@ const ChangeTicketPage = () => {
         );
     };
 
-    const onSelectAllChange = (e) => {
+    const onSelectAllReturn = (e) => {
         if (e.target.checked) {
             setSelectedTickets(order.passengers.map((_, idx) => idx));
         } else {
@@ -48,22 +48,22 @@ const ChangeTicketPage = () => {
 
     const totalPrice = order.passengers.reduce((sum, passenger) => sum + passenger.price, 0);
 
-    // 确认改签按钮点击处理
-    const handleConfirmChange = () => {
+    // 确认退票按钮点击处理函数
+    const handleConfirmReturn = () => {
         if (selectedTickets.length > 0) {
-            navigate('/trains'); // 跳转到车票页
+            navigate('/orders'); // 跳转到“我的订单”页面（假设路径为 /my-orders）
         }
     };
 
-    // 取消按钮点击处理
+    // 取消按钮点击处理函数
     const handleCancel = () => {
-        navigate(-1); // 返回上一级
+        navigate(-1); // 返回上一级页面
     };
 
     return (
         <>
-            <Card className="change-ticket-card" bordered={false} bodyStyle={{ padding: 0 }}>
-                <div className="card-title">改签</div>
+            <Card className="return-ticket-card" bordered={false} bodyStyle={{ padding: 0 }}>
+                <div className="card-title">退票</div>
 
                 <Row justify="space-between" className="info-row">
                     <Text type="secondary" className="order-info-text">
@@ -106,7 +106,7 @@ const ChangeTicketPage = () => {
                                 <Checkbox
                                     indeterminate={indeterminate}
                                     checked={allSelected}
-                                    onChange={onSelectAllChange}
+                                    onChange={onSelectAllReturn}
                                 />
                             </th>
                             <th style={{ width: '5%' }}>序号</th>
@@ -154,8 +154,8 @@ const ChangeTicketPage = () => {
                 </Row>
 
                 <div className="button-row">
-                    <Button type="primary" className="btn-blue" onClick={handleConfirmChange}>
-                        确认改签 ({selectedTickets.length})
+                    <Button type="primary" className="btn-blue" onClick={handleConfirmReturn}>
+                        确认退票 ({selectedTickets.length})
                     </Button>
                     <Button className="btn-white" onClick={handleCancel}>取消</Button>
                 </div>
@@ -173,4 +173,4 @@ const ChangeTicketPage = () => {
     );
 };
 
-export default ChangeTicketPage;
+export default ReturnTicketPage;
