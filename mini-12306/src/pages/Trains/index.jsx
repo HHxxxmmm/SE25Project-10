@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Card, Tag, Pagination, Input, DatePicker, Button, Select, Space, Divider } from 'antd';
+import { Card, Tag, Pagination, Input, DatePicker, Button, Select, Divider } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { SearchOutlined, ClockCircleOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import generateTicketsforOneData from '../../mock/Train'; // 请根据实际路径调整
 import "./style.css";
 
-const { Search } = Input;
 const { Option } = Select;
 
 // 席别映射

@@ -78,15 +78,15 @@ export default function RegisterPage({ visible = true, onCancel }) {
   };
 
   return (
-      <Modal
-          title={<div className="modalTitle">用户注册</div>}
-          visible={visible}
-          onCancel={onCancel}
-          footer={null}
-          destroyOnClose
-          maskClosable={false}
-          centered
-      >
+    <Modal
+        title={<div className="modalTitle">用户注册</div>}
+        open={visible}  // 将 visible 修改为 open
+        onCancel={onCancel}
+        footer={null}
+        destroyOnHidden={true}  // 将 destroyOnClose 修改为 destroyOnHidden
+        maskClosable={false}
+        centered
+    >
         <Form
             layout="horizontal"
             labelCol={{ span: 6 }}
@@ -189,6 +189,6 @@ export default function RegisterPage({ visible = true, onCancel }) {
             </Button>
           </Form.Item>
         </Form>
-      </Modal>
+    </Modal>
   );
 }

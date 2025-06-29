@@ -1,0 +1,315 @@
+.payment-card {
+    margin: 20px auto;
+    max-width: 1000px; /* 与其他页面卡片宽度保持一致 */
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.payment-card .card-title {
+    height: 56px;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff; /* 白色文字 */
+    background-color: #1890ff; /* 蓝色标题背景 */
+    border-bottom: 1px solid #e8e8e8;
+    border-radius: 4px 4px 0 0;
+    position: relative;
+}
+
+.back-icon {
+    margin-right: 12px;
+    font-size: 16px;
+    color: #fff; /* 确保返回图标在蓝色背景上可见 */
+    cursor: pointer;
+}
+
+.timer-badge {
+    position: absolute;
+    right: 24px;
+    color: #fff; /* 调整颜色使其在蓝色背景上可见 */
+}
+
+.payment-timer-label {
+    color: #fff; /* 调整颜色使其在蓝色背景上可见 */
+    margin-right: 4px;
+}
+
+.payment-timer {
+    color: #fff; /* 调整颜色使其在蓝色背景上可见 */
+    font-weight: bold;
+}
+
+.payment-content {
+    padding: 16px 24px; /* 调整内容区域内边距 */
+}
+
+/* 分割线样式 */
+.payment-card .ant-divider {
+    margin: 16px 0; /* 调整分割线上下间距 */
+}
+
+/* 标题样式 */
+.payment-content .ant-typography {
+    margin-bottom: 16px; /* 调整标题下方间距 */
+    text-align: left;
+    color: rgba(0, 0, 0, 0.85);
+}
+
+.train-info-card {
+    background: #f9f9f9;
+    border-radius: 4px;
+    padding: 16px;
+    margin-bottom: 16px;
+    border: 1px solid #f0f0f0;
+}
+
+.train-info-card .ant-card-head {
+    background-color: #1890ff;
+}
+
+.train-date {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 12px;
+}
+
+.payment-card .train-route {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.payment-card .station-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.payment-card .station-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+}
+
+.payment-card .station-time {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1890ff;
+    margin-bottom: 4px;
+}
+
+.payment-card .departure-time, 
+.payment-card .arrival-time {
+    font-size: 12px;
+    color: #888;
+    margin-top: 4px;
+}
+
+.payment-card .arrow-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    margin: 0 16px;
+}
+
+.payment-card .train-number {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.payment-card .arrow {
+    font-size: 24px;
+    color: #999;
+    position: relative;
+}
+
+.payment-card .arrow::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -50px;
+    right: -50px;
+    height: 1px;
+    background: #ddd;
+    z-index: -1;
+}
+
+.order-detail-item {
+    margin-bottom: 12px;
+}
+
+.detail-label {
+    color: #666;
+    margin-right: 8px;
+}
+
+.detail-value {
+    color: #333;
+    font-weight: 500;
+}
+
+.order-price {
+    margin-top: 16px;
+    text-align: right;
+}
+
+.price-value {
+    font-size: 24px;
+    margin-left: 8px;
+}
+
+.payment-method-section {
+    margin: 24px 0;
+}
+
+.payment-methods {
+    display: flex;
+    margin-top: 16px;
+    width: 100%;
+}
+
+.payment-method-option {
+    flex: 1;
+    height: 80px;
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px !important;
+}
+
+.payment-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+
+.payment-icon.alipay {
+    color: #1677ff;
+}
+
+.payment-icon.wechat {
+    color: #07c160;
+}
+
+.payment-icon.bankcard {
+    color: #fa8c16;
+}
+
+.payment-action {
+    display: flex;
+    justify-content: center;
+    margin-top: 32px;
+    gap: 16px;
+}
+
+.pay-button {
+    height: 40px;
+    font-size: 16px;
+    width: 200px;
+}
+
+.cancel-button {
+    height: 40px;
+    font-size: 16px;
+}
+
+.payment-notice {
+    background-color: #f9f9f9;
+    padding: 16px 24px;
+    border-top: 1px solid #f0f0f0;
+    border-radius: 0 0 8px 8px;
+}
+
+.payment-notice h3 {
+    margin-bottom: 8px;
+    color: #666;
+}
+
+.payment-notice ul {
+    padding-left: 20px;
+    margin: 0;
+    color: #888;
+}
+
+.payment-loading {
+    height: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #1890ff;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+}
+
+.passengers-detail {
+    width: 100%;
+}
+
+.passenger-detail-item {
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.passenger-detail-item:last-child {
+    border-bottom: none;
+}
+
+.passenger-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.passenger-name {
+    font-weight: 500;
+    color: #333;
+}
+
+.passenger-id {
+    color: #666;
+    font-size: 13px;
+}
+
+.passenger-seat {
+    color: #1890ff;
+    background-color: #e6f7ff;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.passenger-price {
+    color: #ff4d4f;
+    font-weight: 500;
+}
+
+/* 动画效果 */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+.payment-card .ant-divider {
+    margin: 12px 0; /* 减少分割线上下间距 */
+}
+
+/* 调整订单信息标题的下边距 */
+.payment-content .ant-typography {
+    margin-bottom: 12px; /* 减少标题下方间距 */
+}
+
+/* 调整行间距 */
+.payment-content .ant-row {
+    row-gap: 8px !important; /* 减少行间距 */
+}
