@@ -1,15 +1,17 @@
 // src/pages/Profile/index.jsx
 import React, { useState, useEffect } from 'react';
 import { Card, Descriptions, Divider, Spin, Typography, Modal, Form, Input, message } from 'antd';
-import generatePersonData from '../../mock/Person';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import generatePersonData from '../../mock/Person';
 import AddPassenger from '../AddPassenger';
-import './style.css';
+import './style.css'; // 确保导入原有样式文件
 
 const { Title } = Typography;
 
-const ProfilePage = () => {
-    const { user: authUser, updateUser } = useAuth();
+export default function ProfilePage() {
+    const navigate = useNavigate();
+    const { user: authUser, updateUser, isAuthenticated } = useAuth();
     const [personInfo, setPersonInfo] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isEditModalVisible, setIsEditModalVisible] = useState(false);
@@ -17,6 +19,11 @@ const ProfilePage = () => {
     const [form] = Form.useForm();
 
     useEffect(() => {
+        if (!isAuthenticated) {
+            navigate('/login', { state: { from: '/profile' }, replace: true });
+            return;
+        }
+
         const loadPersonData = () => {
             const mockData = generatePersonData();
             const currentUserData = mockData.news.find(
@@ -25,7 +32,8 @@ const ProfilePage = () => {
 
             setPersonInfo(currentUserData);
             setLoading(false);
-            if (isEditModalVisible && currentUserData) {
+
+            if (isEditModalVisible) {
                 form.setFieldsValue({
                     u_name: currentUserData.u_name,
                     u_id: currentUserData.u_id,
@@ -35,7 +43,7 @@ const ProfilePage = () => {
         };
 
         loadPersonData();
-    }, [authUser, isEditModalVisible, form]);
+    }, [isAuthenticated, navigate, authUser, isEditModalVisible, form]);
 
     const showEditModal = () => {
         setIsEditModalVisible(true);
@@ -48,33 +56,28 @@ const ProfilePage = () => {
         }
     };
 
-    const handleEditCancel = () => {
-        setIsEditModalVisible(false);
-    };
+    const handleEditSubmit = async () => {
+        try {
+            const values = await form.validateFields();
+            const updatedPersonInfo = {
+                ...personInfo,
+                u_name: values.u_name,
+                u_id: values.u_id,
+                u_phone: values.u_phone,
+            };
 
-    const handleEditOk = () => {
-        form.validateFields()
-            .then((values) => {
-                const updatedPersonInfo = {
-                    ...personInfo,
-                    u_name: values.u_name,
-                    u_id: values.u_id,
-                    u_phone: values.u_phone,
-                };
-                setPersonInfo(updatedPersonInfo);
-                updateUser({
-                    username: values.u_name,
-                    realName: values.u_name,
-                    idCard: values.u_id,
-                    phone: values.u_phone,
-                });
-                message.success('个人信息更新成功！');
-                setIsEditModalVisible(false);
-            })
-            .catch((info) => {
-                console.log('Validate Failed:', info);
-                message.error('请检查输入信息。');
+            setPersonInfo(updatedPersonInfo);
+            await updateUser({
+                realName: values.u_name,
+                idCard: values.u_id,
+                phone: values.u_phone
             });
+
+            message.success('个人信息更新成功！');
+            setIsEditModalVisible(false);
+        } catch (error) {
+            message.error('请检查输入信息。');
+        }
     };
 
     if (loading) {
@@ -95,7 +98,7 @@ const ProfilePage = () => {
 
     return (
         <div className="profile-page-container">
-            {/* 个人信息卡片 */}
+            {/* 个人信息卡片 - 保持原有结构和类名 */}
             <Card
                 className="profile-card"
                 title={<Title level={4} className="card-title">个人信息</Title>}
@@ -113,21 +116,20 @@ const ProfilePage = () => {
 
             <Divider />
 
-            {/* 关联乘车人卡片 */}
+            {/* 关联乘车人卡片 - 保持原有结构和类名 */}
             <Card
                 className="profile-card related-passengers-card"
                 title={<Title level={4} className="card-title">关联乘车人</Title>}
                 headStyle={{ padding: 0 }}
                 bodyStyle={{ padding: '24px' }}
             >
-                {personInfo.related_passenger_name && personInfo.related_passenger_name.length > 0 ? (
+
+                {personInfo.related_passenger_name?.length > 0 ? (
                     personInfo.related_passenger_name.map((name, index) => (
                         <Descriptions key={index} bordered column={1} style={{ marginBottom: 16 }}>
                             <Descriptions.Item label="姓名">{name}</Descriptions.Item>
                             <Descriptions.Item label="身份证号">
-                                {personInfo.related_passenger_id && personInfo.related_passenger_id[index]
-                                    ? personInfo.related_passenger_id[index]
-                                    : '未提供'}
+                                {personInfo.related_passenger_id?.[index] || '未提供'}
                             </Descriptions.Item>
                         </Descriptions>
                     ))
@@ -146,12 +148,12 @@ const ProfilePage = () => {
                 </div>
             </Card>
 
-            {/* 编辑个人信息模态框 */}
+            {/* 编辑个人信息模态框 - 保持原有表单字段名 */}
             <Modal
                 title="修改个人信息"
                 open={isEditModalVisible}
-                onOk={handleEditOk}
-                onCancel={handleEditCancel}
+                onOk={handleEditSubmit}
+                onCancel={() => setIsEditModalVisible(false)}
                 okText="保存"
                 cancelText="取消"
             >
@@ -195,7 +197,8 @@ const ProfilePage = () => {
                 </Form>
             </Modal>
 
-            {/* 添加乘车人弹窗 */}
+
+            {/* 添加乘车人弹窗 - 保持原有结构 */}
             {showAddPassengerModal && (
                 <div className="add-passenger-page">
                     <div
@@ -211,6 +214,4 @@ const ProfilePage = () => {
             )}
         </div>
     );
-};
-
-export default ProfilePage;
+}

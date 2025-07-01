@@ -100,8 +100,6 @@
     color: #1890ff;
     margin-bottom: 4px;
 }
-
-
 .payment-card .departure-time,
 .payment-card .arrival-time {
     font-size: 12px;
@@ -370,4 +368,3 @@
         padding: 8px;
     }
 }
-

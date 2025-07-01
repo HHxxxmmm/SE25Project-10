@@ -1,126 +1,90 @@
-import { useState, useEffect, useContext, createContext } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { login, logout, register, updateUser } from '../store/actions/authActions';
+import { createContext, useContext, useMemo } from 'react';
 
-// 创建认证上下文
-const AuthContext = createContext(null);
+// 认证上下文（用于非Redux管理的认证相关功能）
+const AuthContext = createContext();
 
-// 模拟用户数据
-const mockUserData = {
-  id: 1,
-  username: 'demo_user',
-  realName: '测试用户',
-  phone: '13800138000',
-  idCard: '110101199001011234'
-};
+/**
+ * 认证提供者组件（兼容旧版）
+ * @param {Object} props - 组件属性
+ * @param {ReactNode} props.children - 子组件
+ * @param {Object} [props.config] - 认证配置
+ */
+export function AuthProvider({ children, config = {} }) {
+  const authState = useSelector(state => state.auth);
+  const dispatch = useDispatch();
 
-// 提供者组件
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // 记忆化上下文值
+  const contextValue = useMemo(() => ({
+    // Redux状态
+    ...authState,
 
-  // 检查是否已保存登录状态
-  useEffect(() => {
-    // 不再强制设置为登录状态
-    const forceAuth = false; // 改为false，不强制登录
-    
-    if (forceAuth) {
-      // 如果没有保存的用户数据，创建一个默认用户
-      let userData = null;
-      try {
-        const savedUser = localStorage.getItem('mini12306_user');
-        if (savedUser) {
-          userData = JSON.parse(savedUser);
-        } else {
-          // 创建默认模拟用户
-          userData = { ...mockUserData };
-          localStorage.setItem('mini12306_user', JSON.stringify(userData));
-        }
-      } catch (e) {
-        console.error('Error parsing user data:', e);
-        userData = { ...mockUserData };
-        localStorage.setItem('mini12306_user', JSON.stringify(userData));
-      }
-      
-      // 设置为已登录状态
-      setUser(userData);
-      setIsAuthenticated(true);
-      console.log('已强制设置为登录状态:', userData);
-      return;
+    // 扩展功能
+    config: {
+      sessionTimeout: 24 * 60 * 60 * 1000, // 默认24小时
+      ...config
+    },
+
+    // 非Redux操作方法
+    checkSession: () => {
+      const loginTime = localStorage.getItem('mini12306_login_time');
+      return loginTime && Date.now() - parseInt(loginTime) < contextValue.config.sessionTimeout;
+    },
+
+    // Redux操作方法
+    actions: {
+      login: (credentials) => dispatch(login(credentials)),
+      logout: () => dispatch(logout()),
+      register: (userData) => dispatch(register(userData)),
+      updateUser: (newData) => dispatch(updateUser(newData))
     }
-    
-    // 正常登录状态检查逻辑
-    const savedUser = localStorage.getItem('mini12306_user');
-    const loginTimestamp = localStorage.getItem('mini12306_login_time'); // 检查登录时间戳
-    
-    if (savedUser && loginTimestamp) {
-      try {
-        const parsedUser = JSON.parse(savedUser);
-        setUser(parsedUser);
-        setIsAuthenticated(true);
-      } catch (err) {
-        console.error('Failed to parse saved user data:', err);
-        localStorage.removeItem('mini12306_user');
-        localStorage.removeItem('mini12306_login_time');
-      }
-    } else {
-      // 确保未登录状态
-      setUser(null);
-      setIsAuthenticated(false);
-    }
-  }, []);
+  }), [authState, config, dispatch]);
 
-  // 登录逻辑
-  const login = async (credentials) => {
-    console.log('Login attempt with:', credentials);
-    
-    // 直接视为登录成功
-    const userData = { ...mockUserData, username: credentials.user || mockUserData.username };
-    
-    // 保存到本地存储确保刷新页面后状态不丢失
-    localStorage.setItem('mini12306_user', JSON.stringify(userData));
-    localStorage.setItem('mini12306_login_time', Date.now().toString()); // 添加登录时间戳
-    
-    // 更新状态
-    setUser(userData);
-    setIsAuthenticated(true);
-    
-    return userData;
-  };
-
-  // 注册逻辑
-  const register = async (userData) => {
-    console.log('Register attempt with:', userData);
-    // 直接视为注册成功，但不自动登录
-    return { success: true };
-  };
-
-  // 更新用户数据逻辑
-  const updateUser = (newUserData) => {
-    const updatedUser = { ...user, ...newUserData };
-    localStorage.setItem('mini12306_user', JSON.stringify(updatedUser));
-    setUser(updatedUser);
-  };
-
-  // 登出逻辑
-  const logout = () => {
-    localStorage.removeItem('mini12306_user');
-    localStorage.removeItem('mini12306_login_time'); // 移除登录时间戳
-    setUser(null);
-    setIsAuthenticated(false);
-  };
-
-  // 提供认证上下文给整个应用
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, register, logout, updateUser }}>
-      {children}
-    </AuthContext.Provider>
+      <AuthContext.Provider value={contextValue}>
+        {children}
+      </AuthContext.Provider>
   );
 }
 
-// 自定义钩子供组件使用
+/**
+ * 认证钩子
+ * @returns {{
+ *   user: Object|null,
+ *   isAuthenticated: boolean,
+ *   loading: boolean,
+ *   error: string|null,
+ *   login: Function,
+ *   logout: Function,
+ *   register: Function,
+ *   updateUser: Function,
+ *   checkSession: Function,
+ *   config: Object
+ * }}
+ */
 export function useAuth() {
   const context = useContext(AuthContext);
+
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context;
+
+  return {
+    // 状态
+    user: context.user,
+    isAuthenticated: context.isAuthenticated,
+    loading: context.loading,
+    error: context.error,
+
+    // 操作方法
+    login: context.actions.login,
+    logout: context.actions.logout,
+    register: context.actions.register,
+    updateUser: context.actions.updateUser,
+
+    // 扩展功能
+    checkSession: context.checkSession,
+    config: context.config
+  };
 }
