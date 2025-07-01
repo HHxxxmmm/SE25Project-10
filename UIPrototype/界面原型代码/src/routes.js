@@ -16,26 +16,43 @@ import OrderDetailPage from './pages/OrderDetail';
 import TicketDetailPage from './pages/TicketDetail';
 import PaymentPage from './pages/Payment';
 
-// 更新 PrivateRoute 组件，使用 Redux 状态
+// 封装需要登录的组件
 const PrivateRoute = ({ element, redirectPath = '/login' }) => {
-  const { isAuthenticated } = useAuth(); // 现在 useAuth 从 Redux 获取状态
+  const checkAuthenticated = () => {
+    try {
+      const userData = localStorage.getItem('mini12306_user');
+      const loginTimestamp = localStorage.getItem('mini12306_login_time');
+      return !!(userData && loginTimestamp);
+    } catch (e) {
+      console.error("Error checking auth state", e);
+      return false;
+    }
+  };
 
-  if (!isAuthenticated) {
+  const isAuth = checkAuthenticated();
+  console.log('PrivateRoute checking auth (direct):', isAuth);
+
+  if (!isAuth) {
+    console.log('Not authenticated, redirecting to login with state:', { from: window.location.pathname });
     return <Navigate to={redirectPath} state={{ from: window.location.pathname }} replace />;
   }
-
+  
   return element;
 };
 
-// 更新 LoginRedirectHandler
+// 登录后重定向逻辑
 const LoginRedirectHandler = () => {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
   React.useEffect(() => {
-    if (isAuthenticated) {
+    console.log('LoginRedirectHandler auth state:', isAuthenticated);
+    const loginTimestamp = localStorage.getItem('mini12306_login_time');
+    
+    if (isAuthenticated && loginTimestamp) {
       const from = location.state?.from || '/';
+      console.log('Already authenticated, redirecting to:', from);
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, location, navigate]);

@@ -53,6 +53,7 @@ export default function RegisterPage({ visible, onCancel }) {
         <Form form={form} onFinish={onFinish} layout="horizontal" labelCol={{ span: 6 }}>
           <Form.Item label="用户名" name="username" rules={validateRules.username}>
             <Input placeholder="6-30位字母开头" />
+
           </Form.Item>
           <Form.Item label="密码" name="password" rules={validateRules.password}>
             <Input.Password placeholder="6-20位密码" />
@@ -97,6 +98,6 @@ export default function RegisterPage({ visible, onCancel }) {
             </Button>
           </Form.Item>
         </Form>
-      </Modal>
+    </Modal>
   );
 }
