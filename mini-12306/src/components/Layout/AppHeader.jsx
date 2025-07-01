@@ -1,56 +1,63 @@
-// AppHeader.jsx
 import React, { useState, useEffect } from 'react';
 import { Layout, Button } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import RegisterPage from '../../pages/Register'; // 这里引入你改成弹窗的RegisterPage组件
+import { useAuth } from '../../hooks/useAuth';
+import RegisterPage from '../../pages/Register';
 import './style.css';
 
 const { Header } = Layout;
 
 export default function AppHeader() {
     const navigate = useNavigate();
-
-    // 临时替代方案：从localStorage直接读取用户数据
-    const getUserAuthState = () => {
-        try {
-            const userData = localStorage.getItem('mini12306_user');
-            const loginTimestamp = localStorage.getItem('mini12306_login_time');
-            if (userData && loginTimestamp) {
-                return { isAuthenticated: true, user: JSON.parse(userData) };
-            }
-        } catch (e) {
-            console.error("Error parsing user data", e);
-            localStorage.removeItem('mini12306_user');
-            localStorage.removeItem('mini12306_login_time');
-        }
-        return { isAuthenticated: false, user: null };
-    };
-
-    const [authState, setAuthState] = useState(getUserAuthState());
+    const { user, isAuthenticated, logout, login } = useAuth();
     const [showRegisterModal, setShowRegisterModal] = useState(false);
+    const [localAuthState, setLocalAuthState] = useState({
+        isAuthenticated: false,
+        user: null
+    });
 
+    // 同步Redux和本地存储状态
     useEffect(() => {
-        const handleStorageChange = () => {
-            setAuthState(getUserAuthState());
+        const checkAuthState = () => {
+            try {
+                const userData = localStorage.getItem('mini12306_user');
+                const loginTime = localStorage.getItem('mini12306_login_time');
+
+                if (userData && loginTime) {
+                    const parsedUser = JSON.parse(userData);
+                    const sessionValid = Date.now() - parseInt(loginTime) < 24 * 60 * 60 * 1000;
+
+                    if (sessionValid) {
+                        // 如果Redux中没有用户数据，用本地存储初始化
+                        if (!isAuthenticated) {
+                            login(parsedUser); // 自动登录
+                        }
+                        setLocalAuthState({
+                            isAuthenticated: true,
+                            user: parsedUser
+                        });
+                    } else {
+                        logout(); // 会话过期
+                    }
+                }
+            } catch (e) {
+                console.error("认证状态检查错误:", e);
+                logout();
+            }
         };
 
-        window.addEventListener('storage', handleStorageChange);
-        const interval = setInterval(() => {
-            setAuthState(getUserAuthState());
-        }, 2000);
+        checkAuthState();
+        const interval = setInterval(checkAuthState, 5000); // 每5秒检查一次
 
-        return () => {
-            window.removeEventListener('storage', handleStorageChange);
-            clearInterval(interval);
-        };
-    }, []);
+        return () => clearInterval(interval);
+    }, [isAuthenticated, login, logout]);
 
-    const { isAuthenticated, user } = authState;
+    // 合并状态：优先使用Redux，没有则使用本地存储
+    const currentAuthState = isAuthenticated ?
+        { isAuthenticated, user } :
+        localAuthState;
 
     const handleLogin = () => {
-        localStorage.removeItem('mini12306_user');
-        localStorage.removeItem('mini12306_login_time');
-        setAuthState({ isAuthenticated: false, user: null });
         navigate('/login');
     };
 
@@ -59,10 +66,8 @@ export default function AppHeader() {
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('mini12306_user');
-        localStorage.removeItem('mini12306_login_time');
-        setAuthState({ isAuthenticated: false, user: null });
-        navigate('/login');
+        logout();
+        setLocalAuthState({ isAuthenticated: false, user: null });
     };
 
     const handleProfileClick = () => {
@@ -74,7 +79,7 @@ export default function AppHeader() {
             <Header className="app-header">
                 <div className="header-left">
                     <img
-                        src={process.env.PUBLIC_URL + '/OIP.jpg'}
+                        src={`${process.env.PUBLIC_URL}/OIP.jpg`}
                         className="app-logo"
                         alt="12306 logo"
                     />
@@ -83,7 +88,7 @@ export default function AppHeader() {
 
                 <div className="header-right">
                     <span className="greeting">您好，</span>
-                    {isAuthenticated ? (
+                    {currentAuthState.isAuthenticated ? (
                         <div className="user-info">
                             <Button
                                 type="link"
@@ -91,7 +96,7 @@ export default function AppHeader() {
                                 onClick={handleProfileClick}
                                 style={{ padding: 0, fontSize: '14px', color: 'rgba(0, 0, 0, 0.85)' }}
                             >
-                                {user?.username || user?.name || '用户'}
+                                {currentAuthState.user?.username || currentAuthState.user?.name || '用户'}
                             </Button>
                             <span className="separator" style={{ margin: '0 8px', color: '#ccc' }}>|</span>
                             <Button
@@ -106,16 +111,30 @@ export default function AppHeader() {
                     ) : (
                         <div className="auth-buttons">
                             <span className="please-text">请</span>
-                            <Button type="text" className="login-btn" onClick={handleLogin}>登录</Button>
+                            <Button
+                                type="text"
+                                className="login-btn"
+                                onClick={handleLogin}
+                            >
+                                登录
+                            </Button>
                             <span className="divider">/</span>
-                            <Button type="text" className="register-btn" onClick={handleRegister}>注册</Button>
+                            <Button
+                                type="text"
+                                className="register-btn"
+                                onClick={handleRegister}
+                            >
+                                注册
+                            </Button>
                         </div>
                     )}
                 </div>
             </Header>
 
-            {/* 注册弹窗 */}
-            <RegisterPage visible={showRegisterModal} onCancel={() => setShowRegisterModal(false)} />
+            <RegisterPage
+                visible={showRegisterModal}
+                onCancel={() => setShowRegisterModal(false)}
+            />
         </>
     );
 }
