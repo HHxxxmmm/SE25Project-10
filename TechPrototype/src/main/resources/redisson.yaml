@@ -1,0 +1,9 @@
+singleServerConfig:
+  address: "redis://${spring.data.redis.host}:${spring.data.redis.port}"
+  password: "${spring.data.redis.password}"
+  database: 0
+  connectionPoolSize: 20
+  connectionMinimumIdleSize: 5
+  idleConnectionTimeout: 10000
+  connectTimeout: 10000
+  timeout: 3000
