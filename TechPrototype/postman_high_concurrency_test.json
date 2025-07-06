@@ -1,0 +1,105 @@
+{
+  "info": {
+    "name": "高并发测试集合",
+    "description": "用于测试系统高并发性能的Postman集合",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "高并发测试 - 1000订单",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/test/high-concurrency-test?orderCount=1000",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "test", "high-concurrency-test"],
+          "query": [
+            {
+              "key": "orderCount",
+              "value": "1000"
+            }
+          ]
+        }
+      },
+      "response": [],
+      "description": "执行1000个并发订单的购票和支付流程测试"
+    },
+    {
+      "name": "高并发测试 - 500订单",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/test/high-concurrency-test?orderCount=500",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "test", "high-concurrency-test"],
+          "query": [
+            {
+              "key": "orderCount",
+              "value": "500"
+            }
+          ]
+        }
+      },
+      "response": [],
+      "description": "执行500个并发订单的购票和支付流程测试"
+    },
+    {
+      "name": "高并发测试 - 100订单",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/test/high-concurrency-test?orderCount=100",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "test", "high-concurrency-test"],
+          "query": [
+            {
+              "key": "orderCount",
+              "value": "100"
+            }
+          ]
+        }
+      },
+      "response": [],
+      "description": "执行100个并发订单的购票和支付流程测试"
+    },
+    {
+      "name": "检查系统状态",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/test/stock",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "test", "stock"]
+        }
+      },
+      "response": [],
+      "description": "检查系统库存状态，确认系统正常运行"
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ]
+} 
