@@ -9,12 +9,13 @@ create table carriage_types
 
 create table passengers
 (
-    passenger_id   bigint auto_increment
+    passenger_id      bigint auto_increment
         primary key,
-    id_card_number varchar(20) not null,
-    real_name      varchar(50) not null,
-    passenger_type tinyint     not null comment '1-成人, 2-儿童, 3-学生, 4-残疾军人',
-    phone_number   varchar(20) null,
+    id_card_number    varchar(20) not null,
+    real_name         varchar(50) not null,
+    passenger_type    tinyint     not null comment '1-成人, 2-儿童, 3-学生, 4-残疾，5-军人',
+    phone_number      varchar(20) null,
+    student_type_left int         null comment '学生票次数剩余',
     constraint id_card_number
         unique (id_card_number)
 );
@@ -42,11 +43,11 @@ create table trains
     train_id         int auto_increment
         primary key,
     train_number     varchar(20) not null,
-    train_type       varchar(10) not null comment 'G-高铁, D-动车, K-快速, T-特快, Z-直达, C-城际',
+    train_type       varchar(10) not null,
     start_station_id int         not null,
     end_station_id   int         not null,
-    departure_time   time        not null,
-    arrival_time     time        not null,
+    departure_time   time(6)     not null,
+    arrival_time     time(6)     not null,
     duration_minutes int         not null,
     constraint train_number
         unique (train_number),
@@ -78,10 +79,19 @@ create table train_carriages
 create table seats
 (
     seat_id     bigint auto_increment,
-    carriage_id bigint            not null,
-    seat_number varchar(10)       not null comment '座位号如1A, 2B等',
-    seat_type   varchar(10)       null comment '靠窗, 靠过道, 中间等',
-    isAvailable tinyint default 1 null comment '座位是否可用',
+    carriage_id bigint          not null,
+    seat_number varchar(10)     not null comment '座位号如1A, 2B等',
+    seat_type   varchar(10)     null comment '靠窗, 靠过道, 中间等',
+    date_1      bigint unsigned null comment '日期位图字段1',
+    date_2      bigint unsigned null comment '日期位图字段2',
+    date_3      bigint unsigned null comment '日期位图字段3',
+    date_4      bigint unsigned null comment '日期位图字段4',
+    date_5      bigint unsigned null comment '日期位图字段5',
+    date_6      bigint unsigned null comment '日期位图字段6',
+    date_7      bigint unsigned null comment '日期位图字段7',
+    date_8      bigint unsigned null comment '日期位图字段8',
+    date_9      bigint unsigned null comment '日期位图字段9',
+    date_10     bigint unsigned null comment '日期位图字段10',
     primary key (carriage_id, seat_id),
     constraint uk_carriage_seat_number
         unique (carriage_id, seat_number),
@@ -92,7 +102,7 @@ create table seats
 );
 
 create index idx_available_seat
-    on seats (isAvailable, carriage_id, seat_type);
+    on seats (carriage_id, seat_type);
 
 create index idx_carriage_type
     on train_carriages (type_id);
@@ -173,16 +183,17 @@ create table users
     password_hash     varchar(255)                       not null,
     email             varchar(100)                       null,
     phone_number      varchar(20)                        not null,
-    id_card_number    varchar(18)                        not null,
     registration_time datetime default CURRENT_TIMESTAMP not null,
     last_login_time   datetime                           null,
     account_status    tinyint  default 1                 not null comment '1-正常, 0-冻结',
+    related_passenger int      default 0                 not null comment '关联乘客数量',
+    passenger_id      bigint                             null comment '用户自身ID',
     constraint email
         unique (email),
-    constraint id_card_number
-        unique (id_card_number),
     constraint phone_number
-        unique (phone_number)
+        unique (phone_number),
+    constraint fk_user_passenger
+        foreign key (passenger_id) references passengers (passenger_id)
 );
 
 create table orders
@@ -196,6 +207,7 @@ create table orders
     payment_time   datetime                           null,
     payment_method varchar(20)                        null,
     order_status   tinyint  default 0                 not null comment '0-待支付, 1-已支付, 2-已完成, 3-已取消',
+    ticket_count   int      default 0                 not null comment '订单包含的票数',
     constraint order_number
         unique (order_number),
     constraint orders_ibfk_1
@@ -223,7 +235,7 @@ create table tickets
     carriage_number   varchar(10)                        null,
     seat_number       varchar(10)                        null,
     price             decimal(10, 2)                     not null,
-    ticket_status     tinyint  default 0                 not null comment '0-未使用, 1-已使用, 2-已退票, 3-已改签',
+    ticket_status     tinyint  default 0                 not null comment '0-待支付，1-未使用，2-已使用，3-已退票，4，已改签',
     digital_signature varchar(255)                       null comment '电子票证签名',
     created_time      datetime default CURRENT_TIMESTAMP not null,
     ticket_type       tinyint  default 1                 not null comment '1-成人, 2-儿童, 3-学生, 4-残疾, 5-军人',
@@ -291,9 +303,6 @@ create table user_passenger_relations
 
 create index passenger_id
     on user_passenger_relations (passenger_id);
-
-create index idx_id_card
-    on users (id_card_number);
 
 create index idx_phone
     on users (phone_number);
