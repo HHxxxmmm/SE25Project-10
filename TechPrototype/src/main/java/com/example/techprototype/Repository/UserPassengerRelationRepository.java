@@ -22,4 +22,9 @@ public interface UserPassengerRelationRepository extends JpaRepository<UserPasse
      * 检查用户是否有指定的乘客关系
      */
     boolean existsByUserIdAndPassengerId(Long userId, Long passengerId);
+    
+    /**
+     * 统计用户关联的乘客数量
+     */
+    long countByUserId(Long userId);
 } 

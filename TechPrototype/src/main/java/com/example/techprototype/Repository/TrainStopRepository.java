@@ -14,4 +14,9 @@ public interface TrainStopRepository extends JpaRepository<TrainStop, Long> {
      * 根据车次ID和站点ID查询车次停靠信息
      */
     TrainStop findByTrainIdAndStationId(Integer trainId, Integer stationId);
+    
+    /**
+     * 根据车次ID和停靠点ID查询车次停靠信息
+     */
+    Optional<TrainStop> findByTrainIdAndStopId(Integer trainId, Long stopId);
 } 

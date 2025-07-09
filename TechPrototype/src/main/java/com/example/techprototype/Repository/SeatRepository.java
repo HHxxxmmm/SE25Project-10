@@ -13,15 +13,28 @@ import java.util.Optional;
 @Repository
 public interface SeatRepository extends JpaRepository<Seat, Long> {
     
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT s FROM Seat s WHERE s.carriageId = :carriageId AND s.isAvailable = true ORDER BY s.seatId LIMIT 1")
-    Optional<Seat> findAvailableSeatByCarriageId(@Param("carriageId") Long carriageId);
+    /**
+     * 查找指定车厢的所有座位
+     */
+    @Query("SELECT s FROM Seat s WHERE s.carriageId = :carriageId")
+    List<Seat> findByCarriageId(@Param("carriageId") Long carriageId);
     
-    @Query("SELECT s FROM Seat s WHERE s.carriageId = :carriageId AND s.isAvailable = true")
-    List<Seat> findAvailableSeatsByCarriageId(@Param("carriageId") Long carriageId);
+    /**
+     * 查找指定车次和车厢类型的所有座位
+     */
+    @Query("SELECT s FROM Seat s WHERE s.carriageId IN (SELECT tc.carriageId FROM TrainCarriage tc WHERE tc.trainId = :trainId AND tc.typeId = :typeId)")
+    List<Seat> findByTrainAndType(@Param("trainId") Integer trainId, @Param("typeId") Integer typeId);
     
-    @Query("SELECT s FROM Seat s WHERE s.carriageId IN (SELECT tc.carriageId FROM TrainCarriage tc WHERE tc.trainId = :trainId AND tc.typeId = :typeId) AND s.isAvailable = true")
-    List<Seat> findAvailableSeatsByTrainAndType(@Param("trainId") Integer trainId, @Param("typeId") Integer typeId);
-    
+    /**
+     * 根据车厢ID和座位号查找座位
+     */
     List<Seat> findByCarriageIdAndSeatNumber(Long carriageId, String seatNumber);
+    
+    /**
+     * 查找指定车厢的可用座位（基于位图查询）
+     * 注意：这个方法需要在Service层结合位图逻辑使用
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT s FROM Seat s WHERE s.carriageId = :carriageId ORDER BY s.seatId")
+    List<Seat> findSeatsByCarriageIdForUpdate(@Param("carriageId") Long carriageId);
 } 

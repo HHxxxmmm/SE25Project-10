@@ -227,6 +227,7 @@ public class TicketServiceImpl implements TicketService {
             if (validTickets.isEmpty()) {
                 // 订单中没有有效车票，将订单状态改为已取消
                 order.setOrderStatus((byte) OrderStatus.CANCELLED.getCode());
+                order.setTicketCount(0); // 设置票数为0
                 orderRepository.save(order);
                 return BookingResponse.successWithMessage("退票成功，订单已取消", order.getOrderNumber(), null, null, LocalDateTime.now());
             }
@@ -309,6 +310,7 @@ public class TicketServiceImpl implements TicketService {
             newOrder.setOrderStatus((byte) OrderStatus.PENDING_PAYMENT.getCode());
             newOrder.setOrderTime(LocalDateTime.now());
             newOrder.setTotalAmount(BigDecimal.ZERO); // 临时设置为0，后面会计算
+            newOrder.setTicketCount(originalTickets.size()); // 设置票数
             
             orderRepository.save(newOrder);
             

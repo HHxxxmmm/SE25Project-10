@@ -21,6 +21,7 @@ public class OrderDetailResponse {
     private LocalDateTime paymentTime;
     private String paymentMethod;
     private BigDecimal totalAmount;
+    private Integer ticketCount; // 订单包含的票数
     
     // 车次信息（所有车票共享相同信息）
     private String trainNumber;

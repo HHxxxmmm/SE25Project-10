@@ -32,6 +32,9 @@ public class OrderTimeoutService {
     @Autowired
     private TrainCarriageRepository trainCarriageRepository;
     
+    @Autowired
+    private SeatService seatService;
+    
     /**
      * 每5分钟检查一次超时订单
      * 超时时间：30分钟
@@ -78,32 +81,10 @@ public class OrderTimeoutService {
             ticket.setTicketStatus((byte) 3); // 已退票状态
             ticketRepository.save(ticket);
             
-            // 释放座位
-            if (ticket.getSeatNumber() != null && ticket.getCarriageNumber() != null) {
-                releaseSeat(ticket.getTrainId(), ticket.getCarriageNumber(), ticket.getSeatNumber());
-            }
+            // 释放座位（使用新的位图管理方式）
+            seatService.releaseSeat(ticket);
         }
         
         System.out.println("超时订单处理完成: " + order.getOrderNumber());
-    }
-    
-    private void releaseSeat(Integer trainId, String carriageNumber, String seatNumber) {
-        try {
-            // 查找车厢
-            java.util.Optional<TrainCarriage> carriageOpt = trainCarriageRepository.findByTrainIdAndCarriageNumber(trainId, carriageNumber);
-            if (carriageOpt.isPresent()) {
-                TrainCarriage carriage = carriageOpt.get();
-                // 查找座位并释放
-                List<Seat> seats = seatRepository.findByCarriageIdAndSeatNumber(carriage.getCarriageId(), seatNumber);
-                if (!seats.isEmpty()) {
-                    Seat seat = seats.get(0);
-                    seat.setIsAvailable(true); // 设置为可用
-                    seatRepository.save(seat);
-                    System.out.println("座位已释放: " + trainId + "-" + carriageNumber + "-" + seatNumber);
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("释放座位失败: " + e.getMessage());
-        }
     }
 } 
