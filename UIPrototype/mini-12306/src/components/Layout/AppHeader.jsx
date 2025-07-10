@@ -9,48 +9,36 @@ const { Header } = Layout;
 
 export default function AppHeader() {
     const navigate = useNavigate();
-    const { user, isAuthenticated, logout, login } = useAuth();
+    const { user, isAuthenticated, logout, login, checkCurrentUser } = useAuth();
     const [showRegisterModal, setShowRegisterModal] = useState(false);
     const [localAuthState, setLocalAuthState] = useState({
         isAuthenticated: false,
         user: null
     });
 
-    // 同步Redux和本地存储状态
+    // 在组件挂载时检查当前用户状态
     useEffect(() => {
-        const checkAuthState = () => {
+        const checkUserSession = async () => {
             try {
-                const userData = localStorage.getItem('mini12306_user');
-                const loginTime = localStorage.getItem('mini12306_login_time');
-
-                if (userData && loginTime) {
-                    const parsedUser = JSON.parse(userData);
-                    const sessionValid = Date.now() - parseInt(loginTime) < 24 * 60 * 60 * 1000;
-
-                    if (sessionValid) {
-                        // 如果Redux中没有用户数据，用本地存储初始化
-                        if (!isAuthenticated) {
-                            login(parsedUser); // 自动登录
-                        }
-                        setLocalAuthState({
-                            isAuthenticated: true,
-                            user: parsedUser
-                        });
-                    } else {
-                        logout(); // 会话过期
-                    }
+                // 从服务器获取当前会话用户
+                // 注意：checkCurrentUser已在authActions中定义，需要先添加到useAuth中
+                const user = await checkCurrentUser();
+                
+                if (user) {
+                    setLocalAuthState({
+                        isAuthenticated: true,
+                        user: user
+                    });
                 }
             } catch (e) {
                 console.error("认证状态检查错误:", e);
-                logout();
             }
         };
 
-        checkAuthState();
-        const interval = setInterval(checkAuthState, 5000); // 每5秒检查一次
-
-        return () => clearInterval(interval);
-    }, [isAuthenticated, login, logout]);
+        checkUserSession();
+        // 可以考虑添加定时检查，但对于大多数情况，这是不必要的
+        // 会话验证应主要依赖服务器端控制
+    }, []);
 
     // 合并状态：优先使用Redux，没有则使用本地存储
     const currentAuthState = isAuthenticated ?
@@ -96,7 +84,7 @@ export default function AppHeader() {
                                 onClick={handleProfileClick}
                                 style={{ padding: 0, fontSize: '14px', color: 'rgba(0, 0, 0, 0.85)' }}
                             >
-                                {currentAuthState.user?.username || currentAuthState.user?.name || '用户'}
+                                {currentAuthState.user?.realName || '用户'}
                             </Button>
                             <span className="separator" style={{ margin: '0 8px', color: '#ccc' }}>|</span>
                             <Button
