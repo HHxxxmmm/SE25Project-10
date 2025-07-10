@@ -1,0 +1,355 @@
+{
+	"info": {
+		"_postman_id": "ticket-detail-api-tests",
+		"name": "车票详情API测试",
+		"description": "测试车票详情API的功能，包括正常获取和权限验证",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "获取车票详情 - 正常情况",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"状态码为200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"响应状态为SUCCESS\", function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.status).to.eql(\"SUCCESS\");",
+							"});",
+							"",
+							"pm.test(\"返回车票详情信息\", function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.ticket).to.not.be.null;",
+							"    pm.expect(response.ticket.ticketId).to.not.be.null;",
+							"    pm.expect(response.ticket.ticketNumber).to.not.be.null;",
+							"    pm.expect(response.ticket.passengerName).to.not.be.null;",
+							"});",
+							"",
+							"pm.test(\"验证车票基本信息\", function () {",
+							"    const response = pm.response.json();",
+							"    const ticket = response.ticket;",
+							"    ",
+							"    pm.expect(ticket.ticketId).to.be.a('number');",
+							"    pm.expect(ticket.ticketNumber).to.be.a('string');",
+							"    pm.expect(ticket.orderNumber).to.be.a('string');",
+							"    pm.expect(ticket.trainNumber).to.be.a('string');",
+							"    pm.expect(ticket.price).to.be.a('number');",
+							"});",
+							"",
+							"pm.test(\"验证车站信息\", function () {",
+							"    const response = pm.response.json();",
+							"    const ticket = response.ticket;",
+							"    ",
+							"    pm.expect(ticket.departureStationName).to.be.a('string');",
+							"    pm.expect(ticket.departureCity).to.be.a('string');",
+							"    pm.expect(ticket.arrivalStationName).to.be.a('string');",
+							"    pm.expect(ticket.arrivalCity).to.be.a('string');",
+							"});",
+							"",
+							"pm.test(\"验证时间信息\", function () {",
+							"    const response = pm.response.json();",
+							"    const ticket = response.ticket;",
+							"    ",
+							"    pm.expect(ticket.travelDate).to.not.be.null;",
+							"    pm.expect(ticket.departureTime).to.not.be.null;",
+							"    pm.expect(ticket.arrivalTime).to.not.be.null;",
+							"});",
+							"",
+							"pm.test(\"验证乘客信息\", function () {",
+							"    const response = pm.response.json();",
+							"    const ticket = response.ticket;",
+							"    ",
+							"    pm.expect(ticket.passengerName).to.be.a('string');",
+							"    pm.expect(ticket.passengerIdCard).to.be.a('string');",
+							"    pm.expect(ticket.passengerPhone).to.be.a('string');",
+							"    pm.expect(ticket.passengerType).to.be.a('number');",
+							"    pm.expect(ticket.passengerTypeText).to.be.a('string');",
+							"});",
+							"",
+							"pm.test(\"验证座位信息\", function () {",
+							"    const response = pm.response.json();",
+							"    const ticket = response.ticket;",
+							"    ",
+							"    pm.expect(ticket.carriageNumber).to.be.a('string');",
+							"    pm.expect(ticket.seatNumber).to.be.a('string');",
+							"    pm.expect(ticket.carriageTypeName).to.be.a('string');",
+							"});",
+							"",
+							"pm.test(\"验证状态信息\", function () {",
+							"    const response = pm.response.json();",
+							"    const ticket = response.ticket;",
+							"    ",
+							"    pm.expect(ticket.ticketStatus).to.be.a('number');",
+							"    pm.expect(ticket.ticketStatusText).to.be.a('string');",
+							"    pm.expect(ticket.ticketType).to.be.a('number');",
+							"    pm.expect(ticket.ticketTypeText).to.be.a('string');",
+							"    pm.expect(ticket.orderStatusText).to.be.a('string');",
+							"});",
+							"",
+							"// 保存车票ID用于后续测试",
+							"const response = pm.response.json();",
+							"if (response.ticket && response.ticket.ticketId) {",
+							"    pm.environment.set(\"testTicketId\", response.ticket.ticketId);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/ticket/detail?ticketId=1&userId=1",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"ticket",
+						"detail"
+					],
+					"query": [
+						{
+							"key": "ticketId",
+							"value": "1",
+							"description": "车票ID"
+						},
+						{
+							"key": "userId",
+							"value": "1",
+							"description": "用户ID"
+						}
+					]
+				},
+				"description": "使用有效的车票ID和用户ID获取车票详情"
+			},
+			"response": []
+		},
+		{
+			"name": "获取车票详情 - 不存在的车票ID",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"状态码为400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"响应状态为FAILURE\", function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.status).to.eql(\"FAILURE\");",
+							"});",
+							"",
+							"pm.test(\"返回错误信息\", function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.message).to.include(\"车票不存在\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/ticket/detail?ticketId=99999&userId=1",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"ticket",
+						"detail"
+					],
+					"query": [
+						{
+							"key": "ticketId",
+							"value": "99999",
+							"description": "不存在的车票ID"
+						},
+						{
+							"key": "userId",
+							"value": "1",
+							"description": "用户ID"
+						}
+					]
+				},
+				"description": "使用不存在的车票ID测试错误处理"
+			},
+			"response": []
+		},
+		{
+			"name": "获取车票详情 - 权限验证失败",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"状态码为400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"响应状态为FAILURE\", function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.status).to.eql(\"FAILURE\");",
+							"});",
+							"",
+							"pm.test(\"返回权限错误信息\", function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.message).to.include(\"无权限\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/ticket/detail?ticketId=1&userId=999",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"ticket",
+						"detail"
+					],
+					"query": [
+						{
+							"key": "ticketId",
+							"value": "1",
+							"description": "车票ID"
+						},
+						{
+							"key": "userId",
+							"value": "999",
+							"description": "无权限的用户ID"
+						}
+					]
+				},
+				"description": "使用无权限的用户ID测试权限验证"
+			},
+			"response": []
+		},
+		{
+			"name": "获取车票详情 - 缺少参数",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"状态码为400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"返回参数错误信息\", function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.message).to.not.be.null;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/ticket/detail?ticketId=1",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"ticket",
+						"detail"
+					],
+					"query": [
+						{
+							"key": "ticketId",
+							"value": "1",
+							"description": "车票ID"
+						}
+					]
+				},
+				"description": "缺少userId参数测试参数验证"
+			},
+			"response": []
+		},
+		{
+			"name": "获取车票详情 - 使用环境变量",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"状态码为200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"响应状态为SUCCESS\", function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.status).to.eql(\"SUCCESS\");",
+							"});",
+							"",
+							"pm.test(\"车票ID匹配\", function () {",
+							"    const response = pm.response.json();",
+							"    const expectedTicketId = pm.environment.get(\"testTicketId\");",
+							"    if (expectedTicketId) {",
+							"        pm.expect(response.ticket.ticketId.toString()).to.eql(expectedTicketId);",
+							"    }",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/ticket/detail?ticketId={{testTicketId}}&userId=1",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"ticket",
+						"detail"
+					],
+					"query": [
+						{
+							"key": "ticketId",
+							"value": "{{testTicketId}}",
+							"description": "从环境变量获取的车票ID"
+						},
+						{
+							"key": "userId",
+							"value": "1",
+							"description": "用户ID"
+						}
+					]
+				},
+				"description": "使用环境变量中的车票ID进行测试"
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		}
+	]
+} 

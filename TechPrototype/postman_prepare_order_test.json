@@ -1,0 +1,275 @@
+{
+  "info": {
+    "name": "准备提交订单测试（修正版）",
+    "description": "测试准备提交订单接口，每个请求包含同一车次同一区间同一日期的所有席别",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    }
+  ],
+  "item": [
+    {
+      "name": "准备提交订单 - 车次1（北京西-上海虹桥）",
+      "item": [
+        {
+          "name": "G101所有席别",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 1,\n  \"inventoryIds\": [1, 11, 21]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/prepare-order/prepare",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "prepare-order", "prepare"]
+            },
+            "description": "测试G101车次（北京西-上海虹桥）的所有席别：商务座、一等座、二等座"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "准备提交订单 - 车次2（北京西-广州站）",
+      "item": [
+        {
+          "name": "D102所有席别",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 2,\n  \"inventoryIds\": [4, 14, 24]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/prepare-order/prepare",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "prepare-order", "prepare"]
+            },
+            "description": "测试D102车次（北京西-广州站）的所有席别：硬座、硬卧、无座"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "准备提交订单 - 车次3（上海虹桥-广州站）",
+      "item": [
+        {
+          "name": "G103所有席别",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 3,\n  \"inventoryIds\": [7, 17, 27]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/prepare-order/prepare",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "prepare-order", "prepare"]
+            },
+            "description": "测试G103车次（上海虹桥-广州站）的所有席别：二等座、硬座"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "准备提交订单 - 车次100（不同区间）",
+      "item": [
+        {
+          "name": "K240区间1所有席别",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 4,\n  \"inventoryIds\": [100, 110, 120]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/prepare-order/prepare",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "prepare-order", "prepare"]
+            },
+            "description": "测试K240车次区间1的所有席别"
+          },
+          "response": []
+        },
+        {
+          "name": "K240区间2所有席别",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 5,\n  \"inventoryIds\": [101, 111, 121]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/prepare-order/prepare",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "prepare-order", "prepare"]
+            },
+            "description": "测试K240车次区间2的所有席别"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "错误测试用例",
+      "item": [
+        {
+          "name": "用户不存在",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 999,\n  \"inventoryIds\": [1, 11, 21]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/prepare-order/prepare",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "prepare-order", "prepare"]
+            },
+            "description": "测试用户不存在的情况"
+          },
+          "response": []
+        },
+        {
+          "name": "库存不存在",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 1,\n  \"inventoryIds\": [999, 998, 997]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/prepare-order/prepare",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "prepare-order", "prepare"]
+            },
+            "description": "测试库存不存在的情况"
+          },
+          "response": []
+        },
+        {
+          "name": "空库存列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 1,\n  \"inventoryIds\": []\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/prepare-order/prepare",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "prepare-order", "prepare"]
+            },
+            "description": "测试空库存列表的情况"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "用户乘客测试",
+      "item": [
+        {
+          "name": "用户6（有3个关联乘客）",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 6,\n  \"inventoryIds\": [1, 11, 21]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/prepare-order/prepare",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "prepare-order", "prepare"]
+            },
+            "description": "测试用户6，该用户有3个关联乘客"
+          },
+          "response": []
+        },
+        {
+          "name": "用户10（关联乘客较少）",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 10,\n  \"inventoryIds\": [1, 11, 21]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/prepare-order/prepare",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "prepare-order", "prepare"]
+            },
+            "description": "测试用户10，该用户关联乘客较少"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+} 

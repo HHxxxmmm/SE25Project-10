@@ -1,0 +1,549 @@
+{
+	"info": {
+		"_postman_id": "orders-api-tests",
+		"name": "订单API测试",
+		"description": "测试订单API的功能，包括获取订单列表和条件查询",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "获取我的订单 - 正常情况",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"状态码为200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"响应状态为SUCCESS\", function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.status).to.eql(\"SUCCESS\");",
+							"});",
+							"",
+							"pm.test(\"返回订单列表\", function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.orders).to.be.an('array');",
+							"});",
+							"",
+							"pm.test(\"验证订单基本信息\", function () {",
+							"    const response = pm.response.json();",
+							"    if (response.orders && response.orders.length > 0) {",
+							"        const order = response.orders[0];",
+							"        pm.expect(order.orderId).to.be.a('number');",
+							"        pm.expect(order.orderNumber).to.be.a('string');",
+							"        pm.expect(order.orderTime).to.not.be.null;",
+							"        pm.expect(order.totalAmount).to.be.a('number');",
+							"        pm.expect(order.orderStatus).to.be.a('number');",
+							"        pm.expect(order.orderStatusText).to.be.a('string');",
+							"    }",
+							"});",
+							"",
+							"pm.test(\"验证车次信息\", function () {",
+							"    const response = pm.response.json();",
+							"    if (response.orders && response.orders.length > 0) {",
+							"        const order = response.orders[0];",
+							"        pm.expect(order.trainId).to.be.a('number');",
+							"        pm.expect(order.trainNumber).to.be.a('string');",
+							"        pm.expect(order.departureDate).to.not.be.null;",
+							"        pm.expect(order.departureTime).to.not.be.null;",
+							"        pm.expect(order.arrivalTime).to.not.be.null;",
+							"    }",
+							"});",
+							"",
+							"pm.test(\"验证车站信息\", function () {",
+							"    const response = pm.response.json();",
+							"    if (response.orders && response.orders.length > 0) {",
+							"        const order = response.orders[0];",
+							"        pm.expect(order.departureStationName).to.be.a('string');",
+							"        pm.expect(order.departureCity).to.be.a('string');",
+							"        pm.expect(order.arrivalStationName).to.be.a('string');",
+							"        pm.expect(order.arrivalCity).to.be.a('string');",
+							"    }",
+							"});",
+							"",
+							"pm.test(\"验证车票数量\", function () {",
+							"    const response = pm.response.json();",
+							"    if (response.orders && response.orders.length > 0) {",
+							"        const order = response.orders[0];",
+							"        pm.expect(order.ticketCount).to.be.a('number');",
+							"        pm.expect(order.ticketCount).to.be.greaterThan(0);",
+							"    }",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/orders/my?userId=1",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"orders",
+						"my"
+					],
+					"query": [
+						{
+							"key": "userId",
+							"value": "1",
+							"description": "用户ID"
+						}
+					]
+				},
+				"description": "使用有效的用户ID获取订单列表"
+			},
+			"response": []
+		},
+		{
+			"name": "获取我的订单 - 按订单号过滤",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"状态码为200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"响应状态为SUCCESS\", function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.status).to.eql(\"SUCCESS\");",
+							"});",
+							"",
+							"pm.test(\"返回过滤后的订单\", function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.orders).to.be.an('array');",
+							"    ",
+							"    // 验证所有返回的订单都包含指定的订单号",
+							"    const orderNumber = pm.request.url.query.get('orderNumber');",
+							"    if (response.orders && response.orders.length > 0) {",
+							"        response.orders.forEach(order => {",
+							"            pm.expect(order.orderNumber).to.include(orderNumber);",
+							"        });",
+							"    }",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/orders/my/filter?userId=1&orderNumber=194314",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"orders",
+						"my",
+						"filter"
+					],
+					"query": [
+						{
+							"key": "userId",
+							"value": "1",
+							"description": "用户ID"
+						},
+						{
+							"key": "orderNumber",
+							"value": "194314",
+							"description": "订单号过滤"
+						}
+					]
+				},
+				"description": "按订单号过滤订单"
+			},
+			"response": []
+		},
+		{
+			"name": "获取我的订单 - 按状态过滤",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"状态码为200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"响应状态为SUCCESS\", function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.status).to.eql(\"SUCCESS\");",
+							"});",
+							"",
+							"pm.test(\"返回指定状态的订单\", function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.orders).to.be.an('array');",
+							"    ",
+							"    // 验证所有返回的订单都是待支付状态",
+							"    if (response.orders && response.orders.length > 0) {",
+							"        response.orders.forEach(order => {",
+							"            pm.expect(order.orderStatus).to.eql(0);",
+							"            pm.expect(order.orderStatusText).to.eql('待支付');",
+							"        });",
+							"    }",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/orders/my/filter?userId=1&orderStatus=0",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"orders",
+						"my",
+						"filter"
+					],
+					"query": [
+						{
+							"key": "userId",
+							"value": "1",
+							"description": "用户ID"
+						},
+						{
+							"key": "orderStatus",
+							"value": "0",
+							"description": "待支付状态"
+						}
+					]
+				},
+				"description": "按订单状态过滤订单"
+			},
+			"response": []
+		},
+		{
+			"name": "获取我的订单 - 按出发日期范围过滤",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"状态码为200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"响应状态为SUCCESS\", function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.status).to.eql(\"SUCCESS\");",
+							"});",
+							"",
+							"pm.test(\"返回日期范围内的订单\", function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.orders).to.be.an('array');",
+							"    ",
+							"    // 验证所有返回的订单的出发日期都在指定范围内",
+							"    const startDate = pm.request.url.query.get('startDate');",
+							"    const endDate = pm.request.url.query.get('endDate');",
+							"    if (response.orders && response.orders.length > 0) {",
+							"        response.orders.forEach(order => {",
+							"            const departureDate = order.departureDate;",
+							"            pm.expect(departureDate).to.be.at.least(startDate);",
+							"            pm.expect(departureDate).to.be.at.most(endDate);",
+							"        });",
+							"    }",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/orders/my/filter?userId=1&startDate=2025-07-01&endDate=2025-07-31",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"orders",
+						"my",
+						"filter"
+					],
+					"query": [
+						{
+							"key": "userId",
+							"value": "1",
+							"description": "用户ID"
+						},
+						{
+							"key": "startDate",
+							"value": "2025-07-01",
+							"description": "开始日期"
+						},
+						{
+							"key": "endDate",
+							"value": "2025-07-31",
+							"description": "结束日期"
+						}
+					]
+				},
+				"description": "按出发日期范围过滤订单"
+			},
+			"response": []
+		},
+		{
+			"name": "获取我的订单 - 按车次号过滤",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"状态码为200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"响应状态为SUCCESS\", function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.status).to.eql(\"SUCCESS\");",
+							"});",
+							"",
+							"pm.test(\"返回指定车次的订单\", function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.orders).to.be.an('array');",
+							"    ",
+							"    // 验证所有返回的订单都包含指定的车次号",
+							"    const trainNumber = pm.request.url.query.get('trainNumber');",
+							"    if (response.orders && response.orders.length > 0) {",
+							"        response.orders.forEach(order => {",
+							"            pm.expect(order.trainNumber).to.include(trainNumber);",
+							"        });",
+							"    }",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/orders/my/filter?userId=1&trainNumber=G",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"orders",
+						"my",
+						"filter"
+					],
+					"query": [
+						{
+							"key": "userId",
+							"value": "1",
+							"description": "用户ID"
+						},
+						{
+							"key": "trainNumber",
+							"value": "G",
+							"description": "车次号过滤"
+						}
+					]
+				},
+				"description": "按车次号过滤订单"
+			},
+			"response": []
+		},
+		{
+			"name": "获取我的订单 - 组合条件过滤",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"状态码为200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"响应状态为SUCCESS\", function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.status).to.eql(\"SUCCESS\");",
+							"});",
+							"",
+							"pm.test(\"返回符合组合条件的订单\", function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.orders).to.be.an('array');",
+							"    ",
+							"    // 验证所有返回的订单都满足组合条件",
+							"    const orderStatus = pm.request.url.query.get('orderStatus');",
+							"    const trainNumber = pm.request.url.query.get('trainNumber');",
+							"    if (response.orders && response.orders.length > 0) {",
+							"        response.orders.forEach(order => {",
+							"            pm.expect(order.orderStatus.toString()).to.eql(orderStatus);",
+							"            pm.expect(order.trainNumber).to.include(trainNumber);",
+							"        });",
+							"    }",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/orders/my/filter?userId=1&orderStatus=0&trainNumber=G",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"orders",
+						"my",
+						"filter"
+					],
+					"query": [
+						{
+							"key": "userId",
+							"value": "1",
+							"description": "用户ID"
+						},
+						{
+							"key": "orderStatus",
+							"value": "0",
+							"description": "待支付状态"
+						},
+						{
+							"key": "trainNumber",
+							"value": "G",
+							"description": "车次号过滤"
+						}
+					]
+				},
+				"description": "使用组合条件过滤订单"
+			},
+			"response": []
+		},
+		{
+			"name": "获取我的订单 - 用户不存在",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"状态码为200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"响应状态为FAILURE\", function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.status).to.eql(\"FAILURE\");",
+							"});",
+							"",
+							"pm.test(\"返回错误信息\", function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.message).to.not.be.null;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/orders/my?userId=99999",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"orders",
+						"my"
+					],
+					"query": [
+						{
+							"key": "userId",
+							"value": "99999",
+							"description": "不存在的用户ID"
+						}
+					]
+				},
+				"description": "使用不存在的用户ID测试错误处理"
+			},
+			"response": []
+		},
+		{
+			"name": "取消订单",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"状态码为200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"响应状态为SUCCESS\", function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.status).to.eql(\"SUCCESS\");",
+							"});",
+							"",
+							"pm.test(\"返回成功信息\", function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.message).to.include(\"成功\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"orderId\": 1,\n  \"userId\": 1\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/orders/cancel",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"orders",
+						"cancel"
+					]
+				},
+				"description": "取消指定订单"
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		}
+	]
+} 

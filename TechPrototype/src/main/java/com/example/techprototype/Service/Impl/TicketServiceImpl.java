@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -227,6 +228,7 @@ public class TicketServiceImpl implements TicketService {
             if (validTickets.isEmpty()) {
                 // 订单中没有有效车票，将订单状态改为已取消
                 order.setOrderStatus((byte) OrderStatus.CANCELLED.getCode());
+                order.setTicketCount(0); // 设置票数为0
                 orderRepository.save(order);
                 return BookingResponse.successWithMessage("退票成功，订单已取消", order.getOrderNumber(), null, null, LocalDateTime.now());
             }
@@ -309,6 +311,7 @@ public class TicketServiceImpl implements TicketService {
             newOrder.setOrderStatus((byte) OrderStatus.PENDING_PAYMENT.getCode());
             newOrder.setOrderTime(LocalDateTime.now());
             newOrder.setTotalAmount(BigDecimal.ZERO); // 临时设置为0，后面会计算
+            newOrder.setTicketCount(originalTickets.size()); // 设置票数
             
             orderRepository.save(newOrder);
             
@@ -523,13 +526,31 @@ public class TicketServiceImpl implements TicketService {
                 return MyTicketResponse.failure("用户未关联乘客信息");
             }
             
-            // 2. 根据乘客ID查询所有有效车票
+            // 2. 获取乘客信息
+            Optional<Passenger> passengerOpt = passengerRepository.findById(user.getPassengerId());
+            if (!passengerOpt.isPresent()) {
+                return MyTicketResponse.failure("乘客信息不存在");
+            }
+            Passenger passenger = passengerOpt.get();
+            
+            // 3. 根据乘客ID查询所有有效车票
             List<Ticket> tickets = ticketRepository.findValidTicketsByPassengerId(user.getPassengerId());
             
-            // 3. 转换为响应格式
+            // 4. 转换为响应格式
             List<MyTicketResponse.MyTicketInfo> ticketInfos = convertToMyTicketInfo(tickets);
             
-            return MyTicketResponse.success(ticketInfos);
+            // 5. 构建用户信息
+            MyTicketResponse.UserInfo userInfo = new MyTicketResponse.UserInfo();
+            userInfo.setUserId(user.getUserId());
+            userInfo.setRealName(user.getRealName());
+            userInfo.setPhoneNumber(user.getPhoneNumber());
+            userInfo.setEmail(user.getEmail());
+            userInfo.setPassengerId(passenger.getPassengerId());
+            userInfo.setPassengerName(passenger.getRealName());
+            userInfo.setPassengerIdCard(passenger.getIdCardNumber());
+            userInfo.setPassengerPhone(passenger.getPhoneNumber());
+            
+            return MyTicketResponse.success(ticketInfos, userInfo);
             
         } catch (Exception e) {
             System.err.println("获取本人车票失败: " + e.getMessage());
@@ -551,14 +572,32 @@ public class TicketServiceImpl implements TicketService {
                 return MyTicketResponse.failure("用户未关联乘客信息");
             }
             
-            // 2. 根据乘客ID和车票状态查询车票
+            // 2. 获取乘客信息
+            Optional<Passenger> passengerOpt = passengerRepository.findById(user.getPassengerId());
+            if (!passengerOpt.isPresent()) {
+                return MyTicketResponse.failure("乘客信息不存在");
+            }
+            Passenger passenger = passengerOpt.get();
+            
+            // 3. 根据乘客ID和车票状态查询车票
             List<Ticket> tickets = ticketRepository.findByPassengerIdAndTicketStatusOrderByCreatedTimeDesc(
                     user.getPassengerId(), ticketStatus);
             
-            // 3. 转换为响应格式
+            // 4. 转换为响应格式
             List<MyTicketResponse.MyTicketInfo> ticketInfos = convertToMyTicketInfo(tickets);
             
-            return MyTicketResponse.success(ticketInfos);
+            // 5. 构建用户信息
+            MyTicketResponse.UserInfo userInfo = new MyTicketResponse.UserInfo();
+            userInfo.setUserId(user.getUserId());
+            userInfo.setRealName(user.getRealName());
+            userInfo.setPhoneNumber(user.getPhoneNumber());
+            userInfo.setEmail(user.getEmail());
+            userInfo.setPassengerId(passenger.getPassengerId());
+            userInfo.setPassengerName(passenger.getRealName());
+            userInfo.setPassengerIdCard(passenger.getIdCardNumber());
+            userInfo.setPassengerPhone(passenger.getPhoneNumber());
+            
+            return MyTicketResponse.success(ticketInfos, userInfo);
             
         } catch (Exception e) {
             System.err.println("获取本人车票失败: " + e.getMessage());
@@ -709,7 +748,11 @@ public class TicketServiceImpl implements TicketService {
             // 8. 获取车厢类型信息
             String carriageTypeName = getCarriageTypeName(ticket.getCarriageTypeId());
             
-            // 9. 构建车票详情信息
+            // 9. 获取出发和到达时间
+            LocalTime departureTime = getDepartureTime(ticket.getDepartureStopId());
+            LocalTime arrivalTime = getArrivalTime(ticket.getArrivalStopId());
+            
+            // 10. 构建车票详情信息
             TicketDetailResponse.TicketDetailInfo ticketDetail = new TicketDetailResponse.TicketDetailInfo();
             ticketDetail.setTicketId(ticket.getTicketId());
             ticketDetail.setTicketNumber(ticket.getTicketNumber());
@@ -724,6 +767,8 @@ public class TicketServiceImpl implements TicketService {
             ticketDetail.setArrivalStationName(arrivalStationName);
             ticketDetail.setArrivalCity(arrivalCity);
             ticketDetail.setTravelDate(ticket.getTravelDate());
+            ticketDetail.setDepartureTime(departureTime);
+            ticketDetail.setArrivalTime(arrivalTime);
             ticketDetail.setCarriageNumber(ticket.getCarriageNumber());
             ticketDetail.setSeatNumber(ticket.getSeatNumber());
             ticketDetail.setPrice(ticket.getPrice());
@@ -773,6 +818,13 @@ public class TicketServiceImpl implements TicketService {
             // 获取车次信息
             String trainNumber = getTrainNumber(ticket.getTrainId());
             
+            // 获取出发和到达时间
+            LocalTime departureTime = getDepartureTime(ticket.getDepartureStopId());
+            LocalTime arrivalTime = getArrivalTime(ticket.getArrivalStopId());
+            
+            // 获取车厢类型名称
+            String carriageTypeName = getCarriageTypeName(ticket.getCarriageTypeId());
+            
             MyTicketResponse.MyTicketInfo ticketInfo = new MyTicketResponse.MyTicketInfo();
             ticketInfo.setTicketId(ticket.getTicketId());
             ticketInfo.setTicketNumber(ticket.getTicketNumber());
@@ -785,8 +837,11 @@ public class TicketServiceImpl implements TicketService {
             ticketInfo.setArrivalStopId(ticket.getArrivalStopId());
             ticketInfo.setArrivalStationName(arrivalStationName);
             ticketInfo.setTravelDate(ticket.getTravelDate());
+            ticketInfo.setDepartureTime(departureTime);
+            ticketInfo.setArrivalTime(arrivalTime);
             ticketInfo.setCarriageNumber(ticket.getCarriageNumber());
             ticketInfo.setSeatNumber(ticket.getSeatNumber());
+            ticketInfo.setCarriageTypeName(carriageTypeName);
             ticketInfo.setPrice(ticket.getPrice());
             ticketInfo.setTicketStatus(ticket.getTicketStatus());
             ticketInfo.setTicketStatusText(getTicketStatusText(ticket.getTicketStatus()));
@@ -800,6 +855,36 @@ public class TicketServiceImpl implements TicketService {
         }
         
         return ticketInfos;
+    }
+    
+    /**
+     * 获取出发时间
+     */
+    private LocalTime getDepartureTime(Long stopId) {
+        try {
+            Optional<TrainStop> trainStopOpt = trainStopRepository.findByStopId(stopId);
+            if (trainStopOpt.isPresent()) {
+                return trainStopOpt.get().getDepartureTime();
+            }
+        } catch (Exception e) {
+            System.err.println("获取出发时间失败: " + e.getMessage());
+        }
+        return null;
+    }
+    
+    /**
+     * 获取到达时间
+     */
+    private LocalTime getArrivalTime(Long stopId) {
+        try {
+            Optional<TrainStop> trainStopOpt = trainStopRepository.findByStopId(stopId);
+            if (trainStopOpt.isPresent()) {
+                return trainStopOpt.get().getArrivalTime();
+            }
+        } catch (Exception e) {
+            System.err.println("获取到达时间失败: " + e.getMessage());
+        }
+        return null;
     }
     
     /**

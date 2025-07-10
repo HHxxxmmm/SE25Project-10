@@ -8,8 +8,15 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class RefundRequest {
+public class PrepareOrderRequest {
+    
+    /**
+     * 用户ID
+     */
     private Long userId;
-    private Long orderId;
-    private List<Long> ticketIds;
+    
+    /**
+     * 库存ID列表（最多3个，对应不同席别）
+     */
+    private List<Long> inventoryIds;
 } 

@@ -12,7 +12,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderDetailResponse {
+public class RefundPreparationResponse {
     
     // 订单基本信息
     private String orderNumber;
@@ -21,9 +21,9 @@ public class OrderDetailResponse {
     private LocalDateTime paymentTime;
     private String paymentMethod;
     private BigDecimal totalAmount;
-    private Integer ticketCount; // 订单包含的票数
+    private Integer ticketCount;
     
-    // 车次信息（所有车票共享相同信息）
+    // 车次信息
     private String trainNumber;
     private LocalDate travelDate;
     private LocalTime departureTime;
@@ -31,13 +31,25 @@ public class OrderDetailResponse {
     private String departureStation;
     private String arrivalStation;
     
-    // 车票列表
-    private List<TicketDetail> tickets;
+    // 退票规则信息
+    private RefundRules refundRules;
+    
+    // 可退票的车票列表
+    private List<RefundableTicket> refundableTickets;
     
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class TicketDetail {
+    public static class RefundRules {
+        private String description; // 退票规则描述
+        private BigDecimal refundRate; // 退票费率
+        private String notice; // 退票须知
+    }
+    
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RefundableTicket {
         private Long ticketId;
         private String ticketNumber;
         private String passengerName;
@@ -47,7 +59,10 @@ public class OrderDetailResponse {
         private String carriageType;
         private String carriageNumber;
         private String seatNumber;
-        private BigDecimal price;
+        private BigDecimal originalPrice; // 原票价
+        private BigDecimal refundAmount; // 可退金额
         private Byte ticketStatus;
+        private Boolean canRefund; // 是否可退票
+        private String refundReason; // 不可退票的原因
     }
 } 

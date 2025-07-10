@@ -39,4 +39,7 @@ public class Order {
     
     @Column(name = "order_status", nullable = false)
     private Byte orderStatus = 0; // 0-待支付, 1-已支付, 2-已完成, 3-已取消
+    
+    @Column(name = "ticket_count", nullable = false)
+    private Integer ticketCount = 0; // 订单包含的票数
 } 

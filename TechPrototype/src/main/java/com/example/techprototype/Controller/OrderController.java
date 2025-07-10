@@ -5,6 +5,8 @@ import com.example.techprototype.DTO.BookingResponse;
 import com.example.techprototype.DTO.CancelOrderRequest;
 import com.example.techprototype.DTO.MyOrderResponse;
 import com.example.techprototype.DTO.OrderDetailResponse;
+import com.example.techprototype.DTO.RefundPreparationRequest;
+import com.example.techprototype.DTO.RefundPreparationResponse;
 import com.example.techprototype.Service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -14,6 +16,7 @@ import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/orders")
+@CrossOrigin(origins = "*")
 public class OrderController {
     
     @Autowired
@@ -63,5 +66,13 @@ public class OrderController {
     @GetMapping("/detail")
     public OrderDetailResponse getOrderDetail(@RequestParam Long userId, @RequestParam Long orderId) {
         return orderService.getOrderDetail(userId, orderId);
+    }
+    
+    /**
+     * 退票准备阶段 - 获取退票信息
+     */
+    @PostMapping("/refund/preparation")
+    public RefundPreparationResponse getRefundPreparation(@RequestBody RefundPreparationRequest request) {
+        return orderService.getRefundPreparation(request);
     }
 } 

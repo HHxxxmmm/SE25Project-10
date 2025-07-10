@@ -8,6 +8,8 @@ import com.example.techprototype.DTO.CancelOrderRequest;
 import com.example.techprototype.DTO.MyOrderResponse;
 import com.example.techprototype.DTO.OrderDetailResponse;
 import com.example.techprototype.DTO.OrderMessage;
+import com.example.techprototype.DTO.RefundPreparationRequest;
+import com.example.techprototype.DTO.RefundPreparationResponse;
 import com.example.techprototype.Entity.Order;
 import com.example.techprototype.Entity.Passenger;
 import com.example.techprototype.Entity.Ticket;
@@ -32,6 +34,7 @@ import com.example.techprototype.Repository.StationRepository;
 import com.example.techprototype.Service.OrderService;
 import com.example.techprototype.Service.RedisService;
 import com.example.techprototype.Service.TicketService;
+import com.example.techprototype.Service.SeatService;
 import com.example.techprototype.Util.TicketNumberGenerator;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,6 +85,9 @@ public class OrderServiceImpl implements OrderService {
     
     @Autowired
     private StationRepository stationRepository;
+    
+    @Autowired
+    private SeatService seatService;
     
     /**
      * 创建订单
@@ -171,6 +177,7 @@ public class OrderServiceImpl implements OrderService {
             }
             order.setTotalAmount(totalAmount);
             order.setOrderStatus((byte) 0); // 待支付
+            order.setTicketCount(message.getPassengers().size()); // 设置票数
             
             order = orderRepository.save(order);
             
@@ -233,8 +240,27 @@ public class OrderServiceImpl implements OrderService {
             // 直接从数据库获取车票
             List<Ticket> tickets = ticketRepository.findByOrderId(order.getOrderId());
             
-            // 更新车票状态
+            // 更新车票状态并释放座位、回滚库存
             for (Ticket ticket : tickets) {
+                // 1. 释放座位（如果有分配座位）
+                if (ticket.getSeatNumber() != null && ticket.getCarriageNumber() != null) {
+                    seatService.releaseSeat(ticket);
+                    System.out.println("座位已释放: 车次" + ticket.getTrainId() + 
+                                     ", 车厢" + ticket.getCarriageNumber() + 
+                                     ", 座位" + ticket.getSeatNumber());
+                }
+                
+                // 2. 回滚库存
+                redisService.incrStock(ticket.getTrainId(), ticket.getDepartureStopId(),
+                        ticket.getArrivalStopId(), ticket.getTravelDate(), 
+                        ticket.getCarriageTypeId(), 1);
+                System.out.println("库存已回滚: 车次" + ticket.getTrainId() + 
+                                 ", 出发站" + ticket.getDepartureStopId() + 
+                                 ", 到达站" + ticket.getArrivalStopId() + 
+                                 ", 日期" + ticket.getTravelDate() + 
+                                 ", 车厢类型" + ticket.getCarriageTypeId());
+                
+                // 3. 更新车票状态
                 ticket.setTicketStatus((byte) 3); // 已退票
                 ticketRepository.save(ticket);
             }
@@ -244,7 +270,7 @@ public class OrderServiceImpl implements OrderService {
             order.setTotalAmount(BigDecimal.ZERO); // 取消订单总价归零
             orderRepository.save(order);
             
-            // 直接操作数据库，不需要Redis缓存
+            System.out.println("订单取消成功: " + order.getOrderNumber() + ", 释放了 " + tickets.size() + " 张车票的座位和库存");
             
             return BookingResponse.successWithMessage("订单取消成功", order.getOrderNumber(), order.getOrderId(), BigDecimal.ZERO, order.getOrderTime());
             
@@ -266,9 +292,7 @@ public class OrderServiceImpl implements OrderService {
      * 根据用户ID获取订单列表
      */
     public List<Order> getOrdersByUserId(Long userId) {
-        return orderRepository.findAll().stream()
-            .filter(order -> order.getUserId().equals(userId))
-            .toList();
+        return orderRepository.findByUserIdOrderByOrderTimeDesc(userId);
     }
     
     /**
@@ -408,7 +432,7 @@ public class OrderServiceImpl implements OrderService {
             orderInfo.setArrivalCity(arrivalCity);
             
             // 车票数量
-            orderInfo.setTicketCount(tickets.size());
+            orderInfo.setTicketCount(order.getTicketCount());
             
             orderInfos.add(orderInfo);
         }
@@ -584,6 +608,7 @@ public class OrderServiceImpl implements OrderService {
             response.setPaymentTime(order.getPaymentTime());
             response.setPaymentMethod(order.getPaymentMethod());
             response.setTotalAmount(order.getTotalAmount());
+            response.setTicketCount(order.getTicketCount());
             response.setTrainNumber(train.getTrainNumber());
             response.setTravelDate(firstTicket.getTravelDate());
             response.setDepartureTime(departureTime);
@@ -614,5 +639,164 @@ public class OrderServiceImpl implements OrderService {
             case 7: return "二等座";
             default: return "未知席别";
         }
+    }
+    
+    @Override
+    public RefundPreparationResponse getRefundPreparation(RefundPreparationRequest request) {
+        try {
+            // 验证订单是否属于该用户
+            Optional<Order> orderOpt = orderRepository.findByOrderIdAndUserId(request.getOrderId(), request.getUserId());
+            if (orderOpt.isEmpty()) {
+                throw new RuntimeException("订单不存在或不属于该用户");
+            }
+            
+            Order order = orderOpt.get();
+            
+            // 验证订单状态是否允许退票
+            if (order.getOrderStatus() != 1 && order.getOrderStatus() != 2) {
+                throw new RuntimeException("订单状态不允许退票");
+            }
+            
+            // 获取指定车票信息
+            List<Ticket> tickets = ticketRepository.findByOrderIdAndTicketIdIn(request.getOrderId(), request.getTicketIds());
+            if (tickets.isEmpty()) {
+                throw new RuntimeException("未找到指定的车票");
+            }
+            
+            // 获取第一个车票的信息作为车次信息
+            Ticket firstTicket = tickets.get(0);
+            
+            // 获取车次信息
+            Optional<Train> trainOpt = trainRepository.findById(firstTicket.getTrainId());
+            if (trainOpt.isEmpty()) {
+                throw new RuntimeException("车次信息不存在");
+            }
+            Train train = trainOpt.get();
+            
+            // 获取出发站和到达站信息
+            String departureStation = getStationName(firstTicket.getDepartureStopId());
+            String arrivalStation = getStationName(firstTicket.getArrivalStopId());
+            
+            // 获取出发时间和到达时间
+            LocalTime departureTime = getDepartureTime(firstTicket.getTrainId(), firstTicket.getDepartureStopId());
+            LocalTime arrivalTime = getArrivalTime(firstTicket.getTrainId(), firstTicket.getArrivalStopId());
+            
+            // 构建可退票的车票列表
+            List<RefundPreparationResponse.RefundableTicket> refundableTickets = new ArrayList<>();
+            for (Ticket ticket : tickets) {
+                // 获取乘客信息
+                Optional<Passenger> passengerOpt = passengerRepository.findById(ticket.getPassengerId());
+                if (passengerOpt.isEmpty()) {
+                    continue;
+                }
+                Passenger passenger = passengerOpt.get();
+                
+                // 获取席别信息
+                String carriageType = getCarriageTypeName(ticket.getCarriageTypeId());
+                
+                // 判断车票是否可以退票
+                boolean canRefund = canRefundTicket(ticket, order);
+                String refundReason = canRefund ? null : getRefundReason(ticket, order);
+                
+                // 计算退票金额
+                BigDecimal refundAmount = canRefund ? calculateRefundAmount(ticket, order) : BigDecimal.ZERO;
+                
+                RefundPreparationResponse.RefundableTicket refundableTicket = new RefundPreparationResponse.RefundableTicket();
+                refundableTicket.setTicketId(ticket.getTicketId());
+                refundableTicket.setTicketNumber(ticket.getTicketNumber());
+                refundableTicket.setPassengerName(passenger.getRealName());
+                refundableTicket.setIdCardNumber(passenger.getIdCardNumber());
+                refundableTicket.setPassengerType(passenger.getPassengerType());
+                refundableTicket.setTicketType(ticket.getTicketType());
+                refundableTicket.setCarriageType(carriageType);
+                refundableTicket.setCarriageNumber(ticket.getCarriageNumber());
+                refundableTicket.setSeatNumber(ticket.getSeatNumber());
+                refundableTicket.setOriginalPrice(ticket.getPrice());
+                refundableTicket.setRefundAmount(refundAmount);
+                refundableTicket.setTicketStatus(ticket.getTicketStatus());
+                refundableTicket.setCanRefund(canRefund);
+                refundableTicket.setRefundReason(refundReason);
+                
+                refundableTickets.add(refundableTicket);
+            }
+            
+            // 构建退票规则
+            RefundPreparationResponse.RefundRules refundRules = new RefundPreparationResponse.RefundRules();
+            refundRules.setDescription("退票规则说明");
+            refundRules.setRefundRate(new BigDecimal("0.8")); // 80%退票费率
+            refundRules.setNotice("退票须知：退票将收取20%手续费，退款将在1-3个工作日内到账");
+            
+            // 构建响应
+            RefundPreparationResponse response = new RefundPreparationResponse();
+            response.setOrderNumber(order.getOrderNumber());
+            response.setOrderStatus(order.getOrderStatus());
+            response.setOrderTime(order.getOrderTime());
+            response.setPaymentTime(order.getPaymentTime());
+            response.setPaymentMethod(order.getPaymentMethod());
+            response.setTotalAmount(order.getTotalAmount());
+            response.setTicketCount(order.getTicketCount());
+            response.setTrainNumber(train.getTrainNumber());
+            response.setTravelDate(firstTicket.getTravelDate());
+            response.setDepartureTime(departureTime);
+            response.setArrivalTime(arrivalTime);
+            response.setDepartureStation(departureStation);
+            response.setArrivalStation(arrivalStation);
+            response.setRefundRules(refundRules);
+            response.setRefundableTickets(refundableTickets);
+            
+            return response;
+            
+        } catch (Exception e) {
+            System.err.println("获取退票准备信息失败: " + e.getMessage());
+            throw new RuntimeException("获取退票准备信息失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 判断车票是否可以退票
+     */
+    private boolean canRefundTicket(Ticket ticket, Order order) {
+        // 检查车票状态
+        if (ticket.getTicketStatus() != 1 && ticket.getTicketStatus() != 2) {
+            return false;
+        }
+        
+        // 检查是否在发车前24小时内
+        LocalDateTime departureDateTime = LocalDateTime.of(ticket.getTravelDate(), 
+            getDepartureTime(ticket.getTrainId(), ticket.getDepartureStopId()));
+        LocalDateTime now = LocalDateTime.now();
+        
+        if (departureDateTime.minusHours(24).isBefore(now)) {
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * 获取不可退票的原因
+     */
+    private String getRefundReason(Ticket ticket, Order order) {
+        if (ticket.getTicketStatus() != 1 && ticket.getTicketStatus() != 2) {
+            return "车票状态不允许退票";
+        }
+        
+        LocalDateTime departureDateTime = LocalDateTime.of(ticket.getTravelDate(), 
+            getDepartureTime(ticket.getTrainId(), ticket.getDepartureStopId()));
+        LocalDateTime now = LocalDateTime.now();
+        
+        if (departureDateTime.minusHours(24).isBefore(now)) {
+            return "发车前24小时内不可退票";
+        }
+        
+        return "未知原因";
+    }
+    
+    /**
+     * 计算退票金额
+     */
+    private BigDecimal calculateRefundAmount(Ticket ticket, Order order) {
+        // 简单计算：原价 * 0.8（80%退票费率）
+        return ticket.getPrice().multiply(new BigDecimal("0.8"));
     }
 } 

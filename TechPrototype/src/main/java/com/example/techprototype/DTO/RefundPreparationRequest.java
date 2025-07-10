@@ -8,7 +8,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class RefundRequest {
+public class RefundPreparationRequest {
     private Long userId;
     private Long orderId;
     private List<Long> ticketIds;

@@ -58,6 +58,12 @@ public class PaymentServiceImpl implements PaymentService {
         order.setOrderStatus((byte) OrderStatus.PAID.getCode());
         order.setPaymentTime(LocalDateTime.now());
         order.setPaymentMethod("在线支付");
+        // 确保ticket_count字段不被覆盖
+        if (order.getTicketCount() == null || order.getTicketCount() == 0) {
+            // 如果ticket_count为空或0，重新计算
+            List<Ticket> orderTickets = ticketRepository.findByOrderId(order.getOrderId());
+            order.setTicketCount(orderTickets.size());
+        }
         orderRepository.save(order);
         
         // 优先从Redis查询车票
@@ -129,21 +135,29 @@ public class PaymentServiceImpl implements PaymentService {
                                     seatService.releaseSeat(originalTicket);
                                 }
                                 
-                                // 4. 更新原订单总价
+                                // 4. 更新原订单总价和票数
                                 Optional<Order> originalOrderOpt = orderRepository.findById(originalTicket.getOrderId());
                                 if (originalOrderOpt.isPresent()) {
                                     Order originalOrder = originalOrderOpt.get();
                                     originalOrder.setTotalAmount(originalOrder.getTotalAmount().subtract(originalTicket.getPrice()));
+                                    
+                                    // 更新原订单的票数（减少1张）
+                                    if (originalOrder.getTicketCount() != null && originalOrder.getTicketCount() > 0) {
+                                        originalOrder.setTicketCount(originalOrder.getTicketCount() - 1);
+                                    }
+                                    
                                     orderRepository.save(originalOrder);
                                     
                                     System.out.println("原订单总价已更新: " + originalOrder.getOrderNumber() + 
-                                                     ", 减去金额: " + originalTicket.getPrice());
+                                                     ", 减去金额: " + originalTicket.getPrice() + 
+                                                     ", 剩余票数: " + originalOrder.getTicketCount());
                                     
                                     // 5. 检查原订单是否还有有效车票
                                     List<Ticket> validTickets = ticketRepository.findValidTicketsByOrderId(originalOrder.getOrderId());
                                     if (validTickets.isEmpty()) {
                                         // 原订单中没有有效车票，将订单状态改为已取消
                                         originalOrder.setOrderStatus((byte) OrderStatus.CANCELLED.getCode());
+                                        originalOrder.setTicketCount(0); // 设置票数为0
                                         orderRepository.save(originalOrder);
                                         System.out.println("原订单已取消: " + originalOrder.getOrderNumber());
                                     }
