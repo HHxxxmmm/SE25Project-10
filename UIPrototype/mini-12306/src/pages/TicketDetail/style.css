@@ -56,9 +56,10 @@ body {
 }
 
 .ticket-status {
-    padding: 6px 16px;
-    border-radius: 14px;
+    padding: 4px 12px;
+    border-radius: 12px;
     font-weight: 600;
+    font-size: 0.8rem;
     white-space: nowrap;
     position: absolute;
     right: 20px;
@@ -69,6 +70,26 @@ body {
 .status-pending {
     background-color: #ffd6d6;
     color: #a8071a;
+}
+
+.status-unused {
+    background-color: #e6f7ff;
+    color: #096dd9;
+}
+
+.status-used {
+    background-color: #f6ffed;
+    color: #389e0d;
+}
+
+.status-refunded {
+    background-color: #fff2e8;
+    color: #d46b08;
+}
+
+.status-changed {
+    background-color: #f9f0ff;
+    color: #722ed1;
 }
 
 .status-completed {

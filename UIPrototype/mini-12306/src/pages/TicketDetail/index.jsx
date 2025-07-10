@@ -1,44 +1,109 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Divider } from 'antd';
-import { useNavigate } from 'react-router-dom';
+import { Card, Typography, Divider, message, Spin } from 'antd';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { ticketAPI } from '../../services/api';
 import './style.css'; // 样式文件
-import generateMyTicketsData from '../../mock/MyTickets'; // 模拟数据函数
 
 const { Text } = Typography;
 
+// 车票状态映射
+const TICKET_STATUS = {
+    0: { text: '待支付', colorClass: 'status-pending' },
+    1: { text: '未使用', colorClass: 'status-unused' },
+    2: { text: '已使用', colorClass: 'status-used' },
+    3: { text: '已退票', colorClass: 'status-refunded' },
+    4: { text: '已改签', colorClass: 'status-changed' },
+};
+
+// 票种映射
+const TICKET_TYPE = {
+    1: '成人票',
+    2: '儿童票',
+    3: '学生票',
+    4: '残疾票',
+    5: '军人票',
+};
+
+// 乘客类型映射
+const PASSENGER_TYPE = {
+    1: '成人',
+    2: '儿童',
+    3: '学生',
+    4: '残疾军人',
+};
+
 const TicketDetailPage = () => {
     const [ticket, setTicket] = useState(null);
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
-    // 模拟获取车票数据
+    // 获取车票详情数据
     useEffect(() => {
-        const data = generateMyTicketsData();
-        if (data.news.length > 0) {
-            const randomIndex = Math.floor(Math.random() * data.news.length);
-            setTicket(data.news[randomIndex]);
-        }
-    }, []);
+        const fetchTicketDetail = async () => {
+            const ticketId = searchParams.get('ticketId');
+            const userId = 1; // 使用固定的测试用户ID
 
-    if (!ticket) {
-        return <div>加载中...</div>;
+            if (!ticketId) {
+                message.error('车票ID不存在');
+                navigate('/my-tickets');
+                return;
+            }
+
+            setLoading(true);
+            try {
+                const response = await ticketAPI.getTicketDetail(parseInt(ticketId), userId);
+                
+                if (response.status === 'SUCCESS' && response.ticket) {
+                    setTicket(response.ticket);
+                } else {
+                    message.error(response.message || '获取车票详情失败');
+                    navigate('/my-tickets');
+                }
+            } catch (error) {
+                console.error('获取车票详情失败:', error);
+                message.error('获取车票详情失败，请稍后重试');
+                navigate('/my-tickets');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchTicketDetail();
+    }, [searchParams, navigate]);
+
+    if (loading) {
+        return (
+            <div style={{ textAlign: 'center', padding: '50px' }}>
+                <Spin size="large" />
+                <div style={{ marginTop: '16px' }}>加载中...</div>
+            </div>
+        );
     }
 
-    const statusMap = {
-        1: { text: '待完成', colorClass: 'status-pending' },
-        2: { text: '已完成', colorClass: 'status-completed' },
+    if (!ticket) {
+        return <div>车票信息不存在</div>;
+    }
+
+    const formatDate = (dateString) => {
+        if (!dateString) return '';
+        return dateString.split('T')[0] || dateString.split(' ')[0] || '';
     };
 
-    const seatMap = {
-        1: '头等',
-        2: '商务',
-        3: '二等',
-        4: '无座',
+    const formatTime = (timeString) => {
+        if (!timeString) return '';
+        const timePart = timeString.includes('T') ? 
+            timeString.split('T')[1] : 
+            timeString.split(' ')[1] || timeString;
+        return timePart.slice(0, 5);
     };
 
     const tips = [
         '请提前15分钟到达车站，避免误车。',
         '车票一经售出，退票可能会产生一定费用，请慎重考虑。',
         '乘车时请携带有效身份证件，配合工作人员查验。',
+        '请妥善保管车票，遗失不补。',
+        '如需改签或退票，请提前办理相关手续。',
     ];
 
     return (
@@ -46,29 +111,29 @@ const TicketDetailPage = () => {
             <div className="card-title">
                 <span className="back-link" onClick={() => navigate(-1)}>返回</span>
                 车票详情
-                <Text className={`ticket-status ${statusMap[ticket.t_status]?.colorClass || ''}`}>
-                    {statusMap[ticket.t_status]?.text || '未知状态'}
-                </Text>
+                <span className={`ticket-status ${TICKET_STATUS[ticket.ticketStatus]?.colorClass || ''}`}>
+                    {TICKET_STATUS[ticket.ticketStatus]?.text || '未知状态'}
+                </span>
             </div>
 
             <Divider />
 
             <div className="train-info-card">
-                <div className="train-date">{ticket.t_time.slice(0, 16)}</div>
+                <div className="train-date">{formatDate(ticket.travelDate)} {formatTime(ticket.departureTime)}</div>
                 <div className="train-route">
                     <div className="station-block">
-                        <div className="station-name">{ticket.t_from_city}{ticket.t_from_station}</div>
-                        <div className="station-time">{ticket.t_time.slice(11, 16)}开</div>
+                        <div className="station-name">{ticket.departureStationName}</div>
+                        <div className="station-time">{formatTime(ticket.departureTime)}开</div>
                     </div>
 
                     <div className="arrow-block">
-                        <div className="train-number">{ticket.train_id}</div>
+                        <div className="train-number">{ticket.trainNumber}</div>
                         <div className="arrow">→</div>
                     </div>
 
                     <div className="station-block">
-                        <div className="station-name">{ticket.t_to_city}{ticket.t_to_station}</div>
-                        <div className="station-time">{ticket.t_arrival_time.slice(11, 16)}到</div>
+                        <div className="station-name">{ticket.arrivalStationName}</div>
+                        <div className="station-time">{formatTime(ticket.arrivalTime)}到</div>
                     </div>
                 </div>
             </div>
@@ -76,13 +141,21 @@ const TicketDetailPage = () => {
             <Divider />
 
             <div className="ticket-info">
-                <div><strong>乘车人：</strong>{ticket.p_name}</div>
-                <div><strong>身份证号：</strong>{ticket.p_id}</div>
-                <div><strong>手机号：</strong>{ticket.p_phone}</div>
-                <div><strong>席别：</strong>{seatMap[ticket.t_seat] || '未知'}</div>
-                <div><strong>票种：</strong>{ticket.ticket_type}</div>
-                <div><strong>车厢座位：</strong>{ticket.carriage_seat}</div>
-                <div><strong>票价：</strong>¥{ticket.t_price}</div>
+                <div><strong>乘车人：</strong>{ticket.passengerName}</div>
+                <div><strong>身份证号：</strong>{ticket.passengerIdCard}</div>
+                <div><strong>手机号：</strong>{ticket.passengerPhone}</div>
+                <div><strong>乘客类型：</strong>{PASSENGER_TYPE[ticket.passengerType] || '未知'}</div>
+                <div><strong>席别：</strong>{ticket.carriageTypeName || '未知'}</div>
+                <div><strong>票种：</strong>{TICKET_TYPE[ticket.ticketType] || '未知'}</div>
+                <div><strong>车厢座位：</strong>{ticket.carriageNumber}车{ticket.seatNumber}座</div>
+                <div><strong>票价：</strong>¥{ticket.price}</div>
+                <div><strong>车票号：</strong>{ticket.ticketNumber}</div>
+                <div><strong>订单号：</strong>{ticket.orderNumber}</div>
+                <div><strong>订单状态：</strong>{ticket.orderStatusText}</div>
+                <div><strong>创建时间：</strong>{ticket.createdTime}</div>
+                {ticket.paymentTime && (
+                    <div><strong>支付时间：</strong>{ticket.paymentTime}</div>
+                )}
             </div>
 
             <Divider />
