@@ -8,12 +8,16 @@ import { AuthProvider } from './hooks/useAuth';
 import reportWebVitals from './reportWebVitals';
 import store from './store';
 
+// 定义会话超时配置，便于调试
+const SESSION_TIMEOUT = 4 * 60 * 1000; // 4分钟
+console.log('====> [DEBUG] 应用启动 - 配置会话超时:', SESSION_TIMEOUT / 1000, '秒', new Date().toLocaleTimeString());
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
     <React.StrictMode>
         <BrowserRouter>
             <Provider store={store}>
-                <AuthProvider> {/* 现在 AuthProvider 只是形式上的包装 */}
+                <AuthProvider config={{ sessionTimeout: SESSION_TIMEOUT }}> {/* 设置会话超时 */}
                     <App />
                 </AuthProvider>
             </Provider>
@@ -22,24 +26,18 @@ root.render(
 );
 
 // 初始化检查认证状态
-const checkAuth = () => {
-    const savedUser = localStorage.getItem('mini12306_user');
-    const loginTimestamp = localStorage.getItem('mini12306_login_time');
-
-    if (savedUser && loginTimestamp) {
-        try {
-            const user = JSON.parse(savedUser);
-            store.dispatch({
-                type: 'LOGIN_SUCCESS',
-                payload: user
-            });
-        } catch (err) {
-            localStorage.removeItem('mini12306_user');
-            localStorage.removeItem('mini12306_login_time');
-        }
+const checkAuth = async () => {
+    try {
+        // 导入authActions中的checkCurrentUser函数
+        const { checkCurrentUser } = require('./store/actions/authActions');
+        // 调用API检查当前用户的会话状态
+        store.dispatch(checkCurrentUser());
+    } catch (err) {
+        console.error('检查认证状态失败:', err);
     }
 };
 
-checkAuth(); // 应用启动时检查认证状态
+// 应用启动时检查认证状态
+setTimeout(checkAuth, 100); // 稍微延迟，确保应用已完全加载
 
 reportWebVitals();
