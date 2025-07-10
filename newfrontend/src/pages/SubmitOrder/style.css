@@ -1,0 +1,498 @@
+/* Reset and base styles */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: "Microsoft YaHei", sans-serif;
+    background-color: #f4f4f4;
+    color: #333;
+    line-height: 1.5;
+}
+
+/* Container wrappers: use max-width and padding for responsive */
+.train-info-wrapper,
+.passenger-info-wrapper {
+    width: 100%;
+    max-width: 1200px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin: 20px auto;
+    padding: 0;
+}
+
+/* Headers */
+.train-info-header,
+.passenger-info-header {
+    background-color: #1890ff;
+    color: #fff;
+    padding: 12px 20px;
+    font-size: 1rem;
+    font-weight: 500;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* Content areas */
+.train-info-content,
+.passenger-info-content {
+    padding: 20px;
+    background-color: #fff;
+}
+
+/* Train details */
+.train-details {
+    padding-bottom: 10px;
+}
+
+.train-details .bold-text {
+    font-weight: bold;
+    font-size: 1.25rem; /* 放大字体 */
+}
+
+.train-details .small-text {
+    font-size: 0.85rem; /* 缩小字体 */
+}
+
+/* Passenger search input */
+.passenger-search {
+    padding: 6px 10px;
+    border-radius: 4px;
+    border: none;
+    font-size: 1rem;
+    outline: none;
+    width: 180px;
+    max-width: 100%;
+    min-width: 160px;
+    margin-top: 8px;
+}
+
+/* Horizontal rule style */
+hr {
+    border: none;
+    border-top: 2px solid #d9d9d9;
+    margin: 10px 0 15px 0;
+}
+
+/* Text elements */
+.train-details,
+.ticket-info-seat,
+.passenger-label,
+.price-note,
+.passenger-item {
+    font-size: 1rem;
+    color: #333;
+}
+
+.ticket-info-seat {
+    padding-bottom: 15px;
+    line-height: 1.6;
+    text-align: left; /* 让内容居左 */
+}
+
+.price-note {
+    font-size: 0.875rem;
+    color: #888;
+}
+
+/* Passenger label with icon */
+.passenger-label {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.passenger-label svg {
+    margin-right: 8px;
+    fill: #1890ff;
+    flex-shrink: 0;
+}
+
+/* Passenger list layout */
+.passenger-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+/* Each passenger item */
+.passenger-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+    min-width: 120px;
+}
+
+.passenger-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+/* Passenger type display */
+.passenger-type {
+    font-size: 0.8rem;
+    color: #666;
+    background-color: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: 4px;
+    white-space: nowrap;
+}
+
+/* Add passenger button */
+.add-passenger-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid #1890ff;
+    background: transparent;
+    color: #1890ff;
+    font-size: 1rem;
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.3s, color 0.3s;
+    white-space: nowrap;
+}
+
+.add-passenger-button:hover {
+    background-color: #1890ff;
+    color: white;
+}
+
+.plus-sign {
+    font-size: 20px;
+    font-weight: bold;
+    line-height: 1;
+}
+
+/* Passenger details table wrapper */
+.passenger-details-table-wrapper {
+    margin-top: 10px;
+    overflow-x: auto;
+}
+
+/* Passenger details table */
+.passenger-details-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 1rem;
+    color: #333;
+    min-width: 600px; /* ensure horizontal scroll on small screens */
+}
+
+.passenger-details-table th,
+.passenger-details-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.passenger-details-table th {
+    background-color: #f0f0f0;
+    font-weight: 600;
+}
+
+/* Inputs and selects in table */
+.passenger-details-table select,
+.passenger-details-table input[type="text"] {
+    width: 100%;
+    padding: 6px 8px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+/* Delete button */
+.delete-row-button {
+    background: transparent;
+    border: none;
+    color: #ff4d4f;
+    font-weight: bold;
+    font-size: 20px;
+    cursor: pointer;
+    line-height: 1;
+    user-select: none;
+    transition: color 0.3s;
+}
+
+.delete-row-button:hover {
+    color: #d9363e;
+}
+
+/* Buttons row container */
+.button-row {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 30px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+/* Buttons base */
+.btn {
+    min-width: 140px;
+    padding: 12px 0;
+    border-radius: 4px;
+    font-size: 1.125rem;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    border: 1px solid transparent;
+    transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    white-space: nowrap;
+}
+
+/* White "上一步" button */
+.btn-white {
+    background-color: #fff;
+    color: #333;
+    border: 1px solid #ccc;
+}
+
+.btn-white:hover {
+    background-color: #f0f0f0;
+}
+
+/* Blue "提交订单" button */
+.btn-blue {
+    background-color: #1890ff;
+    color: white;
+    border: 1px solid #1890ff;
+}
+
+.btn-blue:hover {
+    background-color: #40a9ff;
+    border-color: #40a9ff;
+}
+
+/* 温馨提示框 */
+.tip-wrapper {
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    padding: 16px 24px;
+    color: #555;
+    font-size: 1rem;
+    max-width: 1200px;
+    margin: 0 auto 40px auto;
+    box-sizing: border-box;
+}
+
+.tip-content p {
+    margin: 0 0 8px 0;
+    line-height: 1.5;
+}
+
+.tip-content p:first-child {
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.ticket-item.ticket-unavailable .seat-type {
+    color: #888; /* 灰色，无票时 */
+}
+
+.ticket-item.ticket-available .seat-type {
+    color: #333; /* 正常显示，有票时 */
+}
+
+.price-unavailable {
+    color: #888; /* 灰色，无票时 */
+}
+
+.price-available {
+    color: #f57c00; /* 橙黄色，有票时 */
+}
+
+/* Responsive styles */
+@media (max-width: 992px) {
+    .train-info-wrapper,
+    .passenger-info-wrapper,
+    .tip-wrapper {
+        max-width: 95%;
+        margin: 20px auto;
+        padding: 0 10px;
+    }
+    .passenger-details-table {
+        min-width: 100%;
+    }
+    .btn {
+        min-width: 120px;
+        font-size: 1rem;
+        padding: 10px 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .train-info-header,
+    .passenger-info-header {
+        padding: 10px 15px;
+        font-size: 1rem;
+    }
+
+    .passenger-search {
+        width: 140px;
+        min-width: 120px;
+        font-size: 0.9rem;
+        margin-top: 6px;
+    }
+
+    .passenger-list {
+        gap: 12px;
+    }
+
+    .passenger-item {
+        min-width: 100px;
+        font-size: 0.9rem;
+    }
+
+    .button-row {
+        flex-direction: column;
+        gap: 14px;
+        margin-top: 25px;
+        margin-bottom: 25px;
+    }
+
+    .btn {
+        width: 100%;
+        min-width: auto;
+        font-size: 1rem;
+        padding: 12px 0;
+    }
+
+    .tip-wrapper {
+        max-width: 100%;
+        margin: 0 10px 30px 10px;
+        font-size: 0.9rem;
+        padding: 14px 16px;
+    }
+
+    .passenger-details-table th,
+    .passenger-details-table td {
+        padding: 8px 6px;
+        font-size: 0.9rem;
+    }
+
+    .passenger-details-table {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .passenger-search {
+        width: 100%;
+        min-width: auto;
+    }
+
+    .passenger-list {
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .passenger-item {
+        font-size: 0.85rem;
+        min-width: 90px;
+    }
+
+    .train-info-header,
+    .passenger-info-header {
+        font-size: 0.9rem;
+        padding: 8px 12px;
+    }
+
+    .btn {
+        font-size: 0.95rem;
+        padding: 10px 0;
+    }
+
+    .tip-wrapper {
+        font-size: 0.85rem;
+        padding: 12px 14px;
+        margin: 0 8px 25px 8px;
+    }
+}
+
+/* 新增样式 */
+.passenger-phone {
+    color: #666;
+    font-size: 12px;
+    margin-left: 8px;
+}
+
+.tips-section {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #1890ff;
+}
+
+.tips-title {
+    font-weight: bold;
+    color: #1890ff;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.tips-content {
+    color: #666;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.tips-content p {
+    margin: 5px 0;
+}
+
+.detail-value {
+    color: #333;
+    font-weight: 500;
+}
+
+/* 优化乘客信息显示 */
+.passenger-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.passenger-name {
+    font-weight: bold;
+    color: #333;
+}
+
+.passenger-details {
+    margin-top: 10px;
+}
+
+.detail-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.detail-label {
+    width: 80px;
+    color: #666;
+    font-size: 12px;
+}
