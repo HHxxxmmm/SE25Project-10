@@ -7,12 +7,18 @@ import com.example.techprototype.DTO.MyOrderResponse;
 import com.example.techprototype.DTO.OrderDetailResponse;
 import com.example.techprototype.DTO.RefundPreparationRequest;
 import com.example.techprototype.DTO.RefundPreparationResponse;
+import com.example.techprototype.Entity.Order;
+import com.example.techprototype.Repository.OrderRepository;
 import com.example.techprototype.Service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -21,6 +27,9 @@ public class OrderController {
     
     @Autowired
     private OrderService orderService;
+    
+    @Autowired
+    private OrderRepository orderRepository;
     
     /**
      * 创建订单
@@ -74,5 +83,32 @@ public class OrderController {
     @PostMapping("/refund/preparation")
     public RefundPreparationResponse getRefundPreparation(@RequestBody RefundPreparationRequest request) {
         return orderService.getRefundPreparation(request);
+    }
+    
+    /**
+     * 根据订单号获取订单ID
+     */
+    @GetMapping("/order-id")
+    public ResponseEntity<Map<String, Object>> getOrderIdByOrderNumber(@RequestParam String orderNumber) {
+        try {
+            Optional<Order> order = orderRepository.findByOrderNumber(orderNumber);
+            if (order.isPresent()) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("orderId", order.get().getOrderId());
+                response.put("orderNumber", order.get().getOrderNumber());
+                response.put("status", "SUCCESS");
+                return ResponseEntity.ok(response);
+            } else {
+                Map<String, Object> response = new HashMap<>();
+                response.put("status", "NOT_FOUND");
+                response.put("message", "订单不存在");
+                return ResponseEntity.ok(response);
+            }
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "ERROR");
+            response.put("message", "查询失败: " + e.getMessage());
+            return ResponseEntity.ok(response);
+        }
     }
 } 

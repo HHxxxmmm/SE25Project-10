@@ -89,6 +89,7 @@ public class TicketServiceImpl implements TicketService {
     private final Random random = new Random();
     
     @Override
+    @Transactional
     public BookingResponse bookTickets(BookingRequest request) {
         String lockKey = "booking:" + request.getTrainId() + ":" + request.getTravelDate();
         
@@ -121,11 +122,12 @@ public class TicketServiceImpl implements TicketService {
                 }
             }
             
-            // 3. 预减Redis库存
-            int totalQuantity = request.getPassengers().size();
-            if (!redisService.decrStock(request.getTrainId(), request.getDepartureStopId(), 
-                    request.getArrivalStopId(), request.getTravelDate(), request.getCarriageTypeId(), totalQuantity)) {
-                return BookingResponse.failure("余票不足");
+            // 3. 预减Redis库存 - 为每个乘客的独立席别预减库存
+            for (BookingRequest.PassengerInfo passengerInfo : request.getPassengers()) {
+                if (!redisService.decrStock(request.getTrainId(), request.getDepartureStopId(), 
+                        request.getArrivalStopId(), request.getTravelDate(), passengerInfo.getCarriageTypeId(), 1)) {
+                    return BookingResponse.failure("乘客ID " + passengerInfo.getPassengerId() + " 选择的席别余票不足");
+                }
             }
             
             // 4. 生成订单号
@@ -146,6 +148,7 @@ public class TicketServiceImpl implements TicketService {
                 OrderMessage.PassengerInfo info = new OrderMessage.PassengerInfo();
                 info.setPassengerId(passengerInfo.getPassengerId());
                 info.setTicketType(passengerInfo.getTicketType());
+                info.setCarriageTypeId(passengerInfo.getCarriageTypeId());
                 passengerInfos.add(info);
             }
             orderMessage.setPassengers(passengerInfos);
@@ -1007,5 +1010,51 @@ public class TicketServiceImpl implements TicketService {
             case 4: return "残疾军人";
             default: return "未知类型";
         }
+    }
+
+    /**
+     * 计算票价 - 从库存信息获取基础票价，然后根据票种计算优惠
+     */
+    private BigDecimal calculateTicketPrice(Integer trainId, Long departureStopId, Long arrivalStopId, 
+                                          LocalDate travelDate, Integer carriageTypeId, Byte ticketType) {
+        // 从库存信息获取基础票价
+        Optional<TicketInventory> inventory = ticketInventoryDAO.findByKey(trainId, departureStopId, arrivalStopId, travelDate, carriageTypeId);
+        
+        System.out.println("查询库存 - 车次:" + trainId + ", 出发站:" + departureStopId + ", 到达站:" + arrivalStopId + 
+                          ", 日期:" + travelDate + ", 车厢类型:" + carriageTypeId + ", 找到:" + inventory.isPresent());
+        
+        if (inventory.isEmpty()) {
+            System.out.println("未找到库存记录，使用默认票价100元");
+            return BigDecimal.valueOf(100.0); // 默认票价
+        }
+        
+        BigDecimal basePrice = inventory.get().getPrice();
+        System.out.println("找到库存记录，基础票价:" + basePrice + "元");
+        
+        // 根据票种计算优惠
+        BigDecimal finalPrice;
+        switch (ticketType) {
+            case 1: // 成人票 - 无优惠
+                finalPrice = basePrice;
+                break;
+            case 2: // 儿童票 - 5折
+                finalPrice = basePrice.multiply(BigDecimal.valueOf(0.5));
+                break;
+            case 3: // 学生票 - 8折
+                finalPrice = basePrice.multiply(BigDecimal.valueOf(0.8));
+                break;
+            case 4: // 残疾票 - 5折
+                finalPrice = basePrice.multiply(BigDecimal.valueOf(0.5));
+                break;
+            case 5: // 军人票 - 5折
+                finalPrice = basePrice.multiply(BigDecimal.valueOf(0.5));
+                break;
+            default:
+                finalPrice = basePrice;
+                break;
+        }
+        
+        System.out.println("票种:" + ticketType + ", 最终票价:" + finalPrice + "元");
+        return finalPrice;
     }
 } 

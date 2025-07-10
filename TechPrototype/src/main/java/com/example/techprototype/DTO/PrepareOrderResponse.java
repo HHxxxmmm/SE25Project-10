@@ -32,9 +32,12 @@ public class PrepareOrderResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class TrainInfo {
+        private Integer trainId;           // 车次ID
         private String trainNumber;        // 车次号
         private String departureStation;   // 出发站
         private String arrivalStation;     // 到达站
+        private Long departureStopId;      // 出发站停靠点ID
+        private Long arrivalStopId;        // 到达站停靠点ID
         private LocalTime departureTime;   // 出发时间
         private LocalTime arrivalTime;     // 到达时间
         private LocalDate travelDate;      // 出发日期
@@ -45,6 +48,7 @@ public class PrepareOrderResponse {
     @AllArgsConstructor
     public static class CarriageInfo {
         private Long inventoryId;          // 库存ID
+        private Integer carriageTypeId;    // 席别类型ID
         private String carriageTypeName;   // 席别名称
         private BigDecimal price;          // 价格
         private Boolean hasStock;          // 是否有余票

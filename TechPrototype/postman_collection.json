@@ -28,6 +28,33 @@
   ],
   "item": [
     {
+      "name": "0. 准备提交订单",
+      "item": [
+        {
+          "name": "准备提交订单",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": {{userId}},\n  \"inventoryIds\": [1, 11, 21]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/prepare-order/prepare",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "prepare-order", "prepare"]
+            }
+          },
+          "description": "准备提交订单功能：\n1. 根据用户ID和库存ID列表获取订单准备信息\n2. 返回车次信息、席别信息、价格、余票情况\n3. 返回用户关联的乘客信息\n4. 前端使用此接口获取提交订单页面的所有数据\n5. 测试参数：userId=1, inventoryIds=[1,11,21]"
+        }
+      ]
+    },
+    {
       "name": "1. 购票操作",
       "item": [
         {
@@ -58,7 +85,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"userId\": {{userId}},\n  \"trainId\": 1,\n  \"departureStopId\": 1,\n  \"arrivalStopId\": 2,\n  \"travelDate\": \"2025-07-01\",\n  \"carriageTypeId\": 3,\n  \"passengers\": [\n    {\n      \"passengerId\": 319,\n      \"ticketType\": 1\n    }\n  ]\n}"
+              "raw": "{\n  \"userId\": {{userId}},\n  \"trainId\": 1,\n  \"departureStopId\": 1,\n  \"arrivalStopId\": 2,\n  \"travelDate\": \"2025-07-01\",\n  \"carriageTypeId\": 3,\n  \"passengers\": [\n    {\n      \"passengerId\": 319,\n      \"ticketType\": 1,\n      \"carriageTypeId\": 3\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/ticket/book",
@@ -66,7 +93,7 @@
               "path": ["api", "ticket", "book"]
             }
           },
-          "description": "购票功能说明：\n1. 系统会验证乘客ID与用户的关联关系\n2. 只有关联的乘客才能购票\n3. 支持多种票种：1-成人, 2-儿童, 3-学生, 4-残疾, 5-军人\n4. 购票成功后返回订单号，需要及时支付\n5. 使用二等座(carriageTypeId=3)确保库存充足"
+          "description": "购票功能说明：\n1. 系统会验证乘客ID与用户的关联关系\n2. 只有关联的乘客才能购票\n3. 支持多种票种：1-成人, 2-儿童, 3-学生, 4-残疾, 5-军人\n4. 购票成功后返回订单号，需要及时支付\n5. 使用二等座(carriageTypeId=3)确保库存充足\n6. 每个乘客必须包含carriageTypeId字段"
         },
         {
           "name": "购票 - 多人票",
@@ -80,7 +107,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"userId\": {{userId}},\n  \"trainId\": 2,\n  \"departureStopId\": 1,\n  \"arrivalStopId\": 2,\n  \"travelDate\": \"2025-07-02\",\n  \"carriageTypeId\": 3,\n  \"passengers\": [\n    {\n      \"passengerId\": 327,\n      \"ticketType\": 1\n    },\n    {\n      \"passengerId\": 4285,\n      \"ticketType\": 2\n    }\n  ]\n}"
+              "raw": "{\n  \"userId\": {{userId}},\n  \"trainId\": 2,\n  \"departureStopId\": 1,\n  \"arrivalStopId\": 2,\n  \"travelDate\": \"2025-07-02\",\n  \"carriageTypeId\": 3,\n  \"passengers\": [\n    {\n      \"passengerId\": 327,\n      \"ticketType\": 1,\n      \"carriageTypeId\": 3\n    },\n    {\n      \"passengerId\": 4285,\n      \"ticketType\": 2,\n      \"carriageTypeId\": 3\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/ticket/book",
@@ -88,7 +115,7 @@
               "path": ["api", "ticket", "book"]
             }
           },
-          "description": "多人票购票：\n1. 支持一个订单购买多张票\n2. 每张票可以有不同的票种\n3. 所有乘客ID必须与用户有关联关系\n4. 使用不同日期避免时间冲突\n5. 使用车次2和二等座分散库存压力"
+          "description": "多人票购票：\n1. 支持一个订单购买多张票\n2. 每张票可以有不同的票种\n3. 所有乘客ID必须与用户有关联关系\n4. 使用不同日期避免时间冲突\n5. 使用车次2和二等座分散库存压力\n6. 每个乘客必须包含carriageTypeId字段"
         },
         {
           "name": "购票 - 不同区间",
@@ -102,7 +129,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"userId\": {{userId}},\n  \"trainId\": 3,\n  \"departureStopId\": 1,\n  \"arrivalStopId\": 3,\n  \"travelDate\": \"2025-07-03\",\n  \"carriageTypeId\": 3,\n  \"passengers\": [\n    {\n      \"passengerId\": 319,\n      \"ticketType\": 1\n    }\n  ]\n}"
+              "raw": "{\n  \"userId\": {{userId}},\n  \"trainId\": 3,\n  \"departureStopId\": 1,\n  \"arrivalStopId\": 3,\n  \"travelDate\": \"2025-07-03\",\n  \"carriageTypeId\": 3,\n  \"passengers\": [\n    {\n      \"passengerId\": 319,\n      \"ticketType\": 1,\n      \"carriageTypeId\": 3\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/ticket/book",
@@ -110,7 +137,7 @@
               "path": ["api", "ticket", "book"]
             }
           },
-          "description": "不同区间购票：\n1. 支持不同的出发站和到达站组合\n2. 系统会自动处理区间占用逻辑\n3. 使用不同日期避免时间冲突\n4. 使用车次3和二等座分散库存压力"
+          "description": "不同区间购票：\n1. 支持不同的出发站和到达站组合\n2. 系统会自动处理区间占用逻辑\n3. 使用不同日期避免时间冲突\n4. 使用车次3和二等座分散库存压力\n5. 每个乘客必须包含carriageTypeId字段"
         },
         {
           "name": "购票 - 不同座位类型",
@@ -124,7 +151,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"userId\": {{userId}},\n  \"trainId\": 4,\n  \"departureStopId\": 1,\n  \"arrivalStopId\": 2,\n  \"travelDate\": \"2025-07-04\",\n  \"carriageTypeId\": 3,\n  \"passengers\": [\n    {\n      \"passengerId\": 327,\n      \"ticketType\": 1\n    }\n  ]\n}"
+              "raw": "{\n  \"userId\": {{userId}},\n  \"trainId\": 4,\n  \"departureStopId\": 1,\n  \"arrivalStopId\": 2,\n  \"travelDate\": \"2025-07-04\",\n  \"carriageTypeId\": 3,\n  \"passengers\": [\n    {\n      \"passengerId\": 327,\n      \"ticketType\": 1,\n      \"carriageTypeId\": 3\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/ticket/book",
@@ -132,7 +159,7 @@
               "path": ["api", "ticket", "book"]
             }
           },
-          "description": "不同座位类型：\n1. 支持不同的车厢类型\n2. 1-商务座, 2-一等座, 3-二等座等\n3. 使用不同日期避免时间冲突\n4. 使用车次4和二等座分散库存压力"
+          "description": "不同座位类型：\n1. 支持不同的车厢类型\n2. 1-商务座, 2-一等座, 3-二等座等\n3. 使用不同日期避免时间冲突\n4. 使用车次4和二等座分散库存压力\n5. 每个乘客必须包含carriageTypeId字段"
         }
       ]
     },

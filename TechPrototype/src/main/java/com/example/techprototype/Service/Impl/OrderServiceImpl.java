@@ -126,7 +126,7 @@ public class OrderServiceImpl implements OrderService {
             
             // 创建订单消息发送到RabbitMQ
             List<OrderMessage.PassengerInfo> passengerInfos = request.getPassengers().stream()
-                .map(p -> new OrderMessage.PassengerInfo(p.getPassengerId(), p.getTicketType()))
+                .map(p -> new OrderMessage.PassengerInfo(p.getPassengerId(), p.getTicketType(), p.getCarriageTypeId()))
                 .toList();
             
             OrderMessage orderMessage = new OrderMessage(

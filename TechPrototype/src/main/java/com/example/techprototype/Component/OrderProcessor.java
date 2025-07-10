@@ -68,14 +68,14 @@ public class OrderProcessor {
                 ticket.setDepartureStopId(orderMessage.getDepartureStopId());
                 ticket.setArrivalStopId(orderMessage.getArrivalStopId());
                 ticket.setTravelDate(orderMessage.getTravelDate());
-                ticket.setCarriageTypeId(orderMessage.getCarriageTypeId());
+                ticket.setCarriageTypeId(passengerInfo.getCarriageTypeId());
                 // 从库存表获取基础票价，然后根据票种计算优惠
                 BigDecimal ticketPrice = calculateTicketPrice(
                     orderMessage.getTrainId(),
                     orderMessage.getDepartureStopId(),
                     orderMessage.getArrivalStopId(),
                     orderMessage.getTravelDate(),
-                    orderMessage.getCarriageTypeId(),
+                    passengerInfo.getCarriageTypeId(),
                     passengerInfo.getTicketType()
                 );
                 ticket.setPrice(ticketPrice);
@@ -107,7 +107,7 @@ public class OrderProcessor {
                 orderMessage.getDepartureStopId(),
                 orderMessage.getArrivalStopId(),
                 orderMessage.getTravelDate(),
-                orderMessage.getCarriageTypeId(),
+                passengerInfo.getCarriageTypeId(),
                 passengerInfo.getTicketType()
             );
             totalAmount = totalAmount.add(ticketPrice);
