@@ -57,7 +57,7 @@ public class Ticket {
     private BigDecimal price;
     
     @Column(name = "ticket_status", nullable = false)
-    private Byte ticketStatus = 0; // 0-未使用, 1-已使用, 2-已退票, 3-已改签
+    private Byte ticketStatus = 0; // 0-待支付, 1-未使用, 2-已使用, 3-已退票, 4-已改签
     
     @Column(name = "digital_signature", length = 255)
     private String digitalSignature;

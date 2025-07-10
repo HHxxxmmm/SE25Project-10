@@ -32,6 +32,7 @@ import com.example.techprototype.Repository.StationRepository;
 import com.example.techprototype.Service.OrderService;
 import com.example.techprototype.Service.RedisService;
 import com.example.techprototype.Service.TicketService;
+import com.example.techprototype.Service.SeatService;
 import com.example.techprototype.Util.TicketNumberGenerator;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,6 +83,9 @@ public class OrderServiceImpl implements OrderService {
     
     @Autowired
     private StationRepository stationRepository;
+    
+    @Autowired
+    private SeatService seatService;
     
     /**
      * 创建订单
@@ -171,6 +175,7 @@ public class OrderServiceImpl implements OrderService {
             }
             order.setTotalAmount(totalAmount);
             order.setOrderStatus((byte) 0); // 待支付
+            order.setTicketCount(message.getPassengers().size()); // 设置票数
             
             order = orderRepository.save(order);
             
@@ -233,8 +238,27 @@ public class OrderServiceImpl implements OrderService {
             // 直接从数据库获取车票
             List<Ticket> tickets = ticketRepository.findByOrderId(order.getOrderId());
             
-            // 更新车票状态
+            // 更新车票状态并释放座位、回滚库存
             for (Ticket ticket : tickets) {
+                // 1. 释放座位（如果有分配座位）
+                if (ticket.getSeatNumber() != null && ticket.getCarriageNumber() != null) {
+                    seatService.releaseSeat(ticket);
+                    System.out.println("座位已释放: 车次" + ticket.getTrainId() + 
+                                     ", 车厢" + ticket.getCarriageNumber() + 
+                                     ", 座位" + ticket.getSeatNumber());
+                }
+                
+                // 2. 回滚库存
+                redisService.incrStock(ticket.getTrainId(), ticket.getDepartureStopId(),
+                        ticket.getArrivalStopId(), ticket.getTravelDate(), 
+                        ticket.getCarriageTypeId(), 1);
+                System.out.println("库存已回滚: 车次" + ticket.getTrainId() + 
+                                 ", 出发站" + ticket.getDepartureStopId() + 
+                                 ", 到达站" + ticket.getArrivalStopId() + 
+                                 ", 日期" + ticket.getTravelDate() + 
+                                 ", 车厢类型" + ticket.getCarriageTypeId());
+                
+                // 3. 更新车票状态
                 ticket.setTicketStatus((byte) 3); // 已退票
                 ticketRepository.save(ticket);
             }
@@ -244,7 +268,7 @@ public class OrderServiceImpl implements OrderService {
             order.setTotalAmount(BigDecimal.ZERO); // 取消订单总价归零
             orderRepository.save(order);
             
-            // 直接操作数据库，不需要Redis缓存
+            System.out.println("订单取消成功: " + order.getOrderNumber() + ", 释放了 " + tickets.size() + " 张车票的座位和库存");
             
             return BookingResponse.successWithMessage("订单取消成功", order.getOrderNumber(), order.getOrderId(), BigDecimal.ZERO, order.getOrderTime());
             
@@ -266,9 +290,7 @@ public class OrderServiceImpl implements OrderService {
      * 根据用户ID获取订单列表
      */
     public List<Order> getOrdersByUserId(Long userId) {
-        return orderRepository.findAll().stream()
-            .filter(order -> order.getUserId().equals(userId))
-            .toList();
+        return orderRepository.findByUserIdOrderByOrderTimeDesc(userId);
     }
     
     /**
@@ -408,7 +430,7 @@ public class OrderServiceImpl implements OrderService {
             orderInfo.setArrivalCity(arrivalCity);
             
             // 车票数量
-            orderInfo.setTicketCount(tickets.size());
+            orderInfo.setTicketCount(order.getTicketCount());
             
             orderInfos.add(orderInfo);
         }
@@ -584,6 +606,7 @@ public class OrderServiceImpl implements OrderService {
             response.setPaymentTime(order.getPaymentTime());
             response.setPaymentMethod(order.getPaymentMethod());
             response.setTotalAmount(order.getTotalAmount());
+            response.setTicketCount(order.getTicketCount());
             response.setTrainNumber(train.getTrainNumber());
             response.setTravelDate(firstTicket.getTravelDate());
             response.setDepartureTime(departureTime);
