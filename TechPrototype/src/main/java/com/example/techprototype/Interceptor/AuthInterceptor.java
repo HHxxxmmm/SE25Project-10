@@ -59,6 +59,11 @@ public class AuthInterceptor implements HandlerInterceptor {
             "/api/auth/register",
             "/api/auth/logout",
             "/api/auth/currentUser",
+            "/api/trains/list",
+            "/api/trains/direct",
+            "/api/trains/byTime",
+            "/api/trains/transfer",
+            "/api/trains/search",
             "/error"
         };
         
