@@ -1,0 +1,371 @@
+{
+	"info": {
+		"_postman_id": "my-tickets-test-collection",
+		"name": "本人车票API测试",
+		"description": "测试本人车票相关的API接口",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "获取本人车票",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8080/api/ticket/my-tickets?userId=1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"ticket",
+						"my-tickets"
+					],
+					"query": [
+						{
+							"key": "userId",
+							"value": "1",
+							"description": "用户ID"
+						}
+					]
+				},
+				"description": "获取指定用户的所有车票信息"
+			},
+			"response": []
+		},
+		{
+			"name": "按状态获取车票 - 待支付",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8080/api/ticket/my-tickets/status?userId=1&ticketStatus=0",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"ticket",
+						"my-tickets",
+						"status"
+					],
+					"query": [
+						{
+							"key": "userId",
+							"value": "1",
+							"description": "用户ID"
+						},
+						{
+							"key": "ticketStatus",
+							"value": "0",
+							"description": "车票状态：0-待支付"
+						}
+					]
+				},
+				"description": "获取指定用户的待支付车票"
+			},
+			"response": []
+		},
+		{
+			"name": "按状态获取车票 - 未使用",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8080/api/ticket/my-tickets/status?userId=1&ticketStatus=1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"ticket",
+						"my-tickets",
+						"status"
+					],
+					"query": [
+						{
+							"key": "userId",
+							"value": "1",
+							"description": "用户ID"
+						},
+						{
+							"key": "ticketStatus",
+							"value": "1",
+							"description": "车票状态：1-未使用"
+						}
+					]
+				},
+				"description": "获取指定用户的未使用车票"
+			},
+			"response": []
+		},
+		{
+			"name": "按状态获取车票 - 已使用",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8080/api/ticket/my-tickets/status?userId=1&ticketStatus=2",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"ticket",
+						"my-tickets",
+						"status"
+					],
+					"query": [
+						{
+							"key": "userId",
+							"value": "1",
+							"description": "用户ID"
+						},
+						{
+							"key": "ticketStatus",
+							"value": "2",
+							"description": "车票状态：2-已使用"
+						}
+					]
+				},
+				"description": "获取指定用户的已使用车票"
+			},
+			"response": []
+		},
+		{
+			"name": "按状态获取车票 - 已退票",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8080/api/ticket/my-tickets/status?userId=1&ticketStatus=3",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"ticket",
+						"my-tickets",
+						"status"
+					],
+					"query": [
+						{
+							"key": "userId",
+							"value": "1",
+							"description": "用户ID"
+						},
+						{
+							"key": "ticketStatus",
+							"value": "3",
+							"description": "车票状态：3-已退票"
+						}
+					]
+				},
+				"description": "获取指定用户的已退票车票"
+			},
+			"response": []
+		},
+		{
+			"name": "按状态获取车票 - 已改签",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8080/api/ticket/my-tickets/status?userId=1&ticketStatus=4",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"ticket",
+						"my-tickets",
+						"status"
+					],
+					"query": [
+						{
+							"key": "userId",
+							"value": "1",
+							"description": "用户ID"
+						},
+						{
+							"key": "ticketStatus",
+							"value": "4",
+							"description": "车票状态：4-已改签"
+						}
+					]
+				},
+				"description": "获取指定用户的已改签车票"
+			},
+			"response": []
+		},
+		{
+			"name": "按日期范围获取车票",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8080/api/ticket/my-tickets/date-range?userId=1&startDate=2025-07-01&endDate=2025-07-31",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"ticket",
+						"my-tickets",
+						"date-range"
+					],
+					"query": [
+						{
+							"key": "userId",
+							"value": "1",
+							"description": "用户ID"
+						},
+						{
+							"key": "startDate",
+							"value": "2025-07-01",
+							"description": "开始日期 (yyyy-MM-dd)"
+						},
+						{
+							"key": "endDate",
+							"value": "2025-07-31",
+							"description": "结束日期 (yyyy-MM-dd)"
+						}
+					]
+				},
+				"description": "获取指定日期范围内的车票"
+			},
+			"response": []
+		},
+		{
+			"name": "按状态和日期范围获取车票",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8080/api/ticket/my-tickets/status-date-range?userId=1&ticketStatus=1&startDate=2025-07-01&endDate=2025-07-31",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"ticket",
+						"my-tickets",
+						"status-date-range"
+					],
+					"query": [
+						{
+							"key": "userId",
+							"value": "1",
+							"description": "用户ID"
+						},
+						{
+							"key": "ticketStatus",
+							"value": "1",
+							"description": "车票状态：1-未使用"
+						},
+						{
+							"key": "startDate",
+							"value": "2025-07-01",
+							"description": "开始日期 (yyyy-MM-dd)"
+						},
+						{
+							"key": "endDate",
+							"value": "2025-07-31",
+							"description": "结束日期 (yyyy-MM-dd)"
+						}
+					]
+				},
+				"description": "获取指定状态和日期范围内的车票"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "1",
+			"type": "string"
+		}
+	]
+} 

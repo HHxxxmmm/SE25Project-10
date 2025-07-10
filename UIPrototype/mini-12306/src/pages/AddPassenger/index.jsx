@@ -1,37 +1,66 @@
 // AddPassenger.jsx
 import React, { useState } from 'react';
+import { message } from 'antd';
+import { passengerAPI } from '../../services/api';
 import './style.css';
 
 const idTypes = [
     "居民身份证"
 ];
 
-const ticketTypes = [
-    "成人票",
-    "学生票",
-    "儿童票",
-    "残军票"
-];
-
-const AddPassenger = ({ onClose }) => {  // 接收 onClose 作为 props
+const AddPassenger = ({ onClose }) => {
     const [name, setName] = useState('');
     const [idType, setIdType] = useState(idTypes[0]);
-    const [ticketType, setTicketType] = useState(ticketTypes[0]);
     const [idNumber, setIdNumber] = useState('');
     const [phone, setPhone] = useState('');
+    const [submitting, setSubmitting] = useState(false);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        alert(`提交成功（模拟）\n姓名：${name}\n证件类型：${idType}\n优惠类型：${ticketType}\n证件号码：${idNumber}\n手机号码：${phone}`);
+        
+        if (!name || !idNumber || !phone) {
+            message.error('请填写完整信息');
+            return;
+        }
 
-        // 清空表单
-        setName('');
-        setIdType(idTypes[0]);
-        setTicketType(ticketTypes[0]);
-        setIdNumber('');
-        setPhone('');
-
-        if (onClose) onClose();  // 提交后自动关闭弹窗（可选）
+        setSubmitting(true);
+        
+        try {
+            const userId = 1; // 使用测试用户ID
+            
+            // 调用后端API
+            const response = await passengerAPI.addPassenger(userId, name, idNumber, phone);
+            
+            if (response.success) {
+                message.success('乘车人添加成功！');
+                // 清空表单
+                setName('');
+                setIdType(idTypes[0]);
+                setIdNumber('');
+                setPhone('');
+                if (onClose) onClose();
+            } else {
+                // 根据不同的错误情况显示不同的提示
+                let errorMessage = response.message || '添加失败，请稍后重试';
+                
+                if (response.message.includes('已达到最大乘车人数量限制')) {
+                    errorMessage = '已达到最大乘车人数量限制（3人），无法继续添加';
+                } else if (response.message.includes('该乘车人已被添加')) {
+                    errorMessage = '该乘车人已被添加，请勿重复添加';
+                } else if (response.message.includes('该乘车人信息无效')) {
+                    errorMessage = '该乘车人信息无效，请检查姓名、身份证号和手机号是否正确';
+                } else if (response.message.includes('用户不存在')) {
+                    errorMessage = '用户信息错误，请重新登录';
+                }
+                
+                message.error(errorMessage);
+            }
+        } catch (error) {
+            console.error('添加乘车人失败:', error);
+            message.error('添加失败，请检查网络连接');
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return (
@@ -86,20 +115,6 @@ const AddPassenger = ({ onClose }) => {  // 接收 onClose 作为 props
                 </select>
             </label>
 
-            <label htmlFor="tickettype-select">
-                优惠类型：
-                <select
-                    id="tickettype-select"
-                    value={ticketType}
-                    onChange={e => setTicketType(e.target.value)}
-                    required
-                >
-                    {ticketTypes.map(type => (
-                        <option key={type} value={type}>{type}</option>
-                    ))}
-                </select>
-            </label>
-
             <label htmlFor="idnumber-input">
                 证件号码：
                 <input
@@ -129,7 +144,13 @@ const AddPassenger = ({ onClose }) => {  // 接收 onClose 作为 props
             </label>
 
             <div className="modal-buttons">
-                <button type="submit" className="submit-button">提交</button>
+                <button 
+                    type="submit" 
+                    className="submit-button"
+                    disabled={submitting}
+                >
+                    {submitting ? '添加中...' : '添加乘车人'}
+                </button>
             </div>
         </form>
     );

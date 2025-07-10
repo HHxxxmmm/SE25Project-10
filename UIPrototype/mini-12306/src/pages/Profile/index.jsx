@@ -1,10 +1,10 @@
-// src/pages/Profile/index.jsx
 import React, { useState, useEffect } from 'react';
 import { Card, Descriptions, Divider, Spin, Typography, Modal, Form, Input, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import generatePersonData from '../../mock/Person';
 import AddPassenger from '../AddPassenger';
+import { passengerAPI } from '../../services/api';
 import './style.css'; // 确保导入原有样式文件
 
 const { Title } = Typography;
@@ -80,6 +80,27 @@ export default function ProfilePage() {
         }
     };
 
+    // 检查是否可以添加乘车人
+    const checkCanAddPassenger = async () => {
+        try {
+            const userId = 1; // 使用测试用户ID
+            const response = await passengerAPI.checkCanAddPassenger(userId);
+            
+            if (response.allowed) {
+                setShowAddPassengerModal(true);
+            } else {
+                // 使用原生alert确保用户能看到提示
+                alert(response.message || '无法添加乘车人');
+                message.warning(response.message || '无法添加乘车人');
+            }
+        } catch (error) {
+            console.error('检查添加乘车人权限失败:', error);
+            // 使用原生alert确保用户能看到提示
+            alert('检查权限失败，请稍后重试');
+            message.error('检查权限失败，请稍后重试');
+        }
+    };
+
     if (loading) {
         return (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
@@ -123,7 +144,6 @@ export default function ProfilePage() {
                 headStyle={{ padding: 0 }}
                 bodyStyle={{ padding: '24px' }}
             >
-
                 {personInfo.related_passenger_name?.length > 0 ? (
                     personInfo.related_passenger_name.map((name, index) => (
                         <Descriptions key={index} bordered column={1} style={{ marginBottom: 16 }}>
@@ -141,7 +161,7 @@ export default function ProfilePage() {
                         type="button"
                         className="add-passenger-button"
                         aria-label="添加乘车人"
-                        onClick={() => setShowAddPassengerModal(true)}
+                        onClick={checkCanAddPassenger}
                     >
                         <span className="plus-sign">+</span> 添加乘车人
                     </button>
@@ -196,7 +216,6 @@ export default function ProfilePage() {
                     </Form.Item>
                 </Form>
             </Modal>
-
 
             {/* 添加乘车人弹窗 - 保持原有结构 */}
             {showAddPassengerModal && (

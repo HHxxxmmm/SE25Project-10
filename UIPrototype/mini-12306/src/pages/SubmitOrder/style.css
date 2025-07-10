@@ -142,6 +142,17 @@ hr {
     flex-shrink: 0;
 }
 
+/* Passenger type display */
+.passenger-type {
+    font-size: 0.8rem;
+    color: #666;
+    background-color: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: 4px;
+    white-space: nowrap;
+}
+
 /* Add passenger button */
 .add-passenger-button {
     display: flex;
@@ -418,4 +429,70 @@ hr {
         padding: 12px 14px;
         margin: 0 8px 25px 8px;
     }
+}
+
+/* 新增样式 */
+.passenger-phone {
+    color: #666;
+    font-size: 12px;
+    margin-left: 8px;
+}
+
+.tips-section {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #1890ff;
+}
+
+.tips-title {
+    font-weight: bold;
+    color: #1890ff;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.tips-content {
+    color: #666;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.tips-content p {
+    margin: 5px 0;
+}
+
+.detail-value {
+    color: #333;
+    font-weight: 500;
+}
+
+/* 优化乘客信息显示 */
+.passenger-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.passenger-name {
+    font-weight: bold;
+    color: #333;
+}
+
+.passenger-details {
+    margin-top: 10px;
+}
+
+.detail-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.detail-label {
+    width: 80px;
+    color: #666;
+    font-size: 12px;
 }

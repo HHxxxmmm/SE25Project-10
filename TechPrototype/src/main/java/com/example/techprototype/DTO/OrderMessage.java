@@ -26,5 +26,6 @@ public class OrderMessage {
     public static class PassengerInfo {
         private Long passengerId;
         private Byte ticketType;
+        private Integer carriageTypeId;
     }
 } 

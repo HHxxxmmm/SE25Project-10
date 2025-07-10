@@ -1,57 +1,171 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, Typography, Divider, Checkbox, Button, Row } from 'antd';
-import { useNavigate } from 'react-router-dom';
+import { Card, Typography, Divider, Checkbox, Button, Row, message, Spin } from 'antd';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { orderAPI, ticketAPI } from '../../services/api';
 import './style.css';
-
-// 假设 mock 数据生成函数路径和结构一致
-import generateOrdersData from '../../mock/Orders';
 
 const { Text } = Typography;
 
+// 乘客类型映射
+const PASSENGER_TYPE = {
+    1: '成人',
+    2: '儿童',
+    3: '学生',
+    4: '残疾',
+    5: '军人',
+};
+
+// 票种映射
+const TICKET_TYPE = {
+    1: '成人票',
+    2: '儿童票',
+    3: '学生票',
+    4: '残疾票',
+    5: '军人票',
+};
+
+// 车票状态映射
+const TICKET_STATUS = {
+    0: '待支付',
+    1: '已支付',
+    2: '已完成',
+    3: '已退票',
+    4: '已改签',
+};
+
+function formatDateTime(datetime) {
+    if (!datetime) return '';
+    const date = datetime.split('T')[0] || datetime.split(' ')[0] || '';
+    const time = datetime.includes('T') ? 
+        datetime.split('T')[1] : 
+        datetime.split(' ')[1] || datetime;
+    return `${date} ${time.slice(0, 5)}`;
+}
+
+function formatDate(date) {
+    if (!date) return '';
+    return date.split('T')[0] || date.split(' ')[0] || date;
+}
+
+function formatTime(time) {
+    if (!time) return '';
+    return time.slice(0, 5);
+}
+
 const ReturnTicketPage = () => {
-    const [order, setOrder] = useState(null);
+    const [refundData, setRefundData] = useState(null);
     const [selectedTickets, setSelectedTickets] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const trainInfoCardRef = useRef(null);
-    const navigate = useNavigate(); // 引入 useNavigate 用于导航
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
     useEffect(() => {
-        const data = generateOrdersData();
-        // 假设o_status===2是已支付订单
-        const paidOrders = data.news.filter(order => order.o_status === 2);
+        const fetchRefundData = async () => {
+            try {
+                const orderId = searchParams.get('orderId');
+                const ticketIdsParam = searchParams.get('ticketIds');
+                const userId = searchParams.get('userId') || 1;
+                
+                console.log('退票页面URL参数:', { orderId, ticketIdsParam, userId });
+                
+                if (!orderId || !ticketIdsParam) {
+                    console.error('缺少必要参数:', { orderId, ticketIdsParam });
+                    message.error('缺少必要参数');
+                    navigate('/orders');
+                    return;
+                }
 
-        if (paidOrders.length > 0) {
-            setOrder(paidOrders[0]);
-            setSelectedTickets(paidOrders[0].passengers.map((_, idx) => idx));
-        }
-    }, []);
+                // 解析车票ID列表
+                const ticketIds = ticketIdsParam.split(',').map(id => parseInt(id));
+                
+                console.log('获取退票准备信息:', { orderId, userId, ticketIds });
+                // 调用退票准备阶段API
+                const response = await orderAPI.getRefundPreparation(userId, orderId, ticketIds);
+                console.log('退票准备信息响应:', response);
+                
+                if (response && response.orderNumber) {
+                    setRefundData(response);
+                    // 默认选中所有车票
+                    const allTicketIds = response.refundableTickets.map(ticket => ticket.ticketId);
+                    setSelectedTickets(allTicketIds);
+                } else {
+                    console.error('获取退票信息失败，响应数据:', response);
+                    message.error('获取退票信息失败');
+                    navigate('/orders');
+                }
+            } catch (error) {
+                console.error('获取退票信息失败:', error);
+                message.error('获取退票信息失败，请稍后重试');
+                navigate('/orders');
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    if (!order) {
-        return <div>加载中</div>;
+        fetchRefundData();
+    }, [searchParams, navigate]);
+
+    if (loading) {
+        return (
+            <div style={{ textAlign: 'center', padding: '50px' }}>
+                <Spin size="large" />
+                <div style={{ marginTop: '16px' }}>加载中...</div>
+            </div>
+        );
     }
 
-    const allSelected = selectedTickets.length === order.passengers.length;
+    if (!refundData) {
+        return <div>退票信息不存在</div>;
+    }
+
+    const allSelected = selectedTickets.length === refundData.refundableTickets.length;
     const indeterminate = selectedTickets.length > 0 && !allSelected;
 
-    const toggleSelect = (index) => {
+    const toggleSelect = (ticketId) => {
         setSelectedTickets((prev) =>
-            prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+            prev.includes(ticketId) ? prev.filter(id => id !== ticketId) : [...prev, ticketId]
         );
     };
 
     const onSelectAllReturn = (e) => {
         if (e.target.checked) {
-            setSelectedTickets(order.passengers.map((_, idx) => idx));
+            setSelectedTickets(refundData.refundableTickets.map(ticket => ticket.ticketId));
         } else {
             setSelectedTickets([]);
         }
     };
 
-    const totalPrice = order.passengers.reduce((sum, passenger) => sum + passenger.price, 0);
+    // 确认退票按钮点击处理函数 - 正式退票阶段
+    const handleConfirmReturn = async () => {
+        if (selectedTickets.length === 0) {
+            message.warning('请选择要退票的车票');
+            return;
+        }
 
-    // 确认退票按钮点击处理函数
-    const handleConfirmReturn = () => {
-        if (selectedTickets.length > 0) {
-            navigate('/orders'); // 跳转到“我的订单”页面（假设路径为 /my-orders）
+        setSubmitting(true);
+        try {
+            const userId = searchParams.get('userId') || 1;
+            const orderId = searchParams.get('orderId');
+            
+            console.log('提交正式退票请求:', { userId, orderId, selectedTickets });
+            // 调用正式退票API
+            const response = await ticketAPI.refundTickets(userId, orderId, selectedTickets);
+            console.log('正式退票响应:', response);
+            
+            if (response && response.status === 'SUCCESS') {
+                message.success('退票成功');
+                // 跳转回订单详情页，刷新订单信息
+                navigate(`/order-detail?orderId=${orderId}&userId=${userId}`);
+            } else {
+                message.error(response.message || '退票失败');
+            }
+        } catch (error) {
+            console.error('退票失败:', error);
+            message.error('退票失败，请稍后重试');
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -67,31 +181,31 @@ const ReturnTicketPage = () => {
 
                 <Row justify="space-between" className="info-row">
                     <Text type="secondary" className="order-info-text">
-                        订单号: {order.order_id}
+                        订单号: {refundData.orderNumber}
                     </Text>
                     <Text type="secondary" className="order-info-text">
-                        下单时间: {order.o_time.slice(0, 16)}
+                        下单时间: {formatDateTime(refundData.orderTime)}
                     </Text>
                 </Row>
 
                 <Divider />
 
                 <div className="train-info-card" ref={trainInfoCardRef}>
-                    <div className="train-date">{order.t_time.slice(0, 16)}</div>
+                    <div className="train-date">{formatDate(refundData.travelDate)}</div>
                     <div className="train-route">
                         <div className="station-block">
-                            <div className="station-name">{order.t_from_city}{order.t_from_station}</div>
-                            <div className="station-time">{order.t_time.slice(11, 16)}开</div>
+                            <div className="station-name">{refundData.departureStation}</div>
+                            <div className="station-time">{formatTime(refundData.departureTime)}开</div>
                         </div>
 
                         <div className="arrow-block">
-                            <div className="train-number">{order.train_id}</div>
+                            <div className="train-number">{refundData.trainNumber}</div>
                             <div className="arrow">→</div>
                         </div>
 
                         <div className="station-block">
-                            <div className="station-name">{order.t_to_city}{order.t_to_station}</div>
-                            <div className="station-time">{order.arrive_time.slice(11, 16)}到</div>
+                            <div className="station-name">{refundData.arrivalStation}</div>
+                            <div className="station-time">{formatTime(refundData.arrivalTime)}到</div>
                         </div>
                     </div>
                 </div>
@@ -112,35 +226,36 @@ const ReturnTicketPage = () => {
                             <th style={{ width: '5%' }}>序号</th>
                             <th style={{ width: '12%' }}>姓名</th>
                             <th style={{ width: '22%' }}>身份证号</th>
-                            <th style={{ width: '18%' }}>手机号</th>
                             <th style={{ width: '12%' }}>席别</th>
                             <th style={{ width: '12%' }}>票种</th>
-                            <th style={{ width: '14%' }}>票价</th>
+                            <th style={{ width: '12%' }}>票价</th>
+                            <th style={{ width: '20%' }}>状态</th>
                         </tr>
                         </thead>
                         <tbody>
-                        {order.passengers.map((ticket, index) => (
+                        {refundData.refundableTickets.map((ticket, index) => (
                             <tr
-                                key={index}
-                                className={selectedTickets.includes(index) ? 'selected' : ''}
-                                onClick={() => toggleSelect(index)}
+                                key={ticket.ticketId}
+                                className={selectedTickets.includes(ticket.ticketId) ? 'selected' : ''}
+                                onClick={() => toggleSelect(ticket.ticketId)}
+                                style={{ cursor: 'pointer' }}
                             >
                                 <td>
                                     <Checkbox
-                                        checked={selectedTickets.includes(index)}
+                                        checked={selectedTickets.includes(ticket.ticketId)}
                                         onClick={e => e.stopPropagation()}
-                                        onChange={() => toggleSelect(index)}
+                                        onChange={() => toggleSelect(ticket.ticketId)}
                                     />
                                 </td>
                                 <td>{index + 1}</td>
-                                <td>{ticket.name}</td>
-                                <td>{ticket.id}</td>
-                                <td>{ticket.phone}</td>
-                                <td>{ticket.seat === 1 ? '头等' : ticket.seat === 2 ? '商务' : ticket.seat === 3 ? '二等' : '无座'}</td>
-                                <td>{ticket.ticket_type}</td>
+                                <td>{ticket.passengerName}</td>
+                                <td>{ticket.idCardNumber}</td>
+                                <td>{ticket.carriageType}</td>
+                                <td>{TICKET_TYPE[ticket.ticketType] || '未知'}</td>
                                 <td>
-                                    <Text className="price-text">¥{ticket.price}</Text>
+                                    <Text className="price-text">¥{ticket.originalPrice}</Text>
                                 </td>
+                                <td>{TICKET_STATUS[ticket.ticketStatus] || '未知'}</td>
                             </tr>
                         ))}
                         </tbody>
@@ -150,21 +265,29 @@ const ReturnTicketPage = () => {
                 <Divider />
 
                 <Row justify="space-between" align="middle" className="footer-row">
-                    <div>订单总价: ¥{totalPrice}</div>
+                    <div>订单总价: ¥{refundData.totalAmount}</div>
+                    <div>已选择: {selectedTickets.length}张车票</div>
                 </Row>
 
                 <div className="button-row">
-                    <Button type="primary" className="btn-blue" onClick={handleConfirmReturn}>
-                        确认退票 ({selectedTickets.length})
+                    <Button 
+                        type="primary" 
+                        className="btn-blue" 
+                        onClick={handleConfirmReturn}
+                        disabled={selectedTickets.length === 0 || submitting}
+                        loading={submitting}
+                    >
+                        {submitting ? '退票中...' : `确认退票 (${selectedTickets.length})`}
                     </Button>
-                    <Button className="btn-white" onClick={handleCancel}>取消</Button>
+                    <Button className="btn-white" onClick={handleCancel} disabled={submitting}>
+                        取消
+                    </Button>
                 </div>
             </Card>
 
             <div className="tip-wrapper">
                 <div className="tip-content">
                     <p>温馨提示：</p>
-                    <p>退票可能会产生一定费用，请提前了解退票政策。</p>
                     <p>确认退票后，车票将无法恢复，请谨慎操作。</p>
                     <p>退票后，退款将按原支付方式退回，到账时间以银行处理为准。</p>
                 </div>

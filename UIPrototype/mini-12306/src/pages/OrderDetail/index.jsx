@@ -1,52 +1,162 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Divider, Button, Row } from 'antd';
-import { Link, useNavigate } from 'react-router-dom';
+import { Card, Typography, Divider, Button, Row, message, Spin } from 'antd';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { orderAPI } from '../../services/api';
 import './style.css';
-import generateOrdersData from '../../mock/Orders';
 
 const { Text } = Typography;
 
+// 订单状态映射
+const ORDER_STATUS = {
+    0: { text: '待支付', colorClass: 'status-pending' },
+    1: { text: '已支付', colorClass: 'status-paid' },
+    2: { text: '已完成', colorClass: 'status-completed' },
+    3: { text: '已取消', colorClass: 'status-cancelled' },
+};
+
+// 乘客类型映射
+const PASSENGER_TYPE = {
+    1: '成人',
+    2: '儿童',
+    3: '学生',
+    4: '残疾',
+    5: '军人',
+};
+
+// 票种映射
+const TICKET_TYPE = {
+    1: '成人票',
+    2: '儿童票',
+    3: '学生票',
+    4: '残疾票',
+    5: '军人票',
+};
+
+// 车票状态映射
+const TICKET_STATUS = {
+    0: '待支付',
+    1: '已支付',
+    2: '已完成',
+    3: '已退票',
+    4: '已改签',
+};
+
+function formatDateTime(datetime) {
+    if (!datetime) return '';
+    const date = datetime.split('T')[0] || datetime.split(' ')[0] || '';
+    const time = datetime.includes('T') ? 
+        datetime.split('T')[1] : 
+        datetime.split(' ')[1] || datetime;
+    return `${date} ${time.slice(0, 5)}`;
+}
+
+function formatDate(date) {
+    if (!date) return '';
+    return date.split('T')[0] || date.split(' ')[0] || date;
+}
+
+function formatTime(time) {
+    if (!time) return '';
+    return time.slice(0, 5);
+}
+
 const OrderDetailPage = () => {
-    const [order, setOrder] = useState(null);
+    const [orderDetail, setOrderDetail] = useState(null);
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
     useEffect(() => {
-        const data = generateOrdersData();
-        if (data.news.length > 0) {
-            const randomIndex = Math.floor(Math.random() * data.news.length);
-            setOrder(data.news[randomIndex]);
-        }
-    }, []);
+        const fetchOrderDetail = async () => {
+            try {
+                const orderId = searchParams.get('orderId');
+                const userId = 1; // 使用固定的测试用户ID
+                
+                if (!orderId) {
+                    message.error('订单ID不能为空');
+                    navigate('/orders');
+                    return;
+                }
 
-    if (!order) {
-        return <div>加载中...</div>;
+                console.log('获取订单详情:', { orderId, userId });
+                const response = await orderAPI.getOrderDetail(orderId, userId);
+                console.log('订单详情响应:', response);
+                
+                if (response && response.orderNumber) {
+                    setOrderDetail(response);
+                } else {
+                    message.error('获取订单详情失败');
+                    navigate('/orders');
+                }
+            } catch (error) {
+                console.error('获取订单详情失败:', error);
+                message.error('获取订单详情失败，请稍后重试');
+                navigate('/orders');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchOrderDetail();
+    }, [searchParams, navigate]);
+
+    if (loading) {
+        return (
+            <div style={{ textAlign: 'center', padding: '50px' }}>
+                <Spin size="large" />
+                <div style={{ marginTop: '16px' }}>加载中...</div>
+            </div>
+        );
     }
 
-    const statusMap = {
-        1: { text: '待支付', colorClass: 'status-pending' },
-        2: { text: '已支付', colorClass: 'status-paid' },
-        3: { text: '已完成', colorClass: 'status-completed' },
-    };
+    if (!orderDetail) {
+        return <div>订单不存在</div>;
+    }
 
     // 跳转处理函数
-    const onTicketClick = () => {
-        navigate('/ticket-detail');
+    const onTicketClick = (ticketId) => {
+        navigate(`/ticket-detail?ticketId=${ticketId}`);
     };
 
     const onReturnTicket = () => {
-        navigate('/return-ticket');
+        // 获取所有车票的ID
+        const ticketIds = orderDetail.tickets.map(ticket => ticket.ticketId);
+        const userId = 1; // 使用固定的测试用户ID
+        
+        // 从URL获取orderId参数
+        const orderId = searchParams.get('orderId');
+        
+        // 将参数传递到退票页面
+        navigate(`/return-ticket?orderId=${orderId}&ticketIds=${ticketIds.join(',')}&userId=${userId}`);
     };
 
     const onChangeTicket = () => {
         navigate('/change-ticket');
     };
 
-    const onCancelOrder = () => {
-        navigate('/orders');
+    const onCancelOrder = async () => {
+        try {
+            const userId = 1;
+            // 从URL获取orderId参数
+            const orderId = searchParams.get('orderId');
+            const response = await orderAPI.cancelOrder(orderId, userId);
+            
+            if (response.status === 'SUCCESS') {
+                message.success('订单取消成功');
+                navigate('/orders');
+            } else {
+                message.error(response.message || '取消订单失败');
+            }
+        } catch (error) {
+            console.error('取消订单失败:', error);
+            message.error('取消订单失败，请稍后重试');
+        }
     };
 
     const onPayOrder = () => {
-        navigate(`/payment?orderId=${order.order_id}`);
+        // 从URL获取orderId参数
+        const orderId = searchParams.get('orderId');
+        navigate(`/payment?orderId=${orderId}`);
     };
 
     return (
@@ -59,34 +169,34 @@ const OrderDetailPage = () => {
 
                 <Row justify="space-between" align="middle" className="info-row">
                     <Text type="secondary" className="order-info-text">
-                        订单号: {order.order_id}
+                        订单号: {orderDetail.orderNumber}
                     </Text>
                     <Text type="secondary" className="order-info-text">
-                        下单时间: {order.o_time.slice(0, 16)}
+                        下单时间: {formatDateTime(orderDetail.orderTime)}
                     </Text>
-                    <div className={`order-status ${statusMap[order.o_status]?.colorClass || ''}`}>
-                        {statusMap[order.o_status]?.text || '未知状态'}
+                    <div className={`order-status ${ORDER_STATUS[orderDetail.orderStatus]?.colorClass || ''}`}>
+                        {ORDER_STATUS[orderDetail.orderStatus]?.text || '未知状态'}
                     </div>
                 </Row>
 
                 <Divider />
 
                 <div className="train-info-card">
-                    <div className="train-date">{order.t_time.slice(0, 16)}</div>
+                    <div className="train-date">{formatDate(orderDetail.travelDate)}</div>
                     <div className="train-route">
                         <div className="station-block">
-                            <div className="station-name">{order.t_from_city}{order.t_from_station}</div>
-                            <div className="station-time">{order.t_time.slice(11, 16)}开</div>
+                            <div className="station-name">{orderDetail.departureStation}</div>
+                            <div className="station-time">{formatTime(orderDetail.departureTime)}开</div>
                         </div>
 
                         <div className="arrow-block">
-                            <div className="train-number">{order.train_id}</div>
+                            <div className="train-number">{orderDetail.trainNumber}</div>
                             <div className="arrow">→</div>
                         </div>
 
                         <div className="station-block">
-                            <div className="station-name">{order.t_to_city}{order.t_to_station}</div>
-                            <div className="station-time">{order.arrive_time.slice(11, 16)}到</div>
+                            <div className="station-name">{orderDetail.arrivalStation}</div>
+                            <div className="station-time">{formatTime(orderDetail.arrivalTime)}到</div>
                         </div>
                     </div>
                 </div>
@@ -100,26 +210,28 @@ const OrderDetailPage = () => {
                             <th style={{ width: '5%' }}>序号</th>
                             <th style={{ width: '12%' }}>姓名</th>
                             <th style={{ width: '22%' }}>身份证号</th>
-                            <th style={{ width: '18%' }}>手机号</th>
+                            <th style={{ width: '12%' }}>乘客类型</th>
                             <th style={{ width: '12%' }}>席别</th>
                             <th style={{ width: '12%' }}>票种</th>
+                            <th style={{ width: '12%' }}>状态</th>
                             <th style={{ width: '14%' }}>票价</th>
                         </tr>
                         </thead>
                         <tbody>
-                        {order.passengers.map((ticket, index) => (
+                        {orderDetail.tickets.map((ticket, index) => (
                             <tr
-                                key={index}
+                                key={ticket.ticketId}
                                 style={{ cursor: 'pointer' }}
-                                onClick={onTicketClick}
+                                onClick={() => onTicketClick(ticket.ticketId)}
                                 title="点击查看车票详情"
                             >
                                 <td>{index + 1}</td>
-                                <td>{ticket.name}</td>
-                                <td>{ticket.id}</td>
-                                <td>{ticket.phone}</td>
-                                <td>{ticket.seat === 1 ? '头等' : ticket.seat === 2 ? '商务' : ticket.seat === 3 ? '二等' : '无座'}</td>
-                                <td>{ticket.ticket_type}</td>
+                                <td>{ticket.passengerName}</td>
+                                <td>{ticket.idCardNumber}</td>
+                                <td>{PASSENGER_TYPE[ticket.passengerType] || '未知'}</td>
+                                <td>{ticket.carriageType}</td>
+                                <td>{TICKET_TYPE[ticket.ticketType] || '未知'}</td>
+                                <td>{TICKET_STATUS[ticket.ticketStatus] || '未知'}</td>
                                 <td>
                                     <Text className="price-text">¥{ticket.price}</Text>
                                 </td>
@@ -132,11 +244,12 @@ const OrderDetailPage = () => {
                 <Divider />
 
                 <Row justify="space-between" align="middle" className="footer-row">
-                    <div>订单总价: ¥{order.passengers.reduce((sum, passenger) => sum + passenger.price, 0)}</div>
+                    <div>订单总价: ¥{orderDetail.totalAmount}</div>
+                    <div>车票数量: {orderDetail.ticketCount}张</div>
                 </Row>
 
                 <div className="button-row">
-                    {order.o_status === 1 && (
+                    {orderDetail.orderStatus === 0 && (
                         <>
                             <Button type="primary" className="btn-blue" onClick={onPayOrder}>
                                 去支付
@@ -146,7 +259,7 @@ const OrderDetailPage = () => {
                             </Button>
                         </>
                     )}
-                    {order.o_status === 2 && (
+                    {orderDetail.orderStatus === 1 && (
                         <>
                             <Button type="primary" className="btn-blue" onClick={onReturnTicket}>
                                 退票
@@ -156,7 +269,17 @@ const OrderDetailPage = () => {
                             </Button>
                         </>
                     )}
-                    {/* o_status === 3 不显示按钮 */}
+                    {orderDetail.orderStatus === 2 && (
+                        <>
+                            <Button type="primary" className="btn-blue" onClick={onReturnTicket}>
+                                退票
+                            </Button>
+                            <Button className="btn-white" onClick={onChangeTicket}>
+                                改签
+                            </Button>
+                        </>
+                    )}
+                    {/* orderStatus === 3 (已取消) 不显示按钮 */}
                 </div>
             </Card>
         </>

@@ -44,5 +44,8 @@ public class BookingRequest {
         @NotNull(message = "票种不能为空")
         @Min(value = 1, message = "票种值无效")
         private Byte ticketType; // 1-成人, 2-儿童, 3-学生, 4-残疾, 5-军人
+        
+        @NotNull(message = "车厢类型ID不能为空")
+        private Integer carriageTypeId; // 每个乘客独立的席别
     }
 } 
