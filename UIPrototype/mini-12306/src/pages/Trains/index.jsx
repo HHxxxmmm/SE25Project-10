@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Card, Tag, Pagination, Input, DatePicker, Button, Select, Divider } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { SearchOutlined, ClockCircleOutlined, EnvironmentOutlined } from '@ant-design/icons';
-import generateTicketsforOneData from '../../mock/Train'; // 请根据实际路径调整
+import axios from 'axios';
+//import generateTicketsforOneData from '../../mock/Train'; // 请根据实际路径调整
 import "./style.css";
 
 const { Option } = Select;
@@ -87,14 +88,16 @@ export default function TrainsPage() {
     // 生成车次数据
     useEffect(() => {
         setLoading(true);
-        setTimeout(() => {
-            const data = generateTicketsforOneData();
-            if (data.news && data.news.length > 0) {
-                setTrains(data.news);
-                setFilteredTrains(data.news);
-            }
-            setLoading(false);
-        }, 500);
+        axios.get('/api/trains/list')
+        .then(res => {
+            setTrains(res.data);
+            setFilteredTrains(res.data);
+        })
+        .catch(() => {
+            setTrains([]);
+            setFilteredTrains([]);
+        })
+        .finally(() => setLoading(false));
     }, []);
 
     // 过滤车次
