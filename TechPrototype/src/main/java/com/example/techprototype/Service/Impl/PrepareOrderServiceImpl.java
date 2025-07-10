@@ -74,9 +74,12 @@ public class PrepareOrderServiceImpl implements PrepareOrderService {
         
         // 5. 构建车次信息
         PrepareOrderResponse.TrainInfo trainInfo = new PrepareOrderResponse.TrainInfo();
+        trainInfo.setTrainId(train.getTrainId());
         trainInfo.setTrainNumber(train.getTrainNumber());
         trainInfo.setDepartureStation(departureStation.getStationName());
         trainInfo.setArrivalStation(arrivalStation.getStationName());
+        trainInfo.setDepartureStopId(departureStop.getStopId());
+        trainInfo.setArrivalStopId(arrivalStop.getStopId());
         trainInfo.setDepartureTime(departureStop.getDepartureTime());
         trainInfo.setArrivalTime(arrivalStop.getArrivalTime());
         trainInfo.setTravelDate(firstInventory.getTravelDate());
@@ -89,6 +92,7 @@ public class PrepareOrderServiceImpl implements PrepareOrderService {
             
             PrepareOrderResponse.CarriageInfo carriageInfo = new PrepareOrderResponse.CarriageInfo();
             carriageInfo.setInventoryId(inventory.getInventoryId());
+            carriageInfo.setCarriageTypeId(inventory.getCarriageTypeId());
             carriageInfo.setCarriageTypeName(carriageType.getTypeName());
             carriageInfo.setPrice(inventory.getPrice());
             

@@ -161,6 +161,6 @@ export default function RegisterPage({ visible, onCancel }) {
             </Button>
           </Form.Item>
         </Form>
-    </Modal>
+      </Modal>
   );
 }

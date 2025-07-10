@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -88,6 +89,7 @@ public class TicketServiceImpl implements TicketService {
     private final Random random = new Random();
     
     @Override
+    @Transactional
     public BookingResponse bookTickets(BookingRequest request) {
         String lockKey = "booking:" + request.getTrainId() + ":" + request.getTravelDate();
         
@@ -120,11 +122,12 @@ public class TicketServiceImpl implements TicketService {
                 }
             }
             
-            // 3. 预减Redis库存
-            int totalQuantity = request.getPassengers().size();
-            if (!redisService.decrStock(request.getTrainId(), request.getDepartureStopId(), 
-                    request.getArrivalStopId(), request.getTravelDate(), request.getCarriageTypeId(), totalQuantity)) {
-                return BookingResponse.failure("余票不足");
+            // 3. 预减Redis库存 - 为每个乘客的独立席别预减库存
+            for (BookingRequest.PassengerInfo passengerInfo : request.getPassengers()) {
+                if (!redisService.decrStock(request.getTrainId(), request.getDepartureStopId(), 
+                        request.getArrivalStopId(), request.getTravelDate(), passengerInfo.getCarriageTypeId(), 1)) {
+                    return BookingResponse.failure("乘客ID " + passengerInfo.getPassengerId() + " 选择的席别余票不足");
+                }
             }
             
             // 4. 生成订单号
@@ -145,6 +148,7 @@ public class TicketServiceImpl implements TicketService {
                 OrderMessage.PassengerInfo info = new OrderMessage.PassengerInfo();
                 info.setPassengerId(passengerInfo.getPassengerId());
                 info.setTicketType(passengerInfo.getTicketType());
+                info.setCarriageTypeId(passengerInfo.getCarriageTypeId());
                 passengerInfos.add(info);
             }
             orderMessage.setPassengers(passengerInfos);
@@ -525,13 +529,31 @@ public class TicketServiceImpl implements TicketService {
                 return MyTicketResponse.failure("用户未关联乘客信息");
             }
             
-            // 2. 根据乘客ID查询所有有效车票
+            // 2. 获取乘客信息
+            Optional<Passenger> passengerOpt = passengerRepository.findById(user.getPassengerId());
+            if (!passengerOpt.isPresent()) {
+                return MyTicketResponse.failure("乘客信息不存在");
+            }
+            Passenger passenger = passengerOpt.get();
+            
+            // 3. 根据乘客ID查询所有有效车票
             List<Ticket> tickets = ticketRepository.findValidTicketsByPassengerId(user.getPassengerId());
             
-            // 3. 转换为响应格式
+            // 4. 转换为响应格式
             List<MyTicketResponse.MyTicketInfo> ticketInfos = convertToMyTicketInfo(tickets);
             
-            return MyTicketResponse.success(ticketInfos);
+            // 5. 构建用户信息
+            MyTicketResponse.UserInfo userInfo = new MyTicketResponse.UserInfo();
+            userInfo.setUserId(user.getUserId());
+            userInfo.setRealName(user.getRealName());
+            userInfo.setPhoneNumber(user.getPhoneNumber());
+            userInfo.setEmail(user.getEmail());
+            userInfo.setPassengerId(passenger.getPassengerId());
+            userInfo.setPassengerName(passenger.getRealName());
+            userInfo.setPassengerIdCard(passenger.getIdCardNumber());
+            userInfo.setPassengerPhone(passenger.getPhoneNumber());
+            
+            return MyTicketResponse.success(ticketInfos, userInfo);
             
         } catch (Exception e) {
             System.err.println("获取本人车票失败: " + e.getMessage());
@@ -553,14 +575,32 @@ public class TicketServiceImpl implements TicketService {
                 return MyTicketResponse.failure("用户未关联乘客信息");
             }
             
-            // 2. 根据乘客ID和车票状态查询车票
+            // 2. 获取乘客信息
+            Optional<Passenger> passengerOpt = passengerRepository.findById(user.getPassengerId());
+            if (!passengerOpt.isPresent()) {
+                return MyTicketResponse.failure("乘客信息不存在");
+            }
+            Passenger passenger = passengerOpt.get();
+            
+            // 3. 根据乘客ID和车票状态查询车票
             List<Ticket> tickets = ticketRepository.findByPassengerIdAndTicketStatusOrderByCreatedTimeDesc(
                     user.getPassengerId(), ticketStatus);
             
-            // 3. 转换为响应格式
+            // 4. 转换为响应格式
             List<MyTicketResponse.MyTicketInfo> ticketInfos = convertToMyTicketInfo(tickets);
             
-            return MyTicketResponse.success(ticketInfos);
+            // 5. 构建用户信息
+            MyTicketResponse.UserInfo userInfo = new MyTicketResponse.UserInfo();
+            userInfo.setUserId(user.getUserId());
+            userInfo.setRealName(user.getRealName());
+            userInfo.setPhoneNumber(user.getPhoneNumber());
+            userInfo.setEmail(user.getEmail());
+            userInfo.setPassengerId(passenger.getPassengerId());
+            userInfo.setPassengerName(passenger.getRealName());
+            userInfo.setPassengerIdCard(passenger.getIdCardNumber());
+            userInfo.setPassengerPhone(passenger.getPhoneNumber());
+            
+            return MyTicketResponse.success(ticketInfos, userInfo);
             
         } catch (Exception e) {
             System.err.println("获取本人车票失败: " + e.getMessage());
@@ -711,7 +751,11 @@ public class TicketServiceImpl implements TicketService {
             // 8. 获取车厢类型信息
             String carriageTypeName = getCarriageTypeName(ticket.getCarriageTypeId());
             
-            // 9. 构建车票详情信息
+            // 9. 获取出发和到达时间
+            LocalTime departureTime = getDepartureTime(ticket.getDepartureStopId());
+            LocalTime arrivalTime = getArrivalTime(ticket.getArrivalStopId());
+            
+            // 10. 构建车票详情信息
             TicketDetailResponse.TicketDetailInfo ticketDetail = new TicketDetailResponse.TicketDetailInfo();
             ticketDetail.setTicketId(ticket.getTicketId());
             ticketDetail.setTicketNumber(ticket.getTicketNumber());
@@ -726,6 +770,8 @@ public class TicketServiceImpl implements TicketService {
             ticketDetail.setArrivalStationName(arrivalStationName);
             ticketDetail.setArrivalCity(arrivalCity);
             ticketDetail.setTravelDate(ticket.getTravelDate());
+            ticketDetail.setDepartureTime(departureTime);
+            ticketDetail.setArrivalTime(arrivalTime);
             ticketDetail.setCarriageNumber(ticket.getCarriageNumber());
             ticketDetail.setSeatNumber(ticket.getSeatNumber());
             ticketDetail.setPrice(ticket.getPrice());
@@ -775,6 +821,13 @@ public class TicketServiceImpl implements TicketService {
             // 获取车次信息
             String trainNumber = getTrainNumber(ticket.getTrainId());
             
+            // 获取出发和到达时间
+            LocalTime departureTime = getDepartureTime(ticket.getDepartureStopId());
+            LocalTime arrivalTime = getArrivalTime(ticket.getArrivalStopId());
+            
+            // 获取车厢类型名称
+            String carriageTypeName = getCarriageTypeName(ticket.getCarriageTypeId());
+            
             MyTicketResponse.MyTicketInfo ticketInfo = new MyTicketResponse.MyTicketInfo();
             ticketInfo.setTicketId(ticket.getTicketId());
             ticketInfo.setTicketNumber(ticket.getTicketNumber());
@@ -787,8 +840,11 @@ public class TicketServiceImpl implements TicketService {
             ticketInfo.setArrivalStopId(ticket.getArrivalStopId());
             ticketInfo.setArrivalStationName(arrivalStationName);
             ticketInfo.setTravelDate(ticket.getTravelDate());
+            ticketInfo.setDepartureTime(departureTime);
+            ticketInfo.setArrivalTime(arrivalTime);
             ticketInfo.setCarriageNumber(ticket.getCarriageNumber());
             ticketInfo.setSeatNumber(ticket.getSeatNumber());
+            ticketInfo.setCarriageTypeName(carriageTypeName);
             ticketInfo.setPrice(ticket.getPrice());
             ticketInfo.setTicketStatus(ticket.getTicketStatus());
             ticketInfo.setTicketStatusText(getTicketStatusText(ticket.getTicketStatus()));
@@ -802,6 +858,36 @@ public class TicketServiceImpl implements TicketService {
         }
         
         return ticketInfos;
+    }
+    
+    /**
+     * 获取出发时间
+     */
+    private LocalTime getDepartureTime(Long stopId) {
+        try {
+            Optional<TrainStop> trainStopOpt = trainStopRepository.findByStopId(stopId);
+            if (trainStopOpt.isPresent()) {
+                return trainStopOpt.get().getDepartureTime();
+            }
+        } catch (Exception e) {
+            System.err.println("获取出发时间失败: " + e.getMessage());
+        }
+        return null;
+    }
+    
+    /**
+     * 获取到达时间
+     */
+    private LocalTime getArrivalTime(Long stopId) {
+        try {
+            Optional<TrainStop> trainStopOpt = trainStopRepository.findByStopId(stopId);
+            if (trainStopOpt.isPresent()) {
+                return trainStopOpt.get().getArrivalTime();
+            }
+        } catch (Exception e) {
+            System.err.println("获取到达时间失败: " + e.getMessage());
+        }
+        return null;
     }
     
     /**
@@ -924,5 +1010,51 @@ public class TicketServiceImpl implements TicketService {
             case 4: return "残疾军人";
             default: return "未知类型";
         }
+    }
+
+    /**
+     * 计算票价 - 从库存信息获取基础票价，然后根据票种计算优惠
+     */
+    private BigDecimal calculateTicketPrice(Integer trainId, Long departureStopId, Long arrivalStopId, 
+                                          LocalDate travelDate, Integer carriageTypeId, Byte ticketType) {
+        // 从库存信息获取基础票价
+        Optional<TicketInventory> inventory = ticketInventoryDAO.findByKey(trainId, departureStopId, arrivalStopId, travelDate, carriageTypeId);
+        
+        System.out.println("查询库存 - 车次:" + trainId + ", 出发站:" + departureStopId + ", 到达站:" + arrivalStopId + 
+                          ", 日期:" + travelDate + ", 车厢类型:" + carriageTypeId + ", 找到:" + inventory.isPresent());
+        
+        if (inventory.isEmpty()) {
+            System.out.println("未找到库存记录，使用默认票价100元");
+            return BigDecimal.valueOf(100.0); // 默认票价
+        }
+        
+        BigDecimal basePrice = inventory.get().getPrice();
+        System.out.println("找到库存记录，基础票价:" + basePrice + "元");
+        
+        // 根据票种计算优惠
+        BigDecimal finalPrice;
+        switch (ticketType) {
+            case 1: // 成人票 - 无优惠
+                finalPrice = basePrice;
+                break;
+            case 2: // 儿童票 - 5折
+                finalPrice = basePrice.multiply(BigDecimal.valueOf(0.5));
+                break;
+            case 3: // 学生票 - 8折
+                finalPrice = basePrice.multiply(BigDecimal.valueOf(0.8));
+                break;
+            case 4: // 残疾票 - 5折
+                finalPrice = basePrice.multiply(BigDecimal.valueOf(0.5));
+                break;
+            case 5: // 军人票 - 5折
+                finalPrice = basePrice.multiply(BigDecimal.valueOf(0.5));
+                break;
+            default:
+                finalPrice = basePrice;
+                break;
+        }
+        
+        System.out.println("票种:" + ticketType + ", 最终票价:" + finalPrice + "元");
+        return finalPrice;
     }
 } 

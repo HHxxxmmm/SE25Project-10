@@ -4,6 +4,8 @@ import com.example.techprototype.DTO.BookingResponse;
 import com.example.techprototype.DTO.CancelOrderRequest;
 import com.example.techprototype.DTO.MyOrderResponse;
 import com.example.techprototype.DTO.OrderDetailResponse;
+import com.example.techprototype.DTO.RefundPreparationRequest;
+import com.example.techprototype.DTO.RefundPreparationResponse;
 import com.example.techprototype.Entity.Order;
 import com.example.techprototype.DTO.OrderMessage;
 
@@ -41,4 +43,9 @@ public interface OrderService {
      * 获取订单详情
      */
     OrderDetailResponse getOrderDetail(Long userId, Long orderId);
+    
+    /**
+     * 退票准备阶段 - 获取退票信息
+     */
+    RefundPreparationResponse getRefundPreparation(RefundPreparationRequest request);
 } 

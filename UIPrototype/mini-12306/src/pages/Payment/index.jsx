@@ -8,7 +8,7 @@ import {
     ArrowLeftOutlined
 } from '@ant-design/icons';
 import './style.css';
-import generateOrdersData from '../../mock/Orders';
+import { orderAPI } from '../../services/api';
 
 const { Title, Text } = Typography;
 
@@ -29,52 +29,33 @@ const PaymentPage = () => {
             try {
                 setLoading(true);
                 console.log('获取订单参数:', orderId);
-                console.log('从本地存储获取:', localStorage.getItem('current_order_id'));
                 
                 // 使用URL参数或本地存储的ID
                 const orderIdToUse = orderId || localStorage.getItem('current_order_id');
                 
-                // 模拟API请求获取订单数据
-                const data = generateOrdersData();
-                let foundOrder = null;
-                
-                if (orderIdToUse) {
-                    console.log('查找订单:', orderIdToUse);
-                    foundOrder = data.news.find(o => o.order_id === orderIdToUse);
-                    
-                    // 如果没找到订单，创建一个新的模拟订单
-                    if (!foundOrder) {
-                        console.log('未找到有效订单，创建模拟订单');
-                        
-                        // 使用已有数据作为模板
-                        const templateOrder = data.news[0];
-                        
-                        // 创建新的订单对象
-                        foundOrder = {
-                            ...templateOrder,
-                            order_id: orderIdToUse,
-                            o_status: 1, // 待支付状态
-                            o_time: new Date().toISOString().replace('T', ' ').substring(0, 19),
-                        };
-                    }
-                } else if (data.news.length > 0) {
-                    console.log('未找到订单ID，使用第一个待支付订单');
-                    foundOrder = data.news.find(o => o.o_status === 1);
-                }
-                
-                if (!foundOrder) {
-                    console.error('未找到有效订单');
-                    message.error('未找到有效的待支付订单');
+                if (!orderIdToUse) {
+                    console.error('未找到订单ID');
+                    message.error('未找到有效的订单ID');
                     navigate('/orders');
                     return;
                 }
                 
-                console.log('使用订单:', foundOrder);
-                setOrder(foundOrder);
+                // 调用后端API获取订单详情
+                const orderDetail = await orderAPI.getOrderDetail(orderIdToUse, 1); // 使用测试用户ID=1
+                console.log('订单详情:', orderDetail);
+                
+                if (orderDetail) {
+                    setOrder(orderDetail);
+                } else {
+                    message.error('获取订单详情失败');
+                    navigate('/orders');
+                    return;
+                }
                 
             } catch (error) {
                 console.error('获取订单数据失败:', error);
                 message.error('获取订单数据失败，请重试');
+                navigate('/orders');
             } finally {
                 setLoading(false);
             }
@@ -119,11 +100,16 @@ const PaymentPage = () => {
         try {
             setLoading(true);
             
-            // 模拟支付处理
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // 调用后端支付API
+            const paymentResponse = await orderAPI.payOrder(orderId, 1); // 使用测试用户ID=1
+            console.log('支付响应:', paymentResponse);
             
-            message.success('支付成功');
-            navigate('/order-detail', { state: { orderId: order.order_id, paid: true } });
+            if (paymentResponse.status === 'SUCCESS') {
+                message.success('支付成功');
+                navigate('/order-detail', { state: { orderId: orderId, paid: true } });
+            } else {
+                message.error('支付失败: ' + paymentResponse.message);
+            }
         } catch (error) {
             console.error('支付处理失败:', error);
             message.error('支付失败，请重试');
@@ -135,12 +121,6 @@ const PaymentPage = () => {
     // 处理取消支付
     const handleCancelPayment = () => {
         navigate('/orders');
-    };
-    
-    // 计算总价格
-    const calculateTotalPrice = (order) => {
-        if (!order || !order.passengers) return 0;
-        return order.passengers.reduce((sum, passenger) => sum + passenger.price, 0);
     };
     
     if (loading || !order) {
@@ -174,21 +154,21 @@ const PaymentPage = () => {
                         
                         <Col span={24}>
                             <div className="train-info-card">
-                                <div className="train-date">发车时间：{order.t_time.slice(0, 10)}</div>
+                                <div className="train-date">发车时间：{order.travelDate}</div>
                                 <div className="train-route">
                                     <div className="station-block">
-                                        <div className="station-time">{order.t_time.slice(11, 16)}</div>
-                                        <div className="station-name">{order.t_from_city}{order.t_from_station}</div>
+                                        <div className="station-time">{order.departureTime}</div>
+                                        <div className="station-name">{order.departureStation}</div>
                                     </div>
                                     
                                     <div className="arrow-block">
-                                        <div className="train-number">{order.train_id}</div>
+                                        <div className="train-number">{order.trainNumber}</div>
                                         <div className="arrow">→</div>
                                     </div>
                                     
                                     <div className="station-block">
-                                        <div className="station-time">{order.arrive_time.slice(11, 16)}</div>
-                                        <div className="station-name">{order.t_to_city}{order.t_to_station}</div>
+                                        <div className="station-time">{order.arrivalTime}</div>
+                                        <div className="station-name">{order.arrivalStation}</div>
                                     </div>
                                 </div>
                             </div>
@@ -197,18 +177,16 @@ const PaymentPage = () => {
                         <Col span={24}>
                             <div className="passengers-detail">
                                 <div className="detail-label">乘车人信息：</div>
-                                {order.passengers.map((passenger, index) => (
+                                {order.tickets.map((ticket, index) => (
                                     <div key={index} className="passenger-detail-item">
                                         <div className="passenger-info">
-                                            <span className="passenger-name">{passenger.name}</span>
-                                            <span className="passenger-id">（{passenger.id}）</span>
+                                            <span className="passenger-name">{ticket.passengerName}</span>
+                                            <span className="passenger-id">（{ticket.idCardNumber}）</span>
                                             <span className="passenger-seat">
-                                                {passenger.seat === 1 ? '头等座' : 
-                                                 passenger.seat === 2 ? '商务座' : 
-                                                 passenger.seat === 3 ? '二等座' : '无座'}
+                                                {ticket.carriageType}
                                             </span>
                                             <span className="passenger-price">
-                                                ¥{passenger.price}
+                                                ¥{ticket.price}
                                             </span>
                                         </div>
                                     </div>
@@ -220,7 +198,7 @@ const PaymentPage = () => {
                             <div className="order-price">
                                 <Text type="secondary">总金额：</Text>
                                 <Text type="danger" strong className="price-value">
-                                    ¥{calculateTotalPrice(order)}
+                                    ¥{order.totalAmount}
                                 </Text>
                             </div>
                         </Col>

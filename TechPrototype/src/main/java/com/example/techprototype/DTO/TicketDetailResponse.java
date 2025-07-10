@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @Data
 @NoArgsConstructor
@@ -42,6 +43,8 @@ public class TicketDetailResponse {
         private String arrivalStationName;
         private String arrivalCity;
         private LocalDate travelDate;
+        private LocalTime departureTime;
+        private LocalTime arrivalTime;
         private String carriageNumber;
         private String seatNumber;
         private BigDecimal price;
