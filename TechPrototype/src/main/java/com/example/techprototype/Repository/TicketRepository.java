@@ -57,9 +57,9 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     List<Ticket> findByPassengerIdOrderByCreatedTimeDesc(@Param("passengerId") Long passengerId);
     
     /**
-     * 根据乘客ID查询有效车票（待支付、未使用、已使用状态）
+     * 根据乘客ID查询所有车票（包括所有状态）
      */
-    @Query("SELECT t FROM Ticket t WHERE t.passengerId = :passengerId AND t.ticketStatus IN (0, 1, 2) ORDER BY t.createdTime DESC")
+    @Query("SELECT t FROM Ticket t WHERE t.passengerId = :passengerId ORDER BY t.createdTime DESC")
     List<Ticket> findValidTicketsByPassengerId(@Param("passengerId") Long passengerId);
     
     /**
