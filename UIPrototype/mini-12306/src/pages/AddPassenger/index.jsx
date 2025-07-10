@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { message } from 'antd';
 import { passengerAPI } from '../../services/api';
+import { useAuth } from '../../hooks/useAuth';
 import './style.css';
 
 const idTypes = [
@@ -9,6 +10,7 @@ const idTypes = [
 ];
 
 const AddPassenger = ({ onClose }) => {
+    const { user } = useAuth();
     const [name, setName] = useState('');
     const [idType, setIdType] = useState(idTypes[0]);
     const [idNumber, setIdNumber] = useState('');
@@ -26,10 +28,15 @@ const AddPassenger = ({ onClose }) => {
         setSubmitting(true);
         
         try {
-            const userId = 1; // 使用测试用户ID
+            const currentUserId = user?.userId; // 使用当前登录用户的ID
+            
+            if (!currentUserId) {
+                message.error('请先登录');
+                return;
+            }
             
             // 调用后端API
-            const response = await passengerAPI.addPassenger(userId, name, idNumber, phone);
+            const response = await passengerAPI.addPassenger(currentUserId, name, idNumber, phone);
             
             if (response.success) {
                 message.success('乘车人添加成功！');

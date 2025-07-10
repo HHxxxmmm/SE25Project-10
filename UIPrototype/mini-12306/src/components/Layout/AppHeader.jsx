@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Button } from 'antd';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import RegisterPage from '../../pages/Register';
 import './style.css';
@@ -9,6 +9,7 @@ const { Header } = Layout;
 
 export default function AppHeader() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { user, isAuthenticated, logout, login, checkCurrentUser } = useAuth();
     const [showRegisterModal, setShowRegisterModal] = useState(false);
     const [localAuthState, setLocalAuthState] = useState({
@@ -16,12 +17,11 @@ export default function AppHeader() {
         user: null
     });
 
-    // 在组件挂载时检查当前用户状态
+    // 在组件挂载时检查当前用户状态，但减少频率
     useEffect(() => {
         const checkUserSession = async () => {
             try {
                 // 从服务器获取当前会话用户
-                // 注意：checkCurrentUser已在authActions中定义，需要先添加到useAuth中
                 const user = await checkCurrentUser();
                 
                 if (user) {
@@ -35,10 +35,15 @@ export default function AppHeader() {
             }
         };
 
-        checkUserSession();
-        // 可以考虑添加定时检查，但对于大多数情况，这是不必要的
-        // 会话验证应主要依赖服务器端控制
-    }, []);
+        // 只在特定页面或首次加载时检查认证状态
+        // 对于trains等公开页面，减少认证检查频率
+        const publicPaths = ['/trains', '/home'];
+        const isPublicPath = publicPaths.some(path => location.pathname.startsWith(path));
+        
+        if (!isPublicPath || !isAuthenticated) {
+            checkUserSession();
+        }
+    }, [location.pathname, isAuthenticated]);
 
     // 合并状态：优先使用Redux，没有则使用本地存储
     const currentAuthState = isAuthenticated ?

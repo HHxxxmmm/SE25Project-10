@@ -25,19 +25,26 @@ root.render(
     </React.StrictMode>
 );
 
-// 初始化检查认证状态
+// 初始化检查认证状态 - 优化版本
 const checkAuth = async () => {
     try {
-        // 导入authActions中的checkCurrentUser函数
+        // 只在需要时检查认证状态，减少不必要的API调用
         const { checkCurrentUser } = require('./store/actions/authActions');
-        // 调用API检查当前用户的会话状态
-        store.dispatch(checkCurrentUser());
+        
+        // 检查当前路径，如果是公开页面则跳过认证检查
+        const currentPath = window.location.pathname;
+        const publicPaths = ['/trains', '/home'];
+        const isPublicPath = publicPaths.some(path => currentPath.startsWith(path));
+        
+        if (!isPublicPath) {
+            store.dispatch(checkCurrentUser());
+        }
     } catch (err) {
         console.error('检查认证状态失败:', err);
     }
 };
 
-// 应用启动时检查认证状态
-setTimeout(checkAuth, 100); // 稍微延迟，确保应用已完全加载
+// 应用启动时检查认证状态 - 延迟执行，减少对页面加载的影响
+setTimeout(checkAuth, 500); // 增加延迟，确保应用已完全加载
 
 reportWebVitals();

@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { message, Spin, Select, Input } from 'antd';
 import AddPassenger from '../AddPassenger';
 import { orderAPI, passengerAPI, ticketAPI } from '../../services/api';
+import { useAuth } from '../../hooks/useAuth';
 import './style.css';
 
 // 自定义消息提示组件
@@ -94,6 +95,7 @@ const seatTypeMap = {
 const SubmitOrder = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { user } = useAuth();
     const [searchText, setSearchText] = useState('');
     const [selectedPassengers, setSelectedPassengers] = useState([]);
     const [passengerDetails, setPassengerDetails] = useState({});
@@ -110,12 +112,32 @@ const SubmitOrder = () => {
     useEffect(() => {
         const fetchPrepareOrderData = async () => {
             try {
-                // 内置测试参数
-                const userId = 1;
-                const inventoryIds = [1, 11, 21];
+                // 使用当前登录用户的ID
+                const currentUserId = user?.userId;
                 
-                console.log('获取准备订单信息:', { userId, inventoryIds });
-                const response = await orderAPI.prepareOrder(userId, inventoryIds);
+                if (!currentUserId) {
+                    message.error('请先登录');
+                    navigate('/login');
+                    return;
+                }
+                
+                // 从URL参数获取库存ID
+                const params = new URLSearchParams(location.search);
+                const inventoryIdsParam = params.get('inventoryIds');
+                let inventoryIds = [];
+                
+                if (inventoryIdsParam) {
+                    // 解析库存ID列表
+                    inventoryIds = inventoryIdsParam.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+                }
+                
+                // 如果没有库存ID，使用默认值（向后兼容）
+                if (inventoryIds.length === 0) {
+                    inventoryIds = [1, 11, 21];
+                }
+                
+                console.log('获取准备订单信息:', { currentUserId, inventoryIds });
+                const response = await orderAPI.prepareOrder(currentUserId, inventoryIds);
                 console.log('准备订单信息响应:', response);
                 
                 if (response && response.trainInfo) {
@@ -149,7 +171,7 @@ const SubmitOrder = () => {
         };
 
         fetchPrepareOrderData();
-    }, [navigate]);
+    }, [navigate, location.search]);
 
     const filteredPassengers = passengersData.filter(name =>
         name.includes(searchText)
@@ -207,8 +229,8 @@ const SubmitOrder = () => {
     // 检查是否可以添加乘车人
     const checkCanAddPassenger = async () => {
         try {
-            const userId = 1; // 使用测试用户ID
-            const response = await passengerAPI.checkCanAddPassenger(userId);
+            const currentUserId = user?.userId; // 使用当前登录用户的ID
+            const response = await passengerAPI.checkCanAddPassenger(currentUserId);
             
             if (response.allowed) {
                 setShowAddPassengerModal(true);
@@ -253,7 +275,7 @@ const SubmitOrder = () => {
         try {
             console.log('开始构建购票请求...');
             // 构建购票请求
-            const userId = 1; // 使用测试用户ID
+            const currentUserId = user?.userId; // 使用当前登录用户的ID
             
             // 从response中获取车次信息
             const trainId = response.trainInfo.trainId;
@@ -329,7 +351,7 @@ const SubmitOrder = () => {
             }
 
             const bookingRequest = {
-                userId: userId,
+                userId: currentUserId,
                 trainId: trainId,
                 departureStopId: departureStopId,
                 arrivalStopId: arrivalStopId,

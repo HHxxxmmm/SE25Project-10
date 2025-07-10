@@ -22,6 +22,7 @@ const PaymentPage = () => {
     const [loading, setLoading] = useState(true);
     const [paymentMethod, setPaymentMethod] = useState('alipay');
     const [timeLeft, setTimeLeft] = useState(15 * 60); // 15分钟倒计时
+    const [paymentCompleted, setPaymentCompleted] = useState(false); // 支付完成状态
     
     // 加载订单数据
     useEffect(() => {
@@ -97,16 +98,29 @@ const PaymentPage = () => {
     
     // 处理提交支付
     const handleSubmitPayment = async () => {
+        // 防止重复点击
+        if (loading) {
+            return;
+        }
+        
+        // 确保有有效的orderId
+        const orderIdToUse = orderId || localStorage.getItem('current_order_id');
+        if (!orderIdToUse) {
+            message.error('订单ID不能为空');
+            return;
+        }
+        
         try {
             setLoading(true);
             
             // 调用后端支付API
-            const paymentResponse = await orderAPI.payOrder(orderId, 1); // 使用测试用户ID=1
+            const paymentResponse = await orderAPI.payOrder(orderIdToUse, 1); // 使用测试用户ID=1
             console.log('支付响应:', paymentResponse);
             
             if (paymentResponse.status === 'SUCCESS') {
+                setPaymentCompleted(true); // 设置支付完成状态
                 message.success('支付成功');
-                navigate('/order-detail', { state: { orderId: orderId, paid: true } });
+                navigate('/order-detail', { state: { orderId: orderIdToUse, paid: true } });
             } else {
                 message.error('支付失败: ' + paymentResponse.message);
             }
@@ -235,9 +249,10 @@ const PaymentPage = () => {
                         size="large" 
                         onClick={handleSubmitPayment} 
                         loading={loading}
+                        disabled={paymentCompleted || loading}
                         className="pay-button"
                     >
-                        立即支付
+                        {paymentCompleted ? '支付完成' : '立即支付'}
                     </Button>
                     
                     <Button 

@@ -630,13 +630,12 @@ public class OrderServiceImpl implements OrderService {
      */
     private String getCarriageTypeName(Integer carriageTypeId) {
         switch (carriageTypeId) {
-            case 1: return "硬座";
-            case 2: return "软座";
-            case 3: return "硬卧";
-            case 4: return "软卧";
-            case 5: return "商务座";
-            case 6: return "一等座";
-            case 7: return "二等座";
+            case 1: return "商务座";
+            case 2: return "一等座";
+            case 3: return "二等座";
+            case 4: return "硬座";
+            case 5: return "硬卧";
+            case 6: return "无座";
             default: return "未知席别";
         }
     }
