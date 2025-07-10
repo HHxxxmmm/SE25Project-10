@@ -22,8 +22,8 @@ public class ProfileController {
      * @param userId 用户ID
      * @return 用户个人资料响应
      */
-    @GetMapping("")
-    public ResponseEntity<ProfileResponse> getUserProfile(@RequestParam Long userId) {
+    @GetMapping("/{userId}")
+    public ResponseEntity<ProfileResponse> getUserProfile(@PathVariable Long userId) {
         ProfileResponse response = profileService.getUserProfile(userId);
         if ("SUCCESS".equals(response.getStatus())) {
             return ResponseEntity.ok(response);
@@ -38,9 +38,9 @@ public class ProfileController {
      * @param request 更新请求
      * @return 更新后的用户个人资料响应
      */
-    @PutMapping("")
+    @PutMapping("/{userId}")
     public ResponseEntity<ProfileResponse> updateUserProfile(
-            @RequestParam Long userId, 
+            @PathVariable Long userId, 
             @RequestBody ProfileRequest request) {
         ProfileResponse response = profileService.updateUserProfile(userId, request);
         if ("SUCCESS".equals(response.getStatus())) {
