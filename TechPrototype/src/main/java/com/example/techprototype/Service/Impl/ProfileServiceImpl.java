@@ -81,7 +81,7 @@ public class ProfileServiceImpl implements ProfileService {
                     
                     // 只有学生类型才显示学生票剩余次数
                     if (passenger.getPassengerType() == 3) { // 学生类型
-                        passengerData.setStudentTypeLeft(passenger.getStudentTypeLeft());
+                    passengerData.setStudentTypeLeft(passenger.getStudentTypeLeft());
                     } else {
                         passengerData.setStudentTypeLeft(null);
                     }

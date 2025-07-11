@@ -26,8 +26,8 @@ export default function ProfilePage() {
                 if (!user || !user.userId) {
                     message.error('请先登录');
                     navigate('/login');
-                    return;
-                }
+            return;
+        }
 
                 const response = await profileAPI.getUserProfile(user.userId);
                 
@@ -40,7 +40,7 @@ export default function ProfilePage() {
                 console.error('获取个人资料失败:', error);
                 message.error('获取个人资料失败，请稍后重试');
             } finally {
-                setLoading(false);
+            setLoading(false);
             }
         };
 
@@ -76,8 +76,8 @@ export default function ProfilePage() {
             
             if (response.status === 'SUCCESS') {
                 setProfileData(response.profile);
-                message.success('个人信息更新成功！');
-                setIsEditModalVisible(false);
+            message.success('个人信息更新成功！');
+            setIsEditModalVisible(false);
             } else {
                 message.error(response.message || '更新失败');
             }

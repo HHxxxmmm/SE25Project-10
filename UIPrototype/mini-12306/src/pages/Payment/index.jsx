@@ -1,32 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Radio, Button, message, Row, Col, Divider, Typography } from 'antd';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { 
-    AlipayCircleOutlined, 
-    WechatOutlined, 
-    CreditCardOutlined, 
-    ArrowLeftOutlined
-} from '@ant-design/icons';
+import { ArrowLeftOutlined, AlipayCircleOutlined, WechatOutlined, CreditCardOutlined } from '@ant-design/icons';
 import './style.css';
 import { orderAPI } from '../../services/api';
+import { useAuth } from '../../hooks/useAuth';
 
 const { Title, Text } = Typography;
 
 const PaymentPage = () => {
-    const navigate = useNavigate();
-    const location = useLocation();
-    const [searchParams] = useSearchParams();
-    const orderId = searchParams.get('orderId');
-    
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [paymentMethod, setPaymentMethod] = useState('alipay');
     const [timeLeft, setTimeLeft] = useState(15 * 60); // 15分钟倒计时
-    const [paymentCompleted, setPaymentCompleted] = useState(false); // 支付完成状态
+    const [paymentMethod, setPaymentMethod] = useState('alipay');
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const { user } = useAuth();
+    const orderId = searchParams.get('orderId');
     
     // 加载订单数据
     useEffect(() => {
         const fetchOrder = async () => {
+            // 检查用户是否已登录
+            if (!user) {
+                console.log('用户未登录，跳转到登录页');
+                message.error('请先登录');
+                navigate('/login');
+                return;
+            }
+
+            // 检查用户ID是否存在 - 后端返回的是userId字段
+            const userId = user.userId;
+            if (!userId) {
+                console.log('用户ID不存在:', user);
+                message.error('用户信息不完整，请重新登录');
+                navigate('/login');
+                return;
+            }
+
             try {
                 setLoading(true);
                 console.log('获取订单参数:', orderId);
@@ -42,7 +53,8 @@ const PaymentPage = () => {
                 }
                 
                 // 调用后端API获取订单详情
-                const orderDetail = await orderAPI.getOrderDetail(orderIdToUse, 1); // 使用测试用户ID=1
+                console.log('获取订单详情，用户ID:', userId);
+                const orderDetail = await orderAPI.getOrderDetail(orderIdToUse, userId);
                 console.log('订单详情:', orderDetail);
                 
                 if (orderDetail) {
@@ -62,8 +74,11 @@ const PaymentPage = () => {
             }
         };
         
-        fetchOrder();
-    }, [orderId, navigate]);
+        // 只有在用户存在且已认证时才获取订单
+        if (user && user.userId) {
+            fetchOrder();
+        }
+    }, [orderId, user]); // 移除navigate依赖，避免不必要的重新渲染
     
     // 倒计时效果
     useEffect(() => {
@@ -82,7 +97,7 @@ const PaymentPage = () => {
         }, 1000);
         
         return () => clearInterval(timer);
-    }, [order, navigate]);
+    }, [order]); // 移除navigate依赖，避免不必要的重新渲染
     
     // 格式化倒计时显示
     const formatTimeLeft = () => {
@@ -98,8 +113,18 @@ const PaymentPage = () => {
     
     // 处理提交支付
     const handleSubmitPayment = async () => {
-        // 防止重复点击
-        if (loading) {
+        // 检查用户是否已登录
+        if (!user) {
+            message.error('请先登录');
+            navigate('/login');
+            return;
+        }
+
+        // 检查用户ID是否存在 - 后端返回的是userId字段
+        const userId = user.userId;
+        if (!userId) {
+            message.error('用户信息不完整，请重新登录');
+            navigate('/login');
             return;
         }
         
@@ -114,13 +139,13 @@ const PaymentPage = () => {
             setLoading(true);
             
             // 调用后端支付API
-            const paymentResponse = await orderAPI.payOrder(orderIdToUse, 1); // 使用测试用户ID=1
+            console.log('提交支付，用户ID:', userId, '订单ID:', orderIdToUse);
+            const paymentResponse = await orderAPI.payOrder(orderIdToUse, userId);
             console.log('支付响应:', paymentResponse);
             
             if (paymentResponse.status === 'SUCCESS') {
-                setPaymentCompleted(true); // 设置支付完成状态
                 message.success('支付成功');
-                navigate('/order-detail', { state: { orderId: orderIdToUse, paid: true } });
+                navigate(`/order-detail?orderId=${orderIdToUse}`);
             } else {
                 message.error('支付失败: ' + paymentResponse.message);
             }
@@ -249,10 +274,9 @@ const PaymentPage = () => {
                         size="large" 
                         onClick={handleSubmitPayment} 
                         loading={loading}
-                        disabled={paymentCompleted || loading}
                         className="pay-button"
                     >
-                        {paymentCompleted ? '支付完成' : '立即支付'}
+                        立即支付
                     </Button>
                     
                     <Button 

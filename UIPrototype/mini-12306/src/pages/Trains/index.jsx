@@ -144,8 +144,8 @@ export default function TrainsPage() {
         // 如果URL中有搜索参数，优先使用URL参数
         if (from || to || date) {
             const newSearchForm = {
-                from,
-                to,
+            from,
+            to,
                 date: date ? dayjs(date) : null,
                 trainType: 'all'
             };
@@ -178,18 +178,18 @@ export default function TrainsPage() {
                 setFilteredTrains(savedState.searchResults);
             } else {
                 // 如果localStorage也没有，加载全部车次数据
-                setLoading(true);
+        setLoading(true);
                 trainAPI.getTrainList()
                     .then(data => {
                         setTrains(data);
                         setFilteredTrains(data);
-                    })
+            })
                     .catch((error) => {
                         console.error('获取车次列表失败:', error);
-                        setTrains([]);
-                        setFilteredTrains([]);
-                    })
-                    .finally(() => setLoading(false));
+                setTrains([]);
+                setFilteredTrains([]);
+            })
+            .finally(() => setLoading(false));
             }
         }
     }, [location.search]); // 当URL参数变化时执行
@@ -212,7 +212,7 @@ export default function TrainsPage() {
     // 当trains数据或搜索条件变化时，重新过滤
     useEffect(() => {
         if (trains.length > 0) {
-            filterTrains();
+        filterTrains();
         }
     }, [filterTrains, trains, searchForm.trainType]);
 
@@ -434,16 +434,16 @@ export default function TrainsPage() {
                                         {train.seat && train.seat.length > 0 ? (
                                             train.seat.map((seatType, index) => (
                                                 <div key={index} className="seat-item">
-                                                    <Tag color={SEAT_TYPES[seatType]?.color}>
+                                                <Tag color={SEAT_TYPES[seatType]?.color}>
                                                         {SEAT_TYPES[seatType]?.text || '未知'}
-                                                    </Tag>
-                                                    <span className="seat-count">
+                                                </Tag>
+                                                <span className="seat-count">
                                                         余{train.seat_number?.[index] || 0}张
-                                                    </span>
-                                                    <span className="seat-price">
+                                                </span>
+                                                <span className="seat-price">
                                                         ¥{train.seat_price?.[index] || 0}
-                                                    </span>
-                                                </div>
+                                                </span>
+                                            </div>
                                             ))
                                         ) : (
                                             <div className="no-seats">暂无座位信息</div>
