@@ -68,7 +68,7 @@ const ReturnTicketPage = () => {
             try {
                 const orderId = searchParams.get('orderId');
                 const ticketIdsParam = searchParams.get('ticketIds');
-                const currentUserId = user?.userId || searchParams.get('userId') || 1;
+                const currentUserId = user?.userId || searchParams.get('userId');
                 
                 console.log('退票页面URL参数:', { orderId, ticketIdsParam, currentUserId });
                 
@@ -154,7 +154,7 @@ const ReturnTicketPage = () => {
 
         setSubmitting(true);
         try {
-            const currentUserId = user?.userId || searchParams.get('userId') || 1;
+            const currentUserId = user?.userId || searchParams.get('userId');
             const orderId = searchParams.get('orderId');
             
             console.log('提交正式退票请求:', { currentUserId, orderId, selectedTickets });

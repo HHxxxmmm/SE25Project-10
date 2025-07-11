@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { Card, Tag, Pagination, Input, DatePicker, Button, Select, Space, Divider, message } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { SearchOutlined, EnvironmentOutlined, UserOutlined, FileTextOutlined } from '@ant-design/icons';
 import { orderAPI } from '../../services/api';
+import { useAuth } from '../../hooks/useAuth';
 import "./style.css";
 
 const { Search } = Input;
@@ -60,10 +61,9 @@ function formatDateTime(datetime) {
     return '';
 }
 
-
-
 export default function OrdersPage() {
     const navigate = useNavigate();
+    const { user } = useAuth(); // 获取当前登录用户
     const [orders, setOrders] = useState([]);
     const [filteredOrders, setFilteredOrders] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
@@ -79,11 +79,38 @@ export default function OrdersPage() {
         endDate: null
     });
 
+    // 使用useRef来跟踪API调用状态，防止重复调用
+    const apiCallInProgress = useRef(false);
+
     // 获取订单数据
     const fetchOrders = useCallback(async () => {
+        // 防止重复API调用
+        if (apiCallInProgress.current) {
+            console.log('API调用正在进行中，跳过重复调用');
+            return;
+        }
+        
+        // 检查用户是否已登录
+        if (!user) {
+            console.log('用户未登录，跳转到登录页');
+            navigate('/login');
+            return;
+        }
+
+        // 检查用户ID是否存在 - 后端返回的是userId字段
+        const userId = user.userId;
+        if (!userId) {
+            console.log('用户ID不存在:', user);
+            message.error('用户信息不完整，请重新登录');
+            navigate('/login');
+            return;
+        }
+
         try {
             setLoading(true);
-            const response = await orderAPI.getMyOrders(1); // 使用测试用户ID=1
+            apiCallInProgress.current = true;
+            console.log('获取订单，用户ID:', userId);
+            const response = await orderAPI.getMyOrders(userId);
             
             console.log('订单API响应:', response);
             
@@ -103,11 +130,21 @@ export default function OrdersPage() {
             setFilteredOrders([]);
         } finally {
             setLoading(false);
+            apiCallInProgress.current = false;
         }
-    }, []);
+    }, [user]);
 
     useEffect(() => {
-        fetchOrders();
+        // 只有在用户存在且已认证时才获取订单
+        if (user && user.userId) {
+            fetchOrders();
+        }
+        
+        // 组件卸载时的清理函数
+        return () => {
+            // 清理API调用状态
+            apiCallInProgress.current = false;
+        };
     }, [fetchOrders]);
 
     // 过滤订单
@@ -167,8 +204,24 @@ export default function OrdersPage() {
 
     const handleCancelOrder = async (order, e) => {
         e.stopPropagation();
+        
+        // 检查用户是否已登录
+        if (!user) {
+            message.error('请先登录');
+            navigate('/login');
+            return;
+        }
+
+        // 检查用户ID是否存在 - 后端返回的是userId字段
+        const userId = user.userId;
+        if (!userId) {
+            message.error('用户信息不完整，请重新登录');
+            navigate('/login');
+            return;
+        }
+
         try {
-            const response = await orderAPI.cancelOrder(order.orderId, 1);
+            const response = await orderAPI.cancelOrder(order.orderId, userId);
             if (response.status === 'SUCCESS') {
                 message.success('订单取消成功');
                 fetchOrders(); // 重新获取订单列表

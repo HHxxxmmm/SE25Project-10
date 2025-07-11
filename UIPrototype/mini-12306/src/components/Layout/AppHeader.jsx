@@ -41,7 +41,7 @@ export default function AppHeader() {
         const isPublicPath = publicPaths.some(path => location.pathname.startsWith(path));
         
         if (!isPublicPath || !isAuthenticated) {
-            checkUserSession();
+        checkUserSession();
         }
     }, [location.pathname, isAuthenticated]);
 

@@ -37,7 +37,7 @@ const checkAuth = async () => {
         const isPublicPath = publicPaths.some(path => currentPath.startsWith(path));
         
         if (!isPublicPath) {
-            store.dispatch(checkCurrentUser());
+        store.dispatch(checkCurrentUser());
         }
     } catch (err) {
         console.error('检查认证状态失败:', err);
