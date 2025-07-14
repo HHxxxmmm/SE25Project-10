@@ -36,6 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class TicketServiceImpl implements TicketService {
@@ -93,14 +95,16 @@ public class TicketServiceImpl implements TicketService {
     @Override
     @Transactional
     public BookingResponse bookTickets(BookingRequest request) {
-        String lockKey = "booking:" + request.getTrainId() + ":" + request.getTravelDate();
+        // 按席别分组，为每个不同的席别创建独立的锁
+        Set<Integer> carriageTypeIds = request.getPassengers().stream()
+                .map(BookingRequest.PassengerInfo::getCarriageTypeId)
+                .collect(Collectors.toSet());
+        
+        List<String> lockKeys = new ArrayList<>();
+        List<String> acquiredLocks = new ArrayList<>();
+        List<BookingRequest.PassengerInfo> successfulStockReductions = new ArrayList<>();
         
         try {
-            // 获取分布式锁
-            if (!redisService.tryLock(lockKey, 5, 30)) {
-                return BookingResponse.failure("系统繁忙，请稍后重试");
-            }
-            
             // 1. 验证乘客关系
             for (BookingRequest.PassengerInfo passengerInfo : request.getPassengers()) {
                 if (!userPassengerRelationRepository.existsByUserIdAndPassengerId(request.getUserId(), passengerInfo.getPassengerId())) {
@@ -124,18 +128,36 @@ public class TicketServiceImpl implements TicketService {
                 }
             }
             
-            // 3. 预减Redis库存 - 为每个乘客的独立席别预减库存
+            // 3. 获取分布式锁 - 按席别分别加锁
+            for (Integer carriageTypeId : carriageTypeIds) {
+                String lockKey = "booking:" + request.getTrainId() + ":" + request.getTravelDate() + ":" + carriageTypeId;
+                lockKeys.add(lockKey);
+                
+                if (!redisService.tryLock(lockKey, 5, 30)) {
+                    // 如果获取锁失败，释放已获取的锁
+                    for (String acquiredLock : acquiredLocks) {
+                        redisService.unlock(acquiredLock);
+                    }
+                    return BookingResponse.failure("系统繁忙，请稍后重试");
+                }
+                acquiredLocks.add(lockKey);
+            }
+            
+            // 4. 预减Redis库存 - 为每个乘客的独立席别预减库存
             for (BookingRequest.PassengerInfo passengerInfo : request.getPassengers()) {
                 if (!redisService.decrStock(request.getTrainId(), request.getDepartureStopId(), 
                         request.getArrivalStopId(), request.getTravelDate(), passengerInfo.getCarriageTypeId(), 1)) {
+                    // 库存不足，回滚已扣减的库存
+                    rollbackStockReductions(successfulStockReductions, request);
                     return BookingResponse.failure("乘客ID " + passengerInfo.getPassengerId() + " 选择的席别余票不足");
                 }
+                successfulStockReductions.add(passengerInfo);
             }
             
-            // 4. 生成订单号
+            // 5. 生成订单号
             String orderNumber = redisService.generateOrderNumber();
             
-            // 5. 发送订单消息到RabbitMQ
+            // 6. 发送订单消息到RabbitMQ
             OrderMessage orderMessage = new OrderMessage();
             orderMessage.setUserId(request.getUserId());
             orderMessage.setTrainId(request.getTrainId());
@@ -155,15 +177,30 @@ public class TicketServiceImpl implements TicketService {
             }
             orderMessage.setPassengers(passengerInfos);
             
-            System.out.println("发送订单消息到RabbitMQ: " + orderNumber);
-            rabbitTemplate.convertAndSend("order.exchange", "order.create", orderMessage);
-            System.out.println("订单消息发送成功: " + orderNumber);
+            try {
+                System.out.println("发送订单消息到RabbitMQ: " + orderNumber);
+                rabbitTemplate.convertAndSend("order.exchange", "order.create", orderMessage);
+                System.out.println("订单消息发送成功: " + orderNumber);
+            } catch (Exception e) {
+                // 消息发送失败，回滚库存
+                System.err.println("订单消息发送失败: " + e.getMessage());
+                rollbackStockReductions(successfulStockReductions, request);
+                return BookingResponse.failure("系统繁忙，请稍后重试");
+            }
             
-            // 6. 返回订单号
+            // 7. 返回订单号
             return BookingResponse.successWithMessage("购票成功", orderNumber, null, null, LocalDateTime.now());
             
+        } catch (Exception e) {
+            // 发生异常，回滚库存
+            System.err.println("购票过程中发生异常: " + e.getMessage());
+            rollbackStockReductions(successfulStockReductions, request);
+            return BookingResponse.failure("系统异常，请稍后重试");
         } finally {
-            redisService.unlock(lockKey);
+            // 释放所有获取的锁
+            for (String lockKey : acquiredLocks) {
+                redisService.unlock(lockKey);
+            }
         }
     }
     
@@ -1097,5 +1134,44 @@ public class TicketServiceImpl implements TicketService {
         
         System.out.println("票种:" + ticketType + ", 最终票价:" + finalPrice + "元");
         return finalPrice;
+    }
+    
+    /**
+     * 回滚库存扣减 - 当购票过程中出现异常时，将已扣减的库存加回
+     */
+    private void rollbackStockReductions(List<BookingRequest.PassengerInfo> successfulReductions, BookingRequest request) {
+        if (successfulReductions.isEmpty()) {
+            return;
+        }
+        
+        System.out.println("开始回滚库存扣减，共 " + successfulReductions.size() + " 个席别");
+        
+        for (BookingRequest.PassengerInfo passengerInfo : successfulReductions) {
+            try {
+                boolean success = redisService.incrStock(
+                    request.getTrainId(),
+                    request.getDepartureStopId(),
+                    request.getArrivalStopId(),
+                    request.getTravelDate(),
+                    passengerInfo.getCarriageTypeId(),
+                    1
+                );
+                
+                if (success) {
+                    System.out.println("库存回滚成功: 车次" + request.getTrainId() + 
+                                     ", 席别" + passengerInfo.getCarriageTypeId() + 
+                                     ", 数量+1");
+                } else {
+                    System.err.println("库存回滚失败: 车次" + request.getTrainId() + 
+                                     ", 席别" + passengerInfo.getCarriageTypeId());
+                }
+            } catch (Exception e) {
+                System.err.println("库存回滚异常: 车次" + request.getTrainId() + 
+                                 ", 席别" + passengerInfo.getCarriageTypeId() + 
+                                 ", 错误: " + e.getMessage());
+            }
+        }
+        
+        System.out.println("库存回滚完成");
     }
 } 

@@ -9,6 +9,7 @@ import com.example.techprototype.Enums.TicketStatus;
 import com.example.techprototype.Repository.OrderRepository;
 import com.example.techprototype.Repository.TicketRepository;
 import com.example.techprototype.Service.SeatService;
+import com.example.techprototype.Service.RedisService;
 import com.example.techprototype.DAO.TicketInventoryDAO;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,10 +38,18 @@ public class OrderProcessor {
     @Autowired
     private TicketInventoryDAO ticketInventoryDAO;
     
+    @Autowired
+    private RedisService redisService;
+    
     @RabbitListener(queues = "order.queue")
     @Transactional
     public void processOrder(OrderMessage orderMessage) {
         System.out.println("收到订单消息: " + orderMessage.getOrderNumber());
+        
+        // 记录已创建的车票，用于异常时回滚
+        List<Ticket> createdTickets = new ArrayList<>();
+        Order createdOrder = null;
+        
         try {
             // 1. 创建订单
             Order order = new Order();
@@ -54,6 +63,7 @@ public class OrderProcessor {
             order.setTotalAmount(totalAmount);
             
             orderRepository.save(order);
+            createdOrder = order;
             System.out.println("订单创建成功: " + order.getOrderNumber() + ", ID: " + order.getOrderId());
             
             // 2. 创建车票记录（未支付状态）
@@ -90,11 +100,21 @@ public class OrderProcessor {
             }
             
             ticketRepository.saveAll(tickets);
+            createdTickets.addAll(tickets);
             System.out.println("车票创建成功: " + tickets.size() + "张");
             
         } catch (Exception e) {
             System.err.println("订单处理失败: " + e.getMessage());
             e.printStackTrace();
+            
+            // 回滚库存
+            rollbackInventory(orderMessage);
+            
+            // 清理已创建的数据
+            cleanupCreatedData(createdTickets, createdOrder);
+            
+            // 重新抛出异常，确保事务回滚
+            throw new RuntimeException("订单处理失败，已回滚库存: " + e.getMessage(), e);
         }
     }
     
@@ -164,5 +184,61 @@ public class OrderProcessor {
     
     private String generateTicketNumber() {
         return "T" + System.currentTimeMillis() + (int)(Math.random() * 1000);
+    }
+    
+    /**
+     * 回滚库存 - 当订单处理失败时，将Redis中的库存加回
+     */
+    private void rollbackInventory(OrderMessage orderMessage) {
+        try {
+            System.out.println("开始回滚库存: " + orderMessage.getOrderNumber());
+            
+            for (OrderMessage.PassengerInfo passengerInfo : orderMessage.getPassengers()) {
+                boolean success = redisService.incrStock(
+                    orderMessage.getTrainId(),
+                    orderMessage.getDepartureStopId(),
+                    orderMessage.getArrivalStopId(),
+                    orderMessage.getTravelDate(),
+                    passengerInfo.getCarriageTypeId(),
+                    1
+                );
+                
+                if (success) {
+                    System.out.println("库存回滚成功: 车次" + orderMessage.getTrainId() + 
+                                     ", 席别" + passengerInfo.getCarriageTypeId() + 
+                                     ", 数量+1");
+                } else {
+                    System.err.println("库存回滚失败: 车次" + orderMessage.getTrainId() + 
+                                     ", 席别" + passengerInfo.getCarriageTypeId());
+                }
+            }
+            
+            System.out.println("库存回滚完成: " + orderMessage.getOrderNumber());
+        } catch (Exception e) {
+            System.err.println("库存回滚异常: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * 清理已创建的数据 - 当订单处理失败时，清理已创建的订单和车票
+     */
+    private void cleanupCreatedData(List<Ticket> createdTickets, Order createdOrder) {
+        try {
+            // 删除已创建的车票
+            if (!createdTickets.isEmpty()) {
+                ticketRepository.deleteAll(createdTickets);
+                System.out.println("已删除 " + createdTickets.size() + " 张车票");
+            }
+            
+            // 删除已创建的订单
+            if (createdOrder != null) {
+                orderRepository.delete(createdOrder);
+                System.out.println("已删除订单: " + createdOrder.getOrderNumber());
+            }
+        } catch (Exception e) {
+            System.err.println("清理已创建数据失败: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 } 
