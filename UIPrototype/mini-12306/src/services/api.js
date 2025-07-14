@@ -4,6 +4,7 @@ const API_BASE_URL = 'http://localhost:8080/api';
 // 通用请求方法
 const request = async (url, options = {}) => {
     const config = {
+        credentials: 'include', // 确保cookie被发送
         headers: {
             'Content-Type': 'application/json',
             ...options.headers,
@@ -35,17 +36,22 @@ const request = async (url, options = {}) => {
 export const passengerAPI = {
     // 检查是否可以添加乘车人
     checkCanAddPassenger: (userId) => 
-        request(`/passenger/check-add/${userId}`),
-    
+        request(`/passenger/check-add?userId=${userId}`),
+
     // 添加乘车人
-    addPassenger: (userId, realName, idCardNumber, phoneNumber) => 
+    addPassenger: (passengerData) => 
         request('/passenger/add', {
             method: 'POST',
-            body: JSON.stringify({ 
-                userId, 
-                realName, 
-                idCardNumber, 
-                phoneNumber 
+            body: JSON.stringify(passengerData),
+        }),
+
+    // 删除乘车人
+    deletePassenger: (userId, passengerId) => 
+        request('/passenger/delete', {
+            method: 'DELETE',
+            body: JSON.stringify({
+                userId: userId,
+                passengerId: passengerId
             }),
         }),
 };
@@ -57,6 +63,13 @@ export const ticketAPI = {
         request('/ticket/book', {
             method: 'POST',
             body: JSON.stringify(bookingRequest),
+        }),
+    
+    // 改签
+    changeTickets: (changeTicketRequest) => 
+        request('/ticket/change', {
+            method: 'POST',
+            body: JSON.stringify(changeTicketRequest),
         }),
     
     // 获取本人车票
@@ -155,9 +168,69 @@ export const userAPI = {
         request(`/user/info?userId=${userId}`),
 };
 
+// 车次相关API
+export const trainAPI = {
+    // 获取所有车次列表
+    getTrainList: () => 
+        request('/trains/list'),
+    
+    // 根据站点名称和日期搜索车次
+    searchTrains: (fromStation, toStation, travelDate) => 
+        request(`/trains/search?fromStation=${encodeURIComponent(fromStation)}&toStation=${encodeURIComponent(toStation)}&travelDate=${travelDate}`),
+    
+    // 获取直达车次
+    getDirectTrains: (startStationId, endStationId) => 
+        request(`/trains/direct?startStationId=${startStationId}&endStationId=${endStationId}`),
+    
+    // 根据时间区间获取车次
+    getTrainsByTime: (startTime, endTime) => 
+        request(`/trains/byTime?start=${startTime}&end=${endTime}`),
+    
+    // 获取中转车次
+    getTransferTrains: (startStationId, endStationId) => 
+        request(`/trains/transfer?startStationId=${startStationId}&endStationId=${endStationId}`),
+};
+
+// 个人中心相关API
+export const profileAPI = {
+    // 获取用户个人资料
+    getUserProfile: (userId) => 
+        request(`/profile/${userId}`),
+    
+    // 更新用户个人资料
+    updateUserProfile: (userId, profileData) => 
+        request(`/profile/${userId}`, {
+            method: 'PUT',
+            body: JSON.stringify(profileData),
+        }),
+    
+    // 修改密码
+    changePassword: (changePasswordData) => 
+        request('/profile/change-password', {
+            method: 'POST',
+            body: JSON.stringify(changePasswordData),
+        }),
+    
+    // 更新最后登录时间
+    updateLastLoginTime: (userId, loginTime) => 
+        request('/profile/update-login-time', {
+            method: 'POST',
+            body: JSON.stringify({ userId, loginTime }),
+        }),
+    
+    // 更新账户状态（管理员功能）
+    updateAccountStatus: (userId, accountStatus) => 
+        request('/profile/update-account-status', {
+            method: 'POST',
+            body: JSON.stringify({ userId, accountStatus }),
+        }),
+};
+
 export default {
     ticket: ticketAPI,
     order: orderAPI,
     user: userAPI,
     passenger: passengerAPI,
+    train: trainAPI,
+    profile: profileAPI,
 }; 

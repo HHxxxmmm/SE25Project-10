@@ -61,7 +61,8 @@ export function AuthProvider({ children, config = {} }) {
   const updateLastActivity = useCallback(() => {
     if (authState.isAuthenticated) {
       lastActivityRef.current = Date.now();
-      console.log('活动时间已更新:', new Date(lastActivityRef.current).toLocaleTimeString());
+      // 减少日志频率，只在调试时输出
+      // console.log('活动时间已更新:', new Date(lastActivityRef.current).toLocaleTimeString());
     }
   }, [authState.isAuthenticated]);
 
@@ -76,7 +77,8 @@ export function AuthProvider({ children, config = {} }) {
     // 只有在用户已登录的情况下才设置超时
     if (authState.isAuthenticated) {
       const timeoutValue = sessionTimeoutValueRef.current;
-      console.log(`设置会话超时: ${timeoutValue/1000}秒`, new Date().toLocaleTimeString());
+      // 减少日志频率，只在调试时输出
+      // console.log(`设置会话超时: ${timeoutValue/1000}秒`, new Date().toLocaleTimeString());
       
       // 设置新的定时器
       sessionTimeoutRef.current = setTimeout(forceLogout, timeoutValue);
@@ -85,11 +87,12 @@ export function AuthProvider({ children, config = {} }) {
 
   // 会话监控 - 简化实现，集中处理
   useEffect(() => {
-    console.log('认证状态变更:', authState.isAuthenticated ? '已登录' : '未登录');
+    // 减少日志频率，只在状态变化时输出
+    // console.log('认证状态变更:', authState.isAuthenticated ? '已登录' : '未登录');
     
     // 如果用户已登录，设置活动监听和超时计时器
     if (authState.isAuthenticated) {
-      console.log('启动会话监控');
+      // console.log('启动会话监控');
       // 初始化活动时间
       lastActivityRef.current = Date.now();
       
@@ -110,7 +113,7 @@ export function AuthProvider({ children, config = {} }) {
       
       // 清理函数
       return () => {
-        console.log('清理会话监控');
+        // console.log('清理会话监控');
         events.forEach(event => {
           window.removeEventListener(event, handleUserActivity);
         });
@@ -180,11 +183,15 @@ export function AuthProvider({ children, config = {} }) {
   const contextValue = useMemo(() => {
     // 更新会话超时引用值
     sessionTimeoutValueRef.current = config.sessionTimeout || 10 * 1000;
-    console.log('====> [DEBUG] AuthProvider 接收到的会话超时配置:', sessionTimeoutValueRef.current/1000, '秒');
+    // 减少日志频率，只在调试时输出
+    // console.log('====> [DEBUG] AuthProvider 接收到的会话超时配置:', sessionTimeoutValueRef.current/1000, '秒');
     
     return {
-      // Redux状态
-      ...authState,
+      // Redux状态 - 只传递必要的状态，避免频繁变化
+      user: authState.user,
+      isAuthenticated: authState.isAuthenticated,
+      loading: authState.loading,
+      error: authState.error,
       
       // 扩展功能
       config: {
@@ -228,7 +235,7 @@ export function AuthProvider({ children, config = {} }) {
       resetSessionTimer,
       forceLogout
     };
-  }, [authState, config, dispatch]);
+  }, [authState.user, authState.isAuthenticated, authState.loading, authState.error, config, dispatch, updateLastActivity, resetSessionTimer, forceLogout]);
 
   return (
       <AuthContext.Provider value={contextValue}>

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, Typography, Divider, Checkbox, Button, Row, message, Spin } from 'antd';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { orderAPI, ticketAPI } from '../../services/api';
+import { useAuth } from '../../hooks/useAuth';
 import './style.css';
 
 const { Text } = Typography;
@@ -60,15 +61,16 @@ const ReturnTicketPage = () => {
     const trainInfoCardRef = useRef(null);
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const { user } = useAuth();
 
     useEffect(() => {
         const fetchRefundData = async () => {
             try {
                 const orderId = searchParams.get('orderId');
                 const ticketIdsParam = searchParams.get('ticketIds');
-                const userId = searchParams.get('userId') || 1;
+                const currentUserId = user?.userId || searchParams.get('userId');
                 
-                console.log('退票页面URL参数:', { orderId, ticketIdsParam, userId });
+                console.log('退票页面URL参数:', { orderId, ticketIdsParam, currentUserId });
                 
                 if (!orderId || !ticketIdsParam) {
                     console.error('缺少必要参数:', { orderId, ticketIdsParam });
@@ -76,13 +78,19 @@ const ReturnTicketPage = () => {
                     navigate('/orders');
                     return;
                 }
+                
+                if (!currentUserId) {
+                    message.error('请先登录');
+                    navigate('/login');
+                    return;
+                }
 
                 // 解析车票ID列表
                 const ticketIds = ticketIdsParam.split(',').map(id => parseInt(id));
                 
-                console.log('获取退票准备信息:', { orderId, userId, ticketIds });
+                console.log('获取退票准备信息:', { orderId, currentUserId, ticketIds });
                 // 调用退票准备阶段API
-                const response = await orderAPI.getRefundPreparation(userId, orderId, ticketIds);
+                const response = await orderAPI.getRefundPreparation(currentUserId, orderId, ticketIds);
                 console.log('退票准备信息响应:', response);
                 
                 if (response && response.orderNumber) {
@@ -146,18 +154,18 @@ const ReturnTicketPage = () => {
 
         setSubmitting(true);
         try {
-            const userId = searchParams.get('userId') || 1;
+            const currentUserId = user?.userId || searchParams.get('userId');
             const orderId = searchParams.get('orderId');
             
-            console.log('提交正式退票请求:', { userId, orderId, selectedTickets });
+            console.log('提交正式退票请求:', { currentUserId, orderId, selectedTickets });
             // 调用正式退票API
-            const response = await ticketAPI.refundTickets(userId, orderId, selectedTickets);
+            const response = await ticketAPI.refundTickets(currentUserId, orderId, selectedTickets);
             console.log('正式退票响应:', response);
             
             if (response && response.status === 'SUCCESS') {
                 message.success('退票成功');
                 // 跳转回订单详情页，刷新订单信息
-                navigate(`/order-detail?orderId=${orderId}&userId=${userId}`);
+                navigate(`/order-detail?orderId=${orderId}&userId=${currentUserId}`);
             } else {
                 message.error(response.message || '退票失败');
             }

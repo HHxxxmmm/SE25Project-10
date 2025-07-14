@@ -50,16 +50,21 @@ export default function MyTicketsPage() {
 
     // 获取本人车票数据
     const fetchMyTickets = useCallback(async (status = null) => {
-        // 使用测试用户ID，实际项目中应该从认证状态获取
-        const testUserId = 1; // 假设用户ID为1
+        // 使用当前登录用户的ID
+        const currentUserId = user?.userId;
+        
+        if (!currentUserId) {
+            message.error('请先登录');
+            return;
+        }
         
         setLoading(true);
         try {
             let response;
             if (status === null) {
-                response = await ticketAPI.getMyTickets(testUserId);
+                response = await ticketAPI.getMyTickets(currentUserId);
             } else {
-                response = await ticketAPI.getMyTicketsByStatus(testUserId, status);
+                response = await ticketAPI.getMyTicketsByStatus(currentUserId, status);
             }
 
             if (response.status === 'SUCCESS' && response.tickets) {

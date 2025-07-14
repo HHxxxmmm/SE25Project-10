@@ -33,14 +33,26 @@ export default function HomePage() {
     ];
 
     const handleSearch = () => {
-        navigate('/trains');
+        // 获取表单数据
+        const fromInput = document.querySelector('input[placeholder="请输入车站或市(县)名"]');
+        const toInput = document.querySelectorAll('input[placeholder="请输入车站或市(县)名"]')[1];
+        const datePicker = document.querySelector('.search-date input');
+        
+        const from = fromInput ? fromInput.value : '';
+        const to = toInput ? toInput.value : '';
+        const date = datePicker ? datePicker.value : '';
+        
+        if (!from || !to || !date) {
+            alert('请填写完整的搜索条件');
+            return;
+        }
+        
+        navigate(`/trains?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&date=${date}`);
     };
 
-    // 限制日期选择：只能选择今天至15天后的日期
+    // 移除日期选择限制，允许选择任意日期
     const disabledDate = (current) => {
-        const today = dayjs().startOf('day');
-        const maxDate = dayjs().add(15, 'day').endOf('day');
-        return current && (current.isBefore(today, 'day') || current.isAfter(maxDate, 'day'));
+        return false; // 不限制任何日期
     };
 
     return (

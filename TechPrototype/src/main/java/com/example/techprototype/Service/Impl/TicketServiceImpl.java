@@ -31,7 +31,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 
@@ -224,9 +226,14 @@ public class TicketServiceImpl implements TicketService {
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             
             order.setTotalAmount(order.getTotalAmount().subtract(refundedAmount));
+            
+            // 8. 更新订单乘车人数
+            int remainingTickets = order.getTicketCount() - tickets.size();
+            order.setTicketCount(remainingTickets);
+            
             orderRepository.save(order);
             
-            // 8. 检查订单是否还有有效车票
+            // 9. 检查订单是否还有有效车票
             List<Ticket> validTickets = ticketRepository.findValidTicketsByOrderId(order.getOrderId());
             if (validTickets.isEmpty()) {
                 // 订单中没有有效车票，将订单状态改为已取消
@@ -299,11 +306,27 @@ public class TicketServiceImpl implements TicketService {
                 return BookingResponse.failure("改签的出发站和到达站城市必须与原票一致");
             }
             
-            // 6. 检查新车次余票
-            int totalQuantity = originalTickets.size();
-            if (!redisService.decrStock(request.getNewTrainId(), request.getNewDepartureStopId(), 
-                    request.getNewArrivalStopId(), request.getNewTravelDate(), request.getNewCarriageTypeId(), totalQuantity)) {
-                return BookingResponse.failure("新车次余票不足");
+            // 6. 检查新车次余票（为每个不同的席别检查）
+            Map<Integer, Integer> carriageTypeCounts = new HashMap<>();
+            if (request.getPassengers() != null && !request.getPassengers().isEmpty()) {
+                // 使用乘客信息中的席别
+                for (ChangeTicketRequest.ChangeTicketPassenger passenger : request.getPassengers()) {
+                    Integer carriageTypeId = passenger.getCarriageTypeId();
+                    carriageTypeCounts.put(carriageTypeId, carriageTypeCounts.getOrDefault(carriageTypeId, 0) + 1);
+                }
+            } else {
+                // 兼容旧版本，使用统一的席别
+                carriageTypeCounts.put(request.getNewCarriageTypeId(), originalTickets.size());
+            }
+            
+            // 检查每种席别的余票
+            for (Map.Entry<Integer, Integer> entry : carriageTypeCounts.entrySet()) {
+                Integer carriageTypeId = entry.getKey();
+                Integer quantity = entry.getValue();
+                if (!redisService.decrStock(request.getNewTrainId(), request.getNewDepartureStopId(), 
+                        request.getNewArrivalStopId(), request.getNewTravelDate(), carriageTypeId, quantity)) {
+                    return BookingResponse.failure("新车次席别 " + getCarriageTypeName(carriageTypeId) + " 余票不足");
+                }
             }
             
             // 7. 创建新订单
@@ -320,6 +343,15 @@ public class TicketServiceImpl implements TicketService {
             
             // 8. 生成新票并计算新订单总价
             BigDecimal newOrderTotalAmount = BigDecimal.ZERO;
+            Map<Long, ChangeTicketRequest.ChangeTicketPassenger> passengerMap = new HashMap<>();
+            
+            // 构建乘客信息映射
+            if (request.getPassengers() != null) {
+                for (ChangeTicketRequest.ChangeTicketPassenger passenger : request.getPassengers()) {
+                    passengerMap.put(passenger.getPassengerId(), passenger);
+                }
+            }
+            
             for (Ticket oldTicket : originalTickets) {
                 // 生成新票
                 Ticket newTicket = new Ticket();
@@ -330,12 +362,21 @@ public class TicketServiceImpl implements TicketService {
                 newTicket.setDepartureStopId(request.getNewDepartureStopId());
                 newTicket.setArrivalStopId(request.getNewArrivalStopId());
                 newTicket.setTravelDate(request.getNewTravelDate());
-                newTicket.setCarriageTypeId(request.getNewCarriageTypeId());
-                newTicket.setTicketType(oldTicket.getTicketType()); // 保持原票种
+                
+                // 根据乘客信息设置席别和票种
+                ChangeTicketRequest.ChangeTicketPassenger passengerInfo = passengerMap.get(oldTicket.getPassengerId());
+                if (passengerInfo != null) {
+                    newTicket.setCarriageTypeId(passengerInfo.getCarriageTypeId());
+                    newTicket.setTicketType((byte) passengerInfo.getTicketType().intValue());
+                } else {
+                    // 兼容旧版本
+                    newTicket.setCarriageTypeId(request.getNewCarriageTypeId());
+                    newTicket.setTicketType(oldTicket.getTicketType()); // 保持原票种
+                }
                 
                 // 计算新票价格
                 BigDecimal newPrice = calculateNewTicketPrice(request.getNewTrainId(), request.getNewDepartureStopId(),
-                        request.getNewArrivalStopId(), request.getNewTravelDate(), request.getNewCarriageTypeId(), oldTicket.getTicketType());
+                        request.getNewArrivalStopId(), request.getNewTravelDate(), newTicket.getCarriageTypeId(), newTicket.getTicketType());
                 newTicket.setPrice(newPrice);
                 newTicket.setTicketStatus((byte) TicketStatus.PENDING.getCode());
                 newTicket.setCreatedTime(LocalDateTime.now());

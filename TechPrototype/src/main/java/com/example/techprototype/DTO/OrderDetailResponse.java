@@ -15,6 +15,7 @@ import java.util.List;
 public class OrderDetailResponse {
     
     // 订单基本信息
+    private Long orderId;
     private String orderNumber;
     private Byte orderStatus;
     private LocalDateTime orderTime;
@@ -40,8 +41,10 @@ public class OrderDetailResponse {
     public static class TicketDetail {
         private Long ticketId;
         private String ticketNumber;
+        private Long passengerId;
         private String passengerName;
         private String idCardNumber;
+        private String phoneNumber; // 添加手机号字段
         private Byte passengerType;
         private Byte ticketType;
         private String carriageType;

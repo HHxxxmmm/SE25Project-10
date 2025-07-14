@@ -68,7 +68,7 @@ public class InventoryInitService implements CommandLineRunner {
     
     private void createDefaultTestData() {
         LocalDate startDate = LocalDate.of(2025, 7, 1);
-        LocalDate endDate = LocalDate.of(2025, 7, 10);
+        LocalDate endDate = LocalDate.of(2025, 7, 31); // 扩展到7月31日
         
         for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
             // 为G101车次创建默认库存数据

@@ -2,7 +2,9 @@ package com.example.techprototype.Service;
 
 import com.example.techprototype.DTO.AddPassengerRequest;
 import com.example.techprototype.DTO.AddPassengerResponse;
+import com.example.techprototype.DTO.BookingResponse;
 import com.example.techprototype.DTO.CheckAddPassengerResponse;
+import com.example.techprototype.DTO.DeletePassengerRequest;
 
 public interface PassengerManagementService {
     
@@ -15,6 +17,11 @@ public interface PassengerManagementService {
      * 添加乘车人
      */
     AddPassengerResponse addPassenger(AddPassengerRequest request);
+    
+    /**
+     * 删除乘车人
+     */
+    BookingResponse deletePassenger(DeletePassengerRequest request);
     
     /**
      * 刷新用户状态（用于测试）

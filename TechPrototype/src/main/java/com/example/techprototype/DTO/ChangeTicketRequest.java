@@ -35,4 +35,16 @@ public class ChangeTicketRequest {
     
     @NotNull(message = "新车厢类型ID不能为空")
     private Integer newCarriageTypeId;
+    
+    // 新增：乘客信息列表，支持不同车票选择不同席别
+    private List<ChangeTicketPassenger> passengers;
+    
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ChangeTicketPassenger {
+        private Long passengerId;
+        private Integer ticketType;
+        private Integer carriageTypeId;
+    }
 } 

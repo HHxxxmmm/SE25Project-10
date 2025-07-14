@@ -23,13 +23,5 @@ public class WebConfig implements WebMvcConfigurer {
                                      "/api/auth/currentUser");
     }
     
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**")
-                .allowedOriginPatterns("*")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*")
-                .allowCredentials(false)
-                .maxAge(3600);
-    }
+
 } 

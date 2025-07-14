@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Typography, Divider, message, Spin } from 'antd';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ticketAPI } from '../../services/api';
+import { useAuth } from '../../hooks/useAuth';
 import './style.css'; // 样式文件
 
 const { Text } = Typography;
@@ -37,12 +38,13 @@ const TicketDetailPage = () => {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const { user } = useAuth();
 
     // 获取车票详情数据
     useEffect(() => {
         const fetchTicketDetail = async () => {
             const ticketId = searchParams.get('ticketId');
-            const userId = 1; // 使用固定的测试用户ID
+            const currentUserId = user?.userId; // 使用当前登录用户的ID
 
             if (!ticketId) {
                 message.error('车票ID不存在');
@@ -50,9 +52,15 @@ const TicketDetailPage = () => {
                 return;
             }
 
+            if (!currentUserId) {
+                message.error('请先登录');
+                navigate('/login');
+                return;
+            }
+
             setLoading(true);
             try {
-                const response = await ticketAPI.getTicketDetail(parseInt(ticketId), userId);
+                const response = await ticketAPI.getTicketDetail(parseInt(ticketId), currentUserId);
                 
                 if (response.status === 'SUCCESS' && response.ticket) {
                     setTicket(response.ticket);

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Typography, Divider, Button, Row, message, Spin } from 'antd';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { orderAPI } from '../../services/api';
+import { useAuth } from '../../hooks/useAuth';
 import './style.css';
 
 const { Text } = Typography;
@@ -65,12 +66,13 @@ const OrderDetailPage = () => {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const { user } = useAuth();
 
     useEffect(() => {
         const fetchOrderDetail = async () => {
             try {
                 const orderId = searchParams.get('orderId');
-                const userId = 1; // 使用固定的测试用户ID
+                const currentUserId = user?.userId; // 使用当前登录用户的ID
                 
                 if (!orderId) {
                     message.error('订单ID不能为空');
@@ -78,8 +80,14 @@ const OrderDetailPage = () => {
                     return;
                 }
 
-                console.log('获取订单详情:', { orderId, userId });
-                const response = await orderAPI.getOrderDetail(orderId, userId);
+                if (!currentUserId) {
+                    message.error('请先登录');
+                    navigate('/login');
+                    return;
+                }
+
+                console.log('获取订单详情:', { orderId, currentUserId });
+                const response = await orderAPI.getOrderDetail(orderId, currentUserId);
                 console.log('订单详情响应:', response);
                 
                 if (response && response.orderNumber) {
@@ -121,25 +129,27 @@ const OrderDetailPage = () => {
     const onReturnTicket = () => {
         // 获取所有车票的ID
         const ticketIds = orderDetail.tickets.map(ticket => ticket.ticketId);
-        const userId = 1; // 使用固定的测试用户ID
+        const currentUserId = user?.userId; // 使用当前登录用户的ID
         
         // 从URL获取orderId参数
         const orderId = searchParams.get('orderId');
         
         // 将参数传递到退票页面
-        navigate(`/return-ticket?orderId=${orderId}&ticketIds=${ticketIds.join(',')}&userId=${userId}`);
+        navigate(`/return-ticket?orderId=${orderId}&ticketIds=${ticketIds.join(',')}&userId=${currentUserId}`);
     };
 
     const onChangeTicket = () => {
-        navigate('/change-ticket');
+        // 从URL获取orderId参数
+        const orderId = searchParams.get('orderId');
+        navigate(`/change-ticket?orderId=${orderId}`);
     };
 
     const onCancelOrder = async () => {
         try {
-            const userId = 1;
+            const currentUserId = user?.userId; // 使用当前登录用户的ID
             // 从URL获取orderId参数
             const orderId = searchParams.get('orderId');
-            const response = await orderAPI.cancelOrder(orderId, userId);
+            const response = await orderAPI.cancelOrder(orderId, currentUserId);
             
             if (response.status === 'SUCCESS') {
                 message.success('订单取消成功');

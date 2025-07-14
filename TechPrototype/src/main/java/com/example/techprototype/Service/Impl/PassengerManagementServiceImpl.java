@@ -2,7 +2,9 @@ package com.example.techprototype.Service.Impl;
 
 import com.example.techprototype.DTO.AddPassengerRequest;
 import com.example.techprototype.DTO.AddPassengerResponse;
+import com.example.techprototype.DTO.BookingResponse;
 import com.example.techprototype.DTO.CheckAddPassengerResponse;
+import com.example.techprototype.DTO.DeletePassengerRequest;
 import com.example.techprototype.Entity.Passenger;
 import com.example.techprototype.Entity.User;
 import com.example.techprototype.Entity.UserPassengerRelation;
@@ -121,6 +123,46 @@ public class PassengerManagementServiceImpl implements PassengerManagementServic
             long count = userPassengerRelationRepository.countByUserId(userId);
             user.setRelatedPassenger((int) count);
             userRepository.save(user);
+        }
+    }
+
+    @Override
+    @Transactional
+    public BookingResponse deletePassenger(DeletePassengerRequest request) {
+        try {
+            // 1. 验证用户是否存在
+            Optional<User> userOpt = userRepository.findById(request.getUserId());
+            if (userOpt.isEmpty()) {
+                return BookingResponse.failure("用户不存在");
+            }
+            
+            // 2. 验证乘客是否存在
+            Optional<Passenger> passengerOpt = passengerRepository.findById(request.getPassengerId());
+            if (passengerOpt.isEmpty()) {
+                return BookingResponse.failure("乘客不存在");
+            }
+            
+            // 3. 验证用户是否有权限删除该乘客
+            UserPassengerRelation relation = userPassengerRelationRepository
+                .findByUserIdAndPassengerId(request.getUserId(), request.getPassengerId());
+            
+            if (relation == null) {
+                return BookingResponse.failure("您没有权限删除该乘客");
+            }
+            
+            // 4. 删除用户乘客关系
+            userPassengerRelationRepository.delete(relation);
+            
+            // 5. 更新用户的关联乘客数量
+            User user = userOpt.get();
+            user.setRelatedPassenger(user.getRelatedPassenger() - 1);
+            userRepository.save(user);
+            
+            return BookingResponse.successWithMessage("乘客删除成功", null, null, null, LocalDateTime.now());
+            
+        } catch (Exception e) {
+            System.err.println("删除乘客失败: " + e.getMessage());
+            return BookingResponse.failure("删除乘客失败: " + e.getMessage());
         }
     }
 } 
