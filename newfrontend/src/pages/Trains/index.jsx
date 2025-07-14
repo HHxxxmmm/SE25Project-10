@@ -2,8 +2,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Card, Tag, Pagination, Input, DatePicker, Button, Select, Divider, message } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { SearchOutlined, ClockCircleOutlined, EnvironmentOutlined } from '@ant-design/icons';
-import { useSelector, useDispatch } from 'react-redux';
-import { clearChangeTicket } from '../../store/actions/changeTicketActions';
 import { trainAPI } from '../../services/api';
 import dayjs from 'dayjs';
 import "./style.css";
@@ -122,8 +120,6 @@ const clearSearchState = () => {
 export default function TrainsPage() {
     const navigate = useNavigate();
     const location = useLocation();
-    const dispatch = useDispatch();
-    const changeTicketState = useSelector(state => state.changeTicket);
     const [trains, setTrains] = useState([]);
     const [filteredTrains, setFilteredTrains] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
@@ -148,8 +144,8 @@ export default function TrainsPage() {
         // 如果URL中有搜索参数，优先使用URL参数
         if (from || to || date) {
             const newSearchForm = {
-            from,
-            to,
+                from,
+                to,
                 date: date ? dayjs(date) : null,
                 trainType: 'all'
             };
@@ -182,35 +178,21 @@ export default function TrainsPage() {
                 setFilteredTrains(savedState.searchResults);
             } else {
                 // 如果localStorage也没有，加载全部车次数据
-        setLoading(true);
+                setLoading(true);
                 trainAPI.getTrainList()
                     .then(data => {
                         setTrains(data);
                         setFilteredTrains(data);
-            })
+                    })
                     .catch((error) => {
                         console.error('获取车次列表失败:', error);
-                setTrains([]);
-                setFilteredTrains([]);
-            })
-            .finally(() => setLoading(false));
+                        setTrains([]);
+                        setFilteredTrains([]);
+                    })
+                    .finally(() => setLoading(false));
             }
         }
     }, [location.search]); // 当URL参数变化时执行
-
-    // 监听页面离开，清除改签状态
-    useEffect(() => {
-        const handleBeforeUnload = () => {
-            if (changeTicketState.isChanging) {
-                dispatch(clearChangeTicket());
-            }
-        };
-
-        window.addEventListener('beforeunload', handleBeforeUnload);
-        return () => {
-            window.removeEventListener('beforeunload', handleBeforeUnload);
-        };
-    }, [changeTicketState.isChanging, dispatch]);
 
     // 过滤车次（仅用于本地过滤，主要搜索通过API进行）
     const filterTrains = useCallback(() => {
@@ -230,18 +212,11 @@ export default function TrainsPage() {
     // 当trains数据或搜索条件变化时，重新过滤
     useEffect(() => {
         if (trains.length > 0) {
-        filterTrains();
+            filterTrains();
         }
     }, [filterTrains, trains, searchForm.trainType]);
 
     const handleSearch = () => {
-
-        // 改签模式下不允许修改出发地和到达地
-        if (changeTicketState.isChanging) {
-            message.warning('改签模式下不能修改出发地和到达地');
-            return;
-        }
-
         // 如果没有填写搜索条件，重新加载全部车次数据
         if (!searchForm.from && !searchForm.to && !searchForm.date) {
             setLoading(true);
@@ -324,12 +299,7 @@ export default function TrainsPage() {
     const cardTitle = (
         <div className="card-title">
             <SearchOutlined style={{ marginRight: 8 }} />
-            {changeTicketState.isChanging ? '改签车票查询' : '车票查询与购买'}
-            {changeTicketState.isChanging && (
-                <Tag color="orange" style={{ marginLeft: 8 }}>
-                    改签模式
-                </Tag>
-            )}
+            车票查询与购买
         </div>
     );
 
@@ -344,23 +314,6 @@ export default function TrainsPage() {
                 className="trains-card"
                 headStyle={{ padding: 0, borderRadius: '4px 4px 0 0' }}
             >
-                {/* 改签模式提示 */}
-                {changeTicketState.isChanging && (
-                    <div style={{ 
-                        backgroundColor: '#fff7e6', 
-                        border: '1px solid #ffd591', 
-                        borderRadius: '4px', 
-                        padding: '12px', 
-                        marginBottom: '16px' 
-                    }}>
-                        <p style={{ margin: 0, color: '#d46b08' }}>
-                            <strong>改签模式：</strong>
-                            您正在为订单 {changeTicketState.originalOrderNumber || '未知订单'} 进行改签，
-                            出发地和到达地已锁定为 {changeTicketState.departureStation} → {changeTicketState.arrivalStation}
-                        </p>
-                    </div>
-                )}
-
                 {/* 搜索表单 */}
                 <div className="search-section">
                     <div className="search-form">
@@ -372,7 +325,6 @@ export default function TrainsPage() {
                                     value={searchForm.from}
                                     onChange={(e) => setSearchForm(prev => ({ ...prev, from: e.target.value }))}
                                     className="search-input"
-                                    disabled={changeTicketState.isChanging}
                                 />
                             </div>
                             <div className="search-item">
@@ -382,7 +334,6 @@ export default function TrainsPage() {
                                     value={searchForm.to}
                                     onChange={(e) => setSearchForm(prev => ({ ...prev, to: e.target.value }))}
                                     className="search-input"
-                                    disabled={changeTicketState.isChanging}
                                 />
                             </div>
                             <div className="search-item">
@@ -483,16 +434,16 @@ export default function TrainsPage() {
                                         {train.seat && train.seat.length > 0 ? (
                                             train.seat.map((seatType, index) => (
                                                 <div key={index} className="seat-item">
-                                                <Tag color={SEAT_TYPES[seatType]?.color}>
+                                                    <Tag color={SEAT_TYPES[seatType]?.color}>
                                                         {SEAT_TYPES[seatType]?.text || '未知'}
-                                                </Tag>
-                                                <span className="seat-count">
+                                                    </Tag>
+                                                    <span className="seat-count">
                                                         余{train.seat_number?.[index] || 0}张
-                                                </span>
-                                                <span className="seat-price">
+                                                    </span>
+                                                    <span className="seat-price">
                                                         ¥{train.seat_price?.[index] || 0}
-                                                </span>
-                                            </div>
+                                                    </span>
+                                                </div>
                                             ))
                                         ) : (
                                             <div className="no-seats">暂无座位信息</div>
@@ -505,7 +456,7 @@ export default function TrainsPage() {
                                         途经：{train.t_path?.join(' → ') || '未知'}
                                     </div>
                                     <Button type="primary" size="small">
-                                        {changeTicketState.isChanging ? '选择改签' : '购买'}
+                                        购买
                                     </Button>
                                 </div>
                             </div>
@@ -541,9 +492,6 @@ export default function TrainsPage() {
                         <li>请提前30分钟到达车站办理乘车手续</li>
                         <li>请携带有效身份证件乘车</li>
                         <li>如需退票，请在发车前2小时办理</li>
-                        {changeTicketState.isChanging && (
-                            <li>改签模式下，出发地和到达地不可修改</li>
-                        )}
                     </ul>
                 </div>
             </Card>
