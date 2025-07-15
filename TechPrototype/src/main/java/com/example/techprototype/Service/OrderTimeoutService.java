@@ -40,14 +40,14 @@ public class OrderTimeoutService {
     
     /**
      * 每30秒检查一次超时订单
-     * 超时时间：1分钟
+     * 超时时间：15分钟
      */
     @Scheduled(fixedRate = 30000) // 30秒
     @Transactional
     public void handleTimeoutOrders() {
         try {
-            // 查找1分钟前创建的待支付订单
-            LocalDateTime timeoutThreshold = LocalDateTime.now().minusMinutes(1);
+            // 查找15分钟前创建的待支付订单
+            LocalDateTime timeoutThreshold = LocalDateTime.now().minusMinutes(15);
             
             List<Order> timeoutOrders = orderRepository.findTimeoutOrders(timeoutThreshold);
             

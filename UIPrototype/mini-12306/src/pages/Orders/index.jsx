@@ -481,7 +481,7 @@ export default function OrdersPage() {
                 <div className="tips">
                     <p>温馨提示：</p>
                     <ul>
-                        <li>待支付订单请在30分钟内完成支付，超时订单将自动取消</li>
+                        <li>待支付订单请在15分钟内完成支付，超时订单将自动取消</li>
                         <li>已支付订单可在发车前2小时申请退票</li>
                         <li>如需改签，请在发车前2小时办理</li>
                     </ul>

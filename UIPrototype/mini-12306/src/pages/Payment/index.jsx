@@ -11,7 +11,7 @@ const { Title, Text } = Typography;
 const PaymentPage = () => {
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [timeLeft, setTimeLeft] = useState(60); // 1分钟倒计时
+    const [timeLeft, setTimeLeft] = useState(15 * 60); // 15分钟倒计时
     const [paymentMethod, setPaymentMethod] = useState('alipay');
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
@@ -89,7 +89,7 @@ const PaymentPage = () => {
             const orderTime = new Date(order.orderTime);
             const now = new Date();
             const elapsedSeconds = Math.floor((now - orderTime) / 1000);
-            const timeoutSeconds = 60; // 1分钟超时
+            const timeoutSeconds = 15 * 60; // 15分钟超时
             const remainingSeconds = Math.max(0, timeoutSeconds - elapsedSeconds);
             return remainingSeconds;
         };

@@ -130,8 +130,8 @@ public class OrderController {
                 return BasicResponse.failure("订单状态不正确");
             }
             
-            // 检查是否超时（1分钟）
-            LocalDateTime timeoutThreshold = LocalDateTime.now().minusMinutes(1);
+            // 检查是否超时（15分钟）
+            LocalDateTime timeoutThreshold = LocalDateTime.now().minusMinutes(15);
             boolean isTimeout = order.getOrderTime().isBefore(timeoutThreshold);
             
             if (isTimeout) {
