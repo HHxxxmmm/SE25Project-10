@@ -10,6 +10,9 @@ public class ScheduledTaskService {
     @Autowired
     private InventorySyncService inventorySyncService;
     
+    @Autowired
+    private OrderTimeoutService orderTimeoutService;
+    
     private volatile boolean tasksEnabled = false;
     
     /**
@@ -27,6 +30,16 @@ public class ScheduledTaskService {
     public void scheduledInventorySync() {
         if (tasksEnabled) {
             inventorySyncService.syncInventoryToDatabase();
+        }
+    }
+    
+    /**
+     * 每30秒检查一次超时订单
+     */
+    @Scheduled(fixedRate = 30000) // 30秒
+    public void scheduledOrderTimeoutCheck() {
+        if (tasksEnabled) {
+            orderTimeoutService.handleTimeoutOrders();
         }
     }
 } 

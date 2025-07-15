@@ -408,6 +408,8 @@ public class OrderServiceImpl implements OrderService {
             LocalTime departureTime = getDepartureTime(representativeTicket.getTrainId(), representativeTicket.getDepartureStopId());
             LocalTime arrivalTime = getArrivalTime(representativeTicket.getTrainId(), representativeTicket.getArrivalStopId());
             
+
+            
             MyOrderResponse.MyOrderInfo orderInfo = new MyOrderResponse.MyOrderInfo();
             orderInfo.setOrderId(order.getOrderId());
             orderInfo.setOrderNumber(order.getOrderNumber());
@@ -426,6 +428,8 @@ public class OrderServiceImpl implements OrderService {
             orderInfo.setArrivalTime(arrivalTime);
             orderInfo.setDepartureStationName(departureStationName);
             orderInfo.setArrivalStationName(arrivalStationName);
+            
+
             
             // 车票数量
             orderInfo.setTicketCount(order.getTicketCount());

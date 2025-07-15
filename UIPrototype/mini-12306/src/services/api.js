@@ -159,6 +159,10 @@ export const orderAPI = {
             method: 'POST',
             body: JSON.stringify({ orderId, userId }),
         }),
+    
+    // 检查订单是否已超时
+    checkOrderTimeout: (orderId, userId) => 
+        request(`/orders/check-timeout?orderId=${orderId}&userId=${userId}`),
 };
 
 // 用户相关API
