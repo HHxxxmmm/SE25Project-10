@@ -11,7 +11,7 @@ const { Title, Text } = Typography;
 const PaymentPage = () => {
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [timeLeft, setTimeLeft] = useState(15 * 60); // 15分钟倒计时
+    const [timeLeft, setTimeLeft] = useState(60); // 1分钟倒计时
     const [paymentMethod, setPaymentMethod] = useState('alipay');
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
@@ -80,24 +80,61 @@ const PaymentPage = () => {
         }
     }, [orderId, user]); // 移除navigate依赖，避免不必要的重新渲染
     
-    // 倒计时效果
+    // 倒计时效果 - 基于订单创建时间计算
     useEffect(() => {
-        if (!order) return;
+        if (!order || !order.orderTime) return;
+        
+        // 计算订单创建时间到现在的秒数
+        const calculateTimeLeft = () => {
+            const orderTime = new Date(order.orderTime);
+            const now = new Date();
+            const elapsedSeconds = Math.floor((now - orderTime) / 1000);
+            const timeoutSeconds = 60; // 1分钟超时
+            const remainingSeconds = Math.max(0, timeoutSeconds - elapsedSeconds);
+            return remainingSeconds;
+        };
+        
+        // 初始化倒计时
+        setTimeLeft(calculateTimeLeft());
         
         const timer = setInterval(() => {
-            setTimeLeft(prev => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    message.warning('支付超时，订单已取消');
-                    navigate('/orders');
-                    return 0;
-                }
-                return prev - 1;
-            });
+            const remaining = calculateTimeLeft();
+            setTimeLeft(remaining);
+            
+            if (remaining <= 0) {
+                clearInterval(timer);
+                message.warning('支付超时，订单已取消');
+                navigate('/orders');
+            }
         }, 1000);
         
         return () => clearInterval(timer);
-    }, [order]); // 移除navigate依赖，避免不必要的重新渲染
+    }, [order, navigate]);
+    
+    // 定期检查订单是否已超时（每10秒检查一次）
+    useEffect(() => {
+        if (!order || !user) return;
+        
+        const checkTimeout = async () => {
+            try {
+                const response = await orderAPI.checkOrderTimeout(order.orderId, user.userId);
+                if (response.status === 'FAILURE' && response.message.includes('超时')) {
+                    message.warning('订单已超时，正在跳转...');
+                    navigate('/orders');
+                }
+            } catch (error) {
+                console.error('检查订单超时失败:', error);
+            }
+        };
+        
+        // 立即检查一次
+        checkTimeout();
+        
+        // 每10秒检查一次
+        const timeoutCheckTimer = setInterval(checkTimeout, 10000);
+        
+        return () => clearInterval(timeoutCheckTimer);
+    }, [order, user, navigate]);
     
     // 格式化倒计时显示
     const formatTimeLeft = () => {

@@ -35,20 +35,21 @@ public class OrderTimeoutService {
     @Autowired
     private SeatService seatService;
     
+    @Autowired
+    private RedisService redisService;
+    
     /**
-     * 每5分钟检查一次超时订单
-     * 超时时间：30分钟
+     * 每30秒检查一次超时订单
+     * 超时时间：1分钟
      */
-    @Scheduled(fixedRate = 300000) // 5分钟
+    @Scheduled(fixedRate = 30000) // 30秒
     @Transactional
     public void handleTimeoutOrders() {
         try {
-            // 查找30分钟前创建的待支付订单
-            LocalDateTime timeoutThreshold = LocalDateTime.now().minusMinutes(30);
+            // 查找1分钟前创建的待支付订单
+            LocalDateTime timeoutThreshold = LocalDateTime.now().minusMinutes(1);
             
-            // 这里需要根据实际业务逻辑查询超时订单
-            // 简化处理，实际需要添加查询方法
-            List<Order> timeoutOrders = findTimeoutOrders(timeoutThreshold);
+            List<Order> timeoutOrders = orderRepository.findTimeoutOrders(timeoutThreshold);
             
             for (Order order : timeoutOrders) {
                 handleTimeoutOrder(order);
@@ -62,29 +63,36 @@ public class OrderTimeoutService {
         }
     }
     
-    private List<Order> findTimeoutOrders(LocalDateTime timeoutThreshold) {
-        // 这里需要实现查询超时订单的逻辑
-        // 简化处理，返回空列表
-        return List.of();
-    }
-    
     private void handleTimeoutOrder(Order order) {
-        // 1. 更新订单状态为已取消
-        order.setOrderStatus((byte) OrderStatus.CANCELLED.getCode());
-        orderRepository.save(order);
-        
-        // 2. 获取订单下的车票
-        List<Ticket> tickets = ticketRepository.findByOrderId(order.getOrderId());
-        
-        // 3. 更新车票状态为已取消
-        for (Ticket ticket : tickets) {
-            ticket.setTicketStatus((byte) 3); // 已退票状态
-            ticketRepository.save(ticket);
+        try {
+            // 1. 更新订单状态为已取消
+            order.setOrderStatus((byte) OrderStatus.CANCELLED.getCode());
+            orderRepository.save(order);
             
-            // 释放座位（使用新的位图管理方式）
-            seatService.releaseSeat(ticket);
+            // 2. 获取订单下的车票
+            List<Ticket> tickets = ticketRepository.findByOrderId(order.getOrderId());
+            
+            // 3. 更新车票状态为已取消并释放资源
+            for (Ticket ticket : tickets) {
+                // 更新车票状态为已取消
+                ticket.setTicketStatus((byte) 3); // 已退票状态
+                ticketRepository.save(ticket);
+                
+                // 释放座位（使用新的位图管理方式）
+                if (ticket.getSeatNumber() != null && ticket.getCarriageNumber() != null) {
+                    seatService.releaseSeat(ticket);
+                }
+                
+                // 回滚库存
+                redisService.incrStock(ticket.getTrainId(), ticket.getDepartureStopId(),
+                        ticket.getArrivalStopId(), ticket.getTravelDate(), 
+                        ticket.getCarriageTypeId(), 1);
+            }
+            
+            System.out.println("超时订单处理完成: " + order.getOrderNumber() + ", 释放了 " + tickets.size() + " 张车票的座位和库存");
+            
+        } catch (Exception e) {
+            System.err.println("处理超时订单失败: " + order.getOrderNumber() + ", 错误: " + e.getMessage());
         }
-        
-        System.out.println("超时订单处理完成: " + order.getOrderNumber());
     }
 } 

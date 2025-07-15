@@ -9,7 +9,7 @@ import reportWebVitals from './reportWebVitals';
 import store from './store';
 
 // 定义会话超时配置，便于调试
-const SESSION_TIMEOUT = 4 * 60 * 1000; // 4分钟
+const SESSION_TIMEOUT = 15 * 60 * 1000; // 15分钟
 console.log('====> [DEBUG] 应用启动 - 配置会话超时:', SESSION_TIMEOUT / 1000, '秒', new Date().toLocaleTimeString());
 
 const root = ReactDOM.createRoot(document.getElementById('root'));

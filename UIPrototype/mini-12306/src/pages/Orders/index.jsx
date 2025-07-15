@@ -42,11 +42,29 @@ function formatDate(datetime) {
 
 function formatTime(datetime) {
     if (!datetime) return '';
+    
     // 处理LocalTime或LocalDateTime格式
     if (typeof datetime === 'string') {
-        const timePart = datetime.split('T')[1] || datetime.split(' ')[1] || '';
-        return timePart.slice(0, 5) || '';
+        // 如果是纯时间格式 (HH:mm:ss)
+        if (datetime.match(/^\d{2}:\d{2}:\d{2}$/)) {
+            return datetime.slice(0, 5);
+        }
+        // 如果是日期时间格式 (YYYY-MM-DDTHH:mm:ss)
+        if (datetime.includes('T')) {
+            const timePart = datetime.split('T')[1];
+            return timePart ? timePart.slice(0, 5) : '';
+        }
+        // 如果是空格分隔的日期时间格式 (YYYY-MM-DD HH:mm:ss)
+        if (datetime.includes(' ')) {
+            const timePart = datetime.split(' ')[1];
+            return timePart ? timePart.slice(0, 5) : '';
+        }
+        // 如果是纯时间格式 (HH:mm)
+        if (datetime.match(/^\d{2}:\d{2}$/)) {
+            return datetime;
+        }
     }
+    
     return '';
 }
 
@@ -116,6 +134,7 @@ export default function OrdersPage() {
             
             if (response.status === 'SUCCESS') {
                 console.log('订单数据:', response.orders);
+
                 setOrders(response.orders || []);
                 setFilteredOrders(response.orders || []);
             } else {
@@ -333,11 +352,11 @@ export default function OrdersPage() {
                                 tabIndex={0}
                                 onKeyPress={(e) => { if (e.key === 'Enter') handleOrderClick(order); }}
                             >
-                                {/* 订单头部 - 发车时间 */}
+                                {/* 订单头部 - 订单信息 */}
                                 <div className="order-header">
-                                    <div className="departure-time">
-                                        <span className="departure-label">发车时间</span>
-                                        <span className="departure-datetime">{formatDateTime(order.departureDate + ' ' + order.departureTime)}</span>
+                                    <div className="order-info">
+                                        <span className="order-number">订单号：{order.orderNumber}</span>
+                                        <span className="order-time">下单时间：{formatDateTime(order.orderTime)}</span>
                                     </div>
                                     <Tag color={ORDER_STATUS[order.orderStatus]?.color}>
                                         {ORDER_STATUS[order.orderStatus]?.text}
@@ -348,9 +367,9 @@ export default function OrdersPage() {
                                 <div className="order-content">
                                     {/* 左侧：车次和路线信息 */}
                                     <div className="order-left">
-                                        <div className="order-info">
-                                            <span className="order-number">订单号：{order.orderNumber}</span>
-                                            <span className="order-time">下单时间：{formatDateTime(order.orderTime)}</span>
+                                        <div className="departure-date">
+                                            <span className="departure-label">发车日期</span>
+                                            <span className="departure-datetime">{formatDate(order.departureDate)}</span>
                                         </div>
                                         
                                         <div className="train-info">
@@ -364,7 +383,7 @@ export default function OrdersPage() {
                                             <div className="route-info">
                                                 <div className="departure">
                                                     <div className="station-name">{order.departureStationName}</div>
-                                                    <div className="time">{formatTime(order.departureTime)}</div>
+                                                    <div className="departure-time">{formatTime(order.departureTime)}</div>
                                                 </div>
                                                 <div className="journey-line">
                                                     <div className="line"></div>
@@ -372,7 +391,7 @@ export default function OrdersPage() {
                                                 </div>
                                                 <div className="arrival">
                                                     <div className="station-name">{order.arrivalStationName}</div>
-                                                    <div className="time">{formatTime(order.arrivalTime)}</div>
+                                                    <div className="arrival-time">{formatTime(order.arrivalTime)}</div>
                                                 </div>
                                             </div>
                                         </div>

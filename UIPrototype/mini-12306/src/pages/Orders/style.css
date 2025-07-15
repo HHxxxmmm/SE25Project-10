@@ -162,7 +162,6 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
-    margin-bottom: 16px;
 }
 
 .orders-page .order-number {
@@ -174,6 +173,25 @@
 .orders-page .order-time {
     font-size: 0.9rem;
     color: #666;
+}
+
+.orders-page .departure-date {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 16px;
+}
+
+.orders-page .departure-label {
+    font-size: 0.9rem;
+    color: #666;
+    font-weight: 500;
+}
+
+.orders-page .departure-datetime {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1890ff;
 }
 
 /* 订单主体内容 */
@@ -240,6 +258,14 @@
     font-size: 0.9rem;
     color: #666;
     font-weight: 500;
+}
+
+.orders-page .departure-time,
+.orders-page .arrival-time {
+    font-size: 0.85rem;
+    color: #666;
+    font-weight: 500;
+    margin-top: 2px;
 }
 
 .orders-page .journey-line {
