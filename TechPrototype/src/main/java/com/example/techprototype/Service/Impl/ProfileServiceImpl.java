@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.DigestUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -157,8 +158,21 @@ public class ProfileServiceImpl implements ProfileService {
 
             User user = userOpt.get();
 
-            // 验证当前密码
-            if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            // 验证当前密码 - 支持MD5和BCrypt两种格式
+            String currentPasswordHash = user.getPasswordHash();
+            boolean passwordValid = false;
+            
+            // 检查是否是MD5格式的密码（32位十六进制字符串）
+            if (currentPasswordHash.length() == 32 && currentPasswordHash.matches("[a-fA-F0-9]{32}")) {
+                // MD5格式，计算当前密码的MD5值进行比较
+                String md5CurrentPassword = DigestUtils.md5DigestAsHex(request.getCurrentPassword().getBytes());
+                passwordValid = currentPasswordHash.equalsIgnoreCase(md5CurrentPassword);
+            } else {
+                // BCrypt格式，使用BCrypt编码器验证
+                passwordValid = passwordEncoder.matches(request.getCurrentPassword(), currentPasswordHash);
+            }
+            
+            if (!passwordValid) {
                 return ChangePasswordResponse.failure("当前密码不正确");
             }
 

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { message, Spin, Select, Input } from 'antd';
+import { useSelector, useDispatch } from 'react-redux';
+import { clearChangeTicket } from '../../store/actions/changeTicketActions';
 import AddPassenger from '../AddPassenger';
 import { orderAPI, passengerAPI, ticketAPI } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
@@ -95,7 +97,9 @@ const seatTypeMap = {
 const SubmitOrder = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const dispatch = useDispatch();
     const { user } = useAuth();
+    const changeTicketState = useSelector(state => state.changeTicket);
     const [searchText, setSearchText] = useState('');
     const [selectedPassengers, setSelectedPassengers] = useState([]);
     const [passengerDetails, setPassengerDetails] = useState({});
@@ -109,75 +113,164 @@ const SubmitOrder = () => {
     const [loading, setLoading] = useState(true);
     const [response, setResponse] = useState(null);
 
-    useEffect(() => {
-        const fetchPrepareOrderData = async () => {
-            try {
-                // 使用当前登录用户的ID
-                const currentUserId = user?.userId;
+    const fetchPrepareOrderData = async () => {
+        try {
+            // 使用当前登录用户的ID
+            const currentUserId = user?.userId;
+            
+            if (!currentUserId) {
+                message.error('请先登录');
+                navigate('/login');
+                return;
+            }
+            
+            // 从URL参数获取库存ID
+            const params = new URLSearchParams(location.search);
+            const inventoryIdsParam = params.get('inventoryIds');
+            let inventoryIds = [];
+            
+            if (inventoryIdsParam) {
+                // 解析库存ID列表
+                inventoryIds = inventoryIdsParam.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+            }
+            
+            // 如果没有库存ID，使用默认值（向后兼容）
+            if (inventoryIds.length === 0) {
+                inventoryIds = [1, 11, 21];
+            }
+            
+            console.log('获取准备订单信息:', { currentUserId, inventoryIds });
+            const response = await orderAPI.prepareOrder(currentUserId, inventoryIds);
+            console.log('准备订单信息响应:', response);
+            
+            if (response && response.trainInfo) {
+                setTrainInfo(response.trainInfo);
+                setResponse(response);
                 
-                if (!currentUserId) {
-                    message.error('请先登录');
-                    navigate('/login');
-                    return;
-                }
+                // 构建乘客ID映射
+                const idMap = {};
+                const typeMap = {};
+                const phoneMap = {};
                 
-                // 从URL参数获取库存ID
-                const params = new URLSearchParams(location.search);
-                const inventoryIdsParam = params.get('inventoryIds');
-                let inventoryIds = [];
+                // 统一使用后端返回的乘客信息
+                response.passengers.forEach(passenger => {
+                    idMap[passenger.realName] = passenger.idCardNumber;
+                    typeMap[passenger.realName] = passenger.passengerType;
+                    phoneMap[passenger.realName] = passenger.phoneNumber;
+                });
                 
-                if (inventoryIdsParam) {
-                    // 解析库存ID列表
-                    inventoryIds = inventoryIdsParam.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
-                }
-                
-                // 如果没有库存ID，使用默认值（向后兼容）
-                if (inventoryIds.length === 0) {
-                    inventoryIds = [1, 11, 21];
-                }
-                
-                console.log('获取准备订单信息:', { currentUserId, inventoryIds });
-                const response = await orderAPI.prepareOrder(currentUserId, inventoryIds);
-                console.log('准备订单信息响应:', response);
-                
-                if (response && response.trainInfo) {
-                    setTrainInfo(response.trainInfo);
-                    setPassengersData(response.passengers.map(p => p.realName));
-                    setResponse(response);
-                    
-                    // 构建乘客ID映射
-                    const idMap = {};
-                    const typeMap = {};
-                    const phoneMap = {};
-                    response.passengers.forEach(passenger => {
-                        idMap[passenger.realName] = passenger.idCardNumber;
-                        typeMap[passenger.realName] = passenger.passengerType;
-                        phoneMap[passenger.realName] = passenger.phoneNumber;
-                    });
-                    setPassengerIdMap(idMap);
-                    setPassengerTypeMap(typeMap);
-                    setPassengerPhoneMap(phoneMap);
+                setPassengerIdMap(idMap);
+                setPassengerTypeMap(typeMap);
+                setPassengerPhoneMap(phoneMap);
+
+                // 如果是改签模式，从原始订单获取乘客信息
+                if (changeTicketState.isChanging) {
+                    try {
+                        // 获取原始订单详情
+                        const orderDetailResponse = await orderAPI.getOrderDetail(changeTicketState.originalOrderId, currentUserId);
+                        console.log('原始订单详情:', orderDetailResponse);
+                        
+                        if (orderDetailResponse && orderDetailResponse.tickets) {
+                            // 从原始订单的车票中获取乘客信息
+                            const originalPassengers = orderDetailResponse.tickets
+                                .filter(ticket => ticket.ticketStatus === 1) // 只获取未使用的车票
+                                .map(ticket => ({
+                                    realName: ticket.passengerName,
+                                    passengerId: ticket.passengerId,
+                                    idCardNumber: ticket.idCardNumber,
+                                    passengerType: ticket.passengerType || 1,
+                                    phoneNumber: ticket.phoneNumber || '' // 直接从车票信息中获取手机号
+                                }));
+                            
+                            console.log('原始订单乘客信息:', originalPassengers);
+                            
+                            // 设置乘客数据
+                            const passengerNames = originalPassengers.map(p => p.realName);
+                            setPassengersData(passengerNames);
+                            setSelectedPassengers(passengerNames);
+                            
+                            // 更新乘客映射
+                            originalPassengers.forEach(passenger => {
+                                idMap[passenger.realName] = passenger.idCardNumber;
+                                typeMap[passenger.realName] = passenger.passengerType;
+                                phoneMap[passenger.realName] = passenger.phoneNumber; // 直接使用从车票信息中获取的手机号
+                            });
+                            
+                            setPassengerIdMap(idMap);
+                            setPassengerTypeMap(typeMap);
+                            setPassengerPhoneMap(phoneMap);
+                            
+                            // 为改签乘客设置默认详情
+                            passengerNames.forEach(name => {
+                                const passenger = originalPassengers.find(p => p.realName === name);
+                                if (passenger) {
+                                    const passengerType = passenger.passengerType || 1;
+                                    const availableTicketTypes = getAvailableTicketTypes(passengerType);
+                                    const defaultTicketType = availableTicketTypes[0];
+                                    
+                                    setPassengerDetails(details => ({
+                                        ...details,
+                                        [name]: {
+                                            ticketType: TICKET_TYPE[defaultTicketType],
+                                            ticketTypeValue: defaultTicketType,
+                                            seatType: response.carriages?.[0]?.carriageTypeName || "二等座",
+                                            idType: idTypes[0],
+                                            idNumber: passenger.idCardNumber || ''
+                                        }
+                                    }));
+                                }
+                            });
+                        } else {
+                            message.error('获取原始订单信息失败');
+                        }
+                    } catch (error) {
+                        console.error('获取原始订单详情失败:', error);
+                        message.error('获取原始订单信息失败');
+                    }
                 } else {
-                    message.error('获取订单准备信息失败');
-                    navigate('/trains');
+                    // 非改签模式，使用后端返回的乘客信息
+                    setPassengersData(response.passengers.map(p => p.realName));
                 }
-            } catch (error) {
-                console.error('获取订单准备信息失败:', error);
-                message.error('获取订单准备信息失败，请稍后重试');
-                navigate('/trains');
-            } finally {
-                setLoading(false);
+            } else {
+                message.error('获取订单信息失败');
+            }
+        } catch (error) {
+            console.error('获取准备订单信息失败:', error);
+            message.error('获取订单信息失败，请稍后重试');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchPrepareOrderData();
+    }, [user, location.search, changeTicketState.isChanging]);
+
+    // 监听页面离开，清除改签状态
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            if (changeTicketState.isChanging) {
+                dispatch(clearChangeTicket());
             }
         };
 
-        fetchPrepareOrderData();
-    }, [navigate, location.search]);
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [changeTicketState.isChanging, dispatch]);
 
     const filteredPassengers = passengersData.filter(name =>
         name.includes(searchText)
     );
 
     const togglePassenger = (name) => {
+        // 改签模式下不允许取消选择乘客
+        if (changeTicketState.isChanging) {
+            message.warning('改签模式下不能取消选择乘客');
+            return;
+        }
+
         setSelectedPassengers(prev => {
             if (prev.includes(name)) {
                 const newArr = prev.filter(n => n !== name);
@@ -208,6 +301,12 @@ const SubmitOrder = () => {
     };
 
     const removePassenger = (name) => {
+        // 改签模式下不允许移除乘客
+        if (changeTicketState.isChanging) {
+            message.warning('改签模式下不能移除乘客');
+            return;
+        }
+
         setSelectedPassengers(prev => prev.filter(n => n !== name));
         setPassengerDetails(details => {
             const newDetails = { ...details };
@@ -228,6 +327,12 @@ const SubmitOrder = () => {
 
     // 检查是否可以添加乘车人
     const checkCanAddPassenger = async () => {
+        // 改签模式下不允许添加乘车人
+        if (changeTicketState.isChanging) {
+            message.warning('改签模式下不能添加乘车人');
+            return;
+        }
+
         try {
             const currentUserId = user?.userId; // 使用当前登录用户的ID
             const response = await passengerAPI.checkCanAddPassenger(currentUserId);
@@ -250,16 +355,16 @@ const SubmitOrder = () => {
     // 处理提交订单
     const handleSubmitOrder = async () => {
         console.log('开始提交订单...');
-                    console.log('选中的乘客:', selectedPassengers);
-            console.log('乘客详情:', passengerDetails);
-            console.log('响应数据:', response);
-            console.log('车厢信息:', response?.carriages);
-            
-            // 检查乘客详情结构
-            selectedPassengers.forEach(name => {
-                console.log(`乘客 ${name} 的详情:`, passengerDetails[name]);
-            });
+        console.log('选中的乘客:', selectedPassengers);
+        console.log('乘客详情:', passengerDetails);
+        console.log('响应数据:', response);
+        console.log('车厢信息:', response?.carriages);
         
+        // 检查乘客详情结构
+        selectedPassengers.forEach(name => {
+            console.log(`乘客 ${name} 的详情:`, passengerDetails[name]);
+        });
+    
         if (selectedPassengers.length === 0) {
             message.warning('请至少选择一位乘车人');
             return;
@@ -318,124 +423,227 @@ const SubmitOrder = () => {
                 return;
             }
 
-            // 使用第一个乘客选择的席别作为所有乘客的席别
-            const firstPassengerSeatType = passengerSeatTypes[0];
-            const carriageTypeId = seatTypeToCarriageId[firstPassengerSeatType];
-            
-            // 检查所有乘客是否选择了相同的席别
-            const differentSeatTypes = passengerSeatTypes.filter(seatType => seatType !== firstPassengerSeatType);
-            if (differentSeatTypes.length > 0) {
-                message.warning(`检测到不同席别选择，将统一使用 ${firstPassengerSeatType}`);
-            }
-
-            // 构建乘客信息列表
-            const passengers = selectedPassengers.map(name => {
-                const passengerId = response.passengers.find(p => p.realName === name)?.passengerId;
-                const ticketTypeValue = passengerDetails[name]?.ticketTypeValue || 1;
-                const seatType = passengerDetails[name]?.seatType;
-                const carriageTypeId = seatTypeToCarriageId[seatType];
+            // 如果是改签模式，使用改签API
+            if (changeTicketState.isChanging) {
+                console.log('改签状态检查:', changeTicketState);
                 
-                return {
-                    passengerId: passengerId,
-                    ticketType: ticketTypeValue,
-                    carriageTypeId: carriageTypeId
-                };
-            });
-
-            // 验证所有乘客ID都存在
-            const missingPassengers = passengers.filter(p => !p.passengerId);
-            if (missingPassengers.length > 0) {
-                message.error('部分乘客信息不完整，请刷新页面重试');
-                setSubmitting(false);
-                return;
-            }
-
-            const bookingRequest = {
-                userId: currentUserId,
-                trainId: trainId,
-                departureStopId: departureStopId,
-                arrivalStopId: arrivalStopId,
-                travelDate: travelDate,
-                carriageTypeId: carriageTypeId,
-                passengers: passengers
-            };
-
-            console.log('发送购票请求:', bookingRequest);
-            
-            // 保存调试信息到localStorage
-            localStorage.setItem('debug_booking_request', JSON.stringify(bookingRequest));
-            localStorage.setItem('debug_passenger_details', JSON.stringify(passengerDetails));
-            localStorage.setItem('debug_response_data', JSON.stringify(response));
-
-            // 调用后端购票API
-            const bookingResponse = await ticketAPI.bookTickets(bookingRequest);
-            console.log('购票响应:', bookingResponse);
-            
-            // 保存响应信息
-            localStorage.setItem('debug_booking_response', JSON.stringify(bookingResponse));
-
-            if (bookingResponse.status === 'SUCCESS') {
-                // 购票成功，获取订单号
-                const orderNumber = bookingResponse.orderNumber;
-                console.log('购票成功，订单号:', orderNumber);
-                
-                message.success('购票成功，正在处理订单...');
-                
-                // 轮询获取订单ID
-                let retryCount = 0;
-                const maxRetries = 15; // 增加重试次数
-                const pollInterval = 200; // 200毫秒，提高响应速度
-                
-                const pollOrderId = async () => {
-                    try {
-                        const orderResponse = await orderAPI.getOrderIdByOrderNumber(orderNumber);
-                        console.log('查询订单ID响应:', orderResponse);
+                // 构建改签请求
+                const changeTicketRequest = {
+                    userId: currentUserId,
+                    originalOrderId: changeTicketState.originalOrderId,
+                    ticketIds: changeTicketState.ticketIds,
+                    newTrainId: trainId,
+                    newDepartureStopId: departureStopId,
+                    newArrivalStopId: arrivalStopId,
+                    newTravelDate: travelDate,
+                    newCarriageTypeId: seatTypeToCarriageId[passengerSeatTypes[0]], // 使用第一个乘客的席别
+                    passengers: selectedPassengers.map(name => {
+                        const passengerId = response.passengers.find(p => p.realName === name)?.passengerId;
+                        const ticketTypeValue = passengerDetails[name]?.ticketTypeValue || 1;
+                        const seatType = passengerDetails[name]?.seatType;
+                        const carriageTypeId = seatTypeToCarriageId[seatType];
                         
-                        if (orderResponse.status === 'SUCCESS') {
-                            const orderId = orderResponse.orderId;
-                            console.log('获取到订单ID:', orderId);
+                        return {
+                            passengerId: passengerId,
+                            ticketType: ticketTypeValue,
+                            carriageTypeId: carriageTypeId
+                        };
+                    })
+                };
+
+                console.log('发送改签请求:', changeTicketRequest);
+                
+                // 调用后端改签API
+                const changeResponse = await ticketAPI.changeTickets(changeTicketRequest);
+                console.log('改签响应:', changeResponse);
+                
+                if (changeResponse.status === 'SUCCESS') {
+                    // 改签成功，获取订单号
+                    const orderNumber = changeResponse.orderNumber;
+                    console.log('改签成功，订单号:', orderNumber);
+                    
+                    message.success('改签成功，正在处理订单...');
+                    
+                    // 轮询获取订单ID
+                    let retryCount = 0;
+                    const maxRetries = 15;
+                    const pollInterval = 200;
+                    
+                    const pollOrderId = async () => {
+                        try {
+                            const orderResponse = await orderAPI.getOrderIdByOrderNumber(orderNumber);
+                            console.log('查询订单ID响应:', orderResponse);
                             
-                            // 设置本地存储
-                            try {
-                                localStorage.setItem('current_order_id', orderId);
-                                localStorage.setItem('current_order_number', orderNumber);
-                            } catch (e) {
-                                console.error('无法保存订单信息:', e);
-                            }
-                            
-                            // 跳转到支付页面
-                            window.location.href = `/payment?orderId=${orderId}`;
-                        } else if (orderResponse.status === 'NOT_FOUND') {
-                            retryCount++;
-                            if (retryCount < maxRetries) {
-                                console.log(`订单尚未创建，${pollInterval}毫秒后重试 (${retryCount}/${maxRetries})`);
-                                setTimeout(pollOrderId, pollInterval);
+                            if (orderResponse.status === 'SUCCESS') {
+                                const orderId = orderResponse.orderId;
+                                console.log('获取到订单ID:', orderId);
+                                
+                                // 设置本地存储
+                                try {
+                                    localStorage.setItem('current_order_id', orderId);
+                                    localStorage.setItem('current_order_number', orderNumber);
+                                } catch (e) {
+                                    console.error('无法保存订单信息:', e);
+                                }
+                                
+                                // 清除改签状态
+                                dispatch(clearChangeTicket());
+                                
+                                // 跳转到支付页面
+                                window.location.href = `/payment?orderId=${orderId}`;
+                            } else if (orderResponse.status === 'NOT_FOUND') {
+                                retryCount++;
+                                if (retryCount < maxRetries) {
+                                    console.log(`订单尚未创建，${pollInterval}毫秒后重试 (${retryCount}/${maxRetries})`);
+                                    setTimeout(pollOrderId, pollInterval);
+                                } else {
+                                    message.error('订单处理超时，请稍后查看订单状态');
+                                    setSubmitting(false);
+                                }
                             } else {
-                                message.error('订单处理超时，请稍后查看订单状态');
+                                message.error('查询订单失败: ' + orderResponse.message);
                                 setSubmitting(false);
                             }
-                        } else {
-                            message.error('查询订单失败: ' + orderResponse.message);
-                            setSubmitting(false);
+                        } catch (error) {
+                            console.error('查询订单ID失败:', error);
+                            retryCount++;
+                            if (retryCount < maxRetries) {
+                                console.log(`查询失败，${pollInterval}毫秒后重试 (${retryCount}/${maxRetries})`);
+                                setTimeout(pollOrderId, pollInterval);
+                            } else {
+                                message.error('查询订单失败，请稍后重试');
+                                setSubmitting(false);
+                            }
                         }
-                    } catch (error) {
-                        console.error('查询订单ID失败:', error);
-                        retryCount++;
-                        if (retryCount < maxRetries) {
-                            console.log(`查询失败，${pollInterval}毫秒后重试 (${retryCount}/${maxRetries})`);
-                            setTimeout(pollOrderId, pollInterval);
-                        } else {
-                            message.error('查询订单失败，请稍后重试');
-                            setSubmitting(false);
-                        }
-                    }
-                };
-                
-                // 开始轮询
-                setTimeout(pollOrderId, pollInterval);
+                    };
+                    
+                    // 开始轮询
+                    setTimeout(pollOrderId, pollInterval);
+                } else {
+                    message.error(changeResponse.message || '改签失败');
+                    setSubmitting(false);
+                }
             } else {
-                message.error(bookingResponse.message || '购票失败');
-                setSubmitting(false);
+                // 正常购票流程
+                // 使用第一个乘客选择的席别作为所有乘客的席别
+                const firstPassengerSeatType = passengerSeatTypes[0];
+                const carriageTypeId = seatTypeToCarriageId[firstPassengerSeatType];
+                
+                // 检查所有乘客是否选择了相同的席别
+                const differentSeatTypes = passengerSeatTypes.filter(seatType => seatType !== firstPassengerSeatType);
+                if (differentSeatTypes.length > 0) {
+                    message.warning(`检测到不同席别选择，将统一使用 ${firstPassengerSeatType}`);
+                }
+
+                // 构建乘客信息列表
+                const passengers = selectedPassengers.map(name => {
+                    const passengerId = response.passengers.find(p => p.realName === name)?.passengerId;
+                    const ticketTypeValue = passengerDetails[name]?.ticketTypeValue || 1;
+                    const seatType = passengerDetails[name]?.seatType;
+                    const carriageTypeId = seatTypeToCarriageId[seatType];
+                    
+                    return {
+                        passengerId: passengerId,
+                        ticketType: ticketTypeValue,
+                        carriageTypeId: carriageTypeId
+                    };
+                });
+
+                // 验证所有乘客ID都存在
+                const missingPassengers = passengers.filter(p => !p.passengerId);
+                if (missingPassengers.length > 0) {
+                    message.error('部分乘客信息不完整，请刷新页面重试');
+                    setSubmitting(false);
+                    return;
+                }
+
+                const bookingRequest = {
+                    userId: currentUserId,
+                    trainId: trainId,
+                    departureStopId: departureStopId,
+                    arrivalStopId: arrivalStopId,
+                    travelDate: travelDate,
+                    carriageTypeId: carriageTypeId,
+                    passengers: passengers
+                };
+
+                console.log('发送购票请求:', bookingRequest);
+                
+                // 保存调试信息到localStorage
+                localStorage.setItem('debug_booking_request', JSON.stringify(bookingRequest));
+                localStorage.setItem('debug_passenger_details', JSON.stringify(passengerDetails));
+                localStorage.setItem('debug_response_data', JSON.stringify(response));
+
+                // 调用后端购票API
+                const bookingResponse = await ticketAPI.bookTickets(bookingRequest);
+                console.log('购票响应:', bookingResponse);
+                
+                // 保存响应信息
+                localStorage.setItem('debug_booking_response', JSON.stringify(bookingResponse));
+
+                if (bookingResponse.status === 'SUCCESS') {
+                    // 购票成功，获取订单号
+                    const orderNumber = bookingResponse.orderNumber;
+                    console.log('购票成功，订单号:', orderNumber);
+                    
+                    message.success('购票成功，正在处理订单...');
+                    
+                    // 轮询获取订单ID
+                    let retryCount = 0;
+                    const maxRetries = 15; // 增加重试次数
+                    const pollInterval = 200; // 200毫秒，提高响应速度
+                    
+                    const pollOrderId = async () => {
+                        try {
+                            const orderResponse = await orderAPI.getOrderIdByOrderNumber(orderNumber);
+                            console.log('查询订单ID响应:', orderResponse);
+                            
+                            if (orderResponse.status === 'SUCCESS') {
+                                const orderId = orderResponse.orderId;
+                                console.log('获取到订单ID:', orderId);
+                                
+                                // 设置本地存储
+                                try {
+                                    localStorage.setItem('current_order_id', orderId);
+                                    localStorage.setItem('current_order_number', orderNumber);
+                                } catch (e) {
+                                    console.error('无法保存订单信息:', e);
+                                }
+                                
+                                // 跳转到支付页面
+                                window.location.href = `/payment?orderId=${orderId}`;
+                            } else if (orderResponse.status === 'NOT_FOUND') {
+                                retryCount++;
+                                if (retryCount < maxRetries) {
+                                    console.log(`订单尚未创建，${pollInterval}毫秒后重试 (${retryCount}/${maxRetries})`);
+                                    setTimeout(pollOrderId, pollInterval);
+                                } else {
+                                    message.error('订单处理超时，请稍后查看订单状态');
+                                    setSubmitting(false);
+                                }
+                            } else {
+                                message.error('查询订单失败: ' + orderResponse.message);
+                                setSubmitting(false);
+                            }
+                        } catch (error) {
+                            console.error('查询订单ID失败:', error);
+                            retryCount++;
+                            if (retryCount < maxRetries) {
+                                console.log(`查询失败，${pollInterval}毫秒后重试 (${retryCount}/${maxRetries})`);
+                                setTimeout(pollOrderId, pollInterval);
+                            } else {
+                                message.error('查询订单失败，请稍后重试');
+                                setSubmitting(false);
+                            }
+                        }
+                    };
+                    
+                    // 开始轮询
+                    setTimeout(pollOrderId, pollInterval);
+                } else {
+                    message.error(bookingResponse.message || '购票失败');
+                    setSubmitting(false);
+                }
             }
         } catch (error) {
             console.error('购票失败:', error);
@@ -457,6 +665,23 @@ const SubmitOrder = () => {
 
     return (
         <>
+            {/* 改签模式提示 */}
+            {changeTicketState.isChanging && (
+                <div style={{ 
+                    backgroundColor: '#fff7e6', 
+                    border: '1px solid #ffd591', 
+                    borderRadius: '4px', 
+                    padding: '12px', 
+                    marginBottom: '16px' 
+                }}>
+                    <p style={{ margin: 0, color: '#d46b08' }}>
+                        <strong>改签模式：</strong>
+                        您正在为订单 {changeTicketState.originalOrderNumber} 进行改签，
+                        只能选择改签乘客，且不能添加或移除乘客
+                    </p>
+                </div>
+            )}
+
             <div className="train-info-wrapper">
                 <div className="train-info-header">
                     列车信息（以下余票信息仅供参考）
@@ -506,6 +731,7 @@ const SubmitOrder = () => {
                         onChange={e => setSearchText(e.target.value)}
                         className="passenger-search"
                         aria-label="搜索乘车人"
+                        disabled={changeTicketState.isChanging}
                     />
                 </div>
                 <div className="passenger-info-content">
@@ -529,18 +755,21 @@ const SubmitOrder = () => {
                                     type="checkbox"
                                     checked={selectedPassengers.includes(name)}
                                     onChange={() => togglePassenger(name)}
+                                    disabled={changeTicketState.isChanging}
                                 />
                                 <span>{name}</span>
                             </label>
                         ))}
-                        <button
-                            className="add-passenger-button"
-                            type="button"
-                            aria-label="添加乘车人"
-                            onClick={checkCanAddPassenger}
-                        >
-                            <span className="plus-sign">+</span> 添加乘车人
-                        </button>
+                        {!changeTicketState.isChanging && (
+                            <button
+                                className="add-passenger-button"
+                                type="button"
+                                aria-label="添加乘车人"
+                                onClick={checkCanAddPassenger}
+                            >
+                                <span className="plus-sign">+</span> 添加乘车人
+                            </button>
+                        )}
                     </div>
 
                     <hr />
@@ -557,7 +786,7 @@ const SubmitOrder = () => {
                                     <th>手机号</th>
                                     <th>证件类型</th>
                                     <th>证件号码</th>
-                                    <th>操作</th>
+                                    {!changeTicketState.isChanging && <th>操作</th>}
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -597,10 +826,10 @@ const SubmitOrder = () => {
                                                 </Select>
                                             </td>
                                             <td>{name}</td>
-                                            <td>{passengerPhoneMap[name]}</td>
+                                            <td>{passengerPhoneMap[name] || ''}</td>
                                             <td>
                                                 <Select
-                                                    value={passengerDetails[name]?.idType}
+                                                    value={passengerDetails[name]?.idType || idTypes[0]}
                                                     onChange={(value) => updateDetail(name, 'idType', value)}
                                                     style={{ width: 120 }}
                                                 >
@@ -614,21 +843,28 @@ const SubmitOrder = () => {
                                             <td>
                                                 <Input
                                                     value={passengerDetails[name]?.idNumber || ''}
+                                                    onChange={(e) => updateDetail(name, 'idNumber', e.target.value)}
                                                     placeholder="请输入证件号码"
                                                     style={{ width: 200 }}
-                                                    readOnly
                                                 />
                                             </td>
-                                            <td>
-                                                <button
-                                                    type="button"
-                                                    className="delete-row-button"
-                                                    aria-label={`删除乘车人 ${name}`}
-                                                    onClick={() => removePassenger(name)}
-                                                >
-                                                    ×
-                                                </button>
-                                            </td>
+                                            {!changeTicketState.isChanging && (
+                                                <td>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removePassenger(name)}
+                                                        style={{
+                                                            background: 'none',
+                                                            border: 'none',
+                                                            color: '#ff4d4f',
+                                                            cursor: 'pointer',
+                                                            textDecoration: 'underline'
+                                                        }}
+                                                    >
+                                                        移除
+                                                    </button>
+                                                </td>
+                                            )}
                                         </tr>
                                     );
                                 })}
@@ -656,7 +892,7 @@ const SubmitOrder = () => {
                             }}
                             disabled={submitting || selectedPassengers.length === 0}
                         >
-                            {submitting ? '提交中...' : '提交订单'}
+                            {submitting ? '提交中...' : (changeTicketState.isChanging ? '确认改签' : '提交订单')}
                         </button>
                     </div>
 
@@ -676,22 +912,52 @@ const SubmitOrder = () => {
             {showAddPassengerModal && (
                 <div className="add-passenger-page">
                     <div className="modal-wrapper" role="dialog" aria-modal="true" aria-labelledby="modal-title" style={{ position: 'relative' }}>
-                        <AddPassenger onClose={() => setShowAddPassengerModal(false)} />
+                        <AddPassenger 
+                            onClose={() => setShowAddPassengerModal(false)}
+                            onSuccess={() => {
+                                setShowAddPassengerModal(false);
+                                // 重新获取准备订单数据以更新乘客列表
+                                fetchPrepareOrderData();
+                            }}
+                        />
                     </div>
                 </div>
             )}
+
+            <CustomMessage
+                type="success"
+                content="订单提交成功！"
+                visible={false}
+                onClose={() => {}}
+            />
         </>
     );
 };
 
-export default SubmitOrder;
-
 function formatDate(date) {
     if (!date) return '';
-    return date.toString();
+    const dateObj = new Date(date);
+    return dateObj.toLocaleDateString('zh-CN');
 }
 
 function formatTime(time) {
     if (!time) return '';
-    return time.toString().slice(0, 5);
+    // 如果time是完整的日期时间字符串，提取时间部分
+    if (time.includes('T') || time.includes(' ')) {
+        const timeObj = new Date(time);
+        return timeObj.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    }
+    // 如果time只是时间字符串（如 "08:00"），直接返回
+    if (time.includes(':')) {
+        return time;
+    }
+    // 其他情况，尝试解析
+    try {
+        const timeObj = new Date(time);
+        return timeObj.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+        return time;
+    }
 }
+
+export default SubmitOrder;

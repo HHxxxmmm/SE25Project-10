@@ -139,7 +139,9 @@ const OrderDetailPage = () => {
     };
 
     const onChangeTicket = () => {
-        navigate('/change-ticket');
+        // 从URL获取orderId参数
+        const orderId = searchParams.get('orderId');
+        navigate(`/change-ticket?orderId=${orderId}`);
     };
 
     const onCancelOrder = async () => {

@@ -53,9 +53,23 @@ public class UserServiceImpl implements UserService {
         
         User user = userOptional.get();
         
-        // 验证密码
-        String md5Password = generateMD5Password(loginDTO.getPassword());
-        if (!md5Password.equals(user.getPasswordHash())) {
+        // 验证密码 - 支持MD5和BCrypt两种格式
+        String currentPasswordHash = user.getPasswordHash();
+        boolean passwordValid = false;
+        
+        // 检查是否是MD5格式的密码（32位十六进制字符串）
+        if (currentPasswordHash.length() == 32 && currentPasswordHash.matches("[a-fA-F0-9]{32}")) {
+            // MD5格式，计算当前密码的MD5值进行比较
+            String md5Password = generateMD5Password(loginDTO.getPassword());
+            passwordValid = currentPasswordHash.equalsIgnoreCase(md5Password);
+        } else {
+            // BCrypt格式，使用BCrypt编码器验证
+            org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder passwordEncoder = 
+                new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
+            passwordValid = passwordEncoder.matches(loginDTO.getPassword(), currentPasswordHash);
+        }
+        
+        if (!passwordValid) {
             logger.warn("登录失败: 密码错误, 用户手机号: {}", loginDTO.getPhoneNumber());
             throw new Exception("密码错误");
         }

@@ -36,17 +36,22 @@ const request = async (url, options = {}) => {
 export const passengerAPI = {
     // 检查是否可以添加乘车人
     checkCanAddPassenger: (userId) => 
-        request(`/passenger/check-add/${userId}`),
-    
+        request(`/passenger/check-add?userId=${userId}`),
+
     // 添加乘车人
-    addPassenger: (userId, realName, idCardNumber, phoneNumber) => 
+    addPassenger: (passengerData) => 
         request('/passenger/add', {
             method: 'POST',
-            body: JSON.stringify({ 
-                userId, 
-                realName, 
-                idCardNumber, 
-                phoneNumber 
+            body: JSON.stringify(passengerData),
+        }),
+
+    // 删除乘车人
+    deletePassenger: (userId, passengerId) => 
+        request('/passenger/delete', {
+            method: 'DELETE',
+            body: JSON.stringify({
+                userId: userId,
+                passengerId: passengerId
             }),
         }),
 };
@@ -58,6 +63,13 @@ export const ticketAPI = {
         request('/ticket/book', {
             method: 'POST',
             body: JSON.stringify(bookingRequest),
+        }),
+    
+    // 改签
+    changeTickets: (changeTicketRequest) => 
+        request('/ticket/change', {
+            method: 'POST',
+            body: JSON.stringify(changeTicketRequest),
         }),
     
     // 获取本人车票

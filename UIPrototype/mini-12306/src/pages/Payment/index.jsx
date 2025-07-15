@@ -76,7 +76,7 @@ const PaymentPage = () => {
         
         // 只有在用户存在且已认证时才获取订单
         if (user && user.userId) {
-            fetchOrder();
+        fetchOrder();
         }
     }, [orderId, user]); // 移除navigate依赖，避免不必要的重新渲染
     

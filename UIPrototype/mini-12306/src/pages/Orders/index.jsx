@@ -137,7 +137,7 @@ export default function OrdersPage() {
     useEffect(() => {
         // 只有在用户存在且已认证时才获取订单
         if (user && user.userId) {
-            fetchOrders();
+        fetchOrders();
         }
         
         // 组件卸载时的清理函数
