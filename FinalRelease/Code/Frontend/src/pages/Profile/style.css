@@ -1,0 +1,96 @@
+.profile-page-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Microsoft YaHei", sans-serif;
+    color: #333;
+}
+
+.profile-card {
+    width: 100%;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    font-family: "Microsoft YaHei", sans-serif;
+    color: #333;
+}
+
+/* 给卡片头部加背景色 */
+.profile-card .ant-card-head {
+    background-color: #1890ff; /* 深蓝色背景 */
+    border-radius: 8px 8px 0 0;
+    padding: 0;
+}
+
+/* 标题文字居中且白色 */
+.profile-card .card-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    padding: 12px;
+    margin: 0;
+    border-bottom: none; /* 取消分割线以适配背景色 */
+    display: flex;
+    justify-content: center; /* 居中 */
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    color: #fff; /* 白色文字 */
+}
+
+.ant-descriptions-item-label {
+    font-weight: bold;
+    color: rgba(0, 0, 0, 0.65);
+}
+
+.related-passengers-card .ant-descriptions {
+    margin-bottom: 16px;
+}
+
+.related-passengers-card p {
+    text-align: center;
+    color: rgba(0, 0, 0, 0.45);
+}
+
+.add-passenger-button {
+    background-color: #1890ff;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    font-size: 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: background-color 0.3s ease;
+}
+
+.add-passenger-button:hover {
+    background-color: #40a9ff;
+}
+
+.plus-sign {
+    font-weight: bold;
+    font-size: 18px;
+    line-height: 1;
+}
+
+@media (max-width: 768px) {
+    .profile-page-container {
+        margin: 12px 8px;
+        padding: 0 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-page-container .profile-card {
+        margin: 8px 4px;
+    }
+
+    .profile-card .card-title {
+        font-size: 1.25rem;
+        padding: 12px 16px;
+    }
+}
