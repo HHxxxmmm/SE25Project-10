@@ -149,7 +149,7 @@ public class TicketServiceImpl implements TicketService {
                         request.getArrivalStopId(), request.getTravelDate(), passengerInfo.getCarriageTypeId(), 1)) {
                     // 库存不足，回滚已扣减的库存
                     rollbackStockReductions(successfulStockReductions, request);
-                    return BookingResponse.failure("乘客ID " + passengerInfo.getPassengerId() + " 选择的席别余票不足");
+                    return BookingResponse.insufficientStock("乘客ID " + passengerInfo.getPassengerId() + " 选择的席别余票不足");
                 }
                 successfulStockReductions.add(passengerInfo);
             }

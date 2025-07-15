@@ -21,7 +21,12 @@ const request = async (url, options = {}) => {
         console.log('API响应状态:', response.status);
         console.log('API响应数据:', data);
         
+        // 对于购票API，即使返回400状态码，也要返回响应数据，因为可能包含INSUFFICIENT_STOCK状态
         if (!response.ok) {
+            // 如果是购票API且返回400状态码，返回响应数据让前端处理
+            if (url === '/ticket/book' && response.status === 400) {
+                return data;
+            }
             throw new Error(data.message || '请求失败');
         }
         
@@ -170,6 +175,49 @@ export const userAPI = {
     // 获取用户信息
     getUserInfo: (userId) => 
         request(`/user/info?userId=${userId}`),
+};
+
+// 候补订单相关API
+export const waitlistAPI = {
+    // 创建候补订单
+    createWaitlistOrder: (bookingRequest) => 
+        request('/waitlist/create', {
+            method: 'POST',
+            body: JSON.stringify(bookingRequest),
+        }),
+    
+    // 获取我的候补订单
+    getMyWaitlistOrders: (userId) => 
+        request(`/waitlist/my?userId=${userId}`),
+    
+    // 获取候补订单详情
+    getWaitlistOrderDetail: (userId, waitlistId) => 
+        request(`/waitlist/detail?userId=${userId}&waitlistId=${waitlistId}`),
+    
+    // 支付候补订单
+    payWaitlistOrder: (waitlistId, userId) => 
+        request(`/waitlist/pay?waitlistId=${waitlistId}&userId=${userId}`, {
+            method: 'POST',
+        }),
+    
+    // 取消候补订单
+    cancelWaitlistOrder: (waitlistId, userId) => 
+        request(`/waitlist/cancel?waitlistId=${waitlistId}&userId=${userId}`, {
+            method: 'POST',
+        }),
+    
+    // 退款候补订单
+    refundWaitlistOrder: (waitlistId, userId) => 
+        request(`/waitlist/refund?waitlistId=${waitlistId}&userId=${userId}`, {
+            method: 'POST',
+        }),
+    
+    // 部分退款候补订单项
+    refundWaitlistOrderItems: (waitlistId, userId, itemIds) => 
+        request(`/waitlist/refund-items?waitlistId=${waitlistId}&userId=${userId}`, {
+            method: 'POST',
+            body: JSON.stringify(itemIds),
+        }),
 };
 
 // 车次相关API

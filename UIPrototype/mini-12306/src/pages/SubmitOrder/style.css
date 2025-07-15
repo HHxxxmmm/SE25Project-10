@@ -496,3 +496,70 @@ hr {
     color: #666;
     font-size: 12px;
 }
+/* 候补订单弹窗样式 */
+.waitlist-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+}
+
+.waitlist-modal {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 500px;
+    overflow: hidden;
+}
+
+.waitlist-modal-header {
+    background-color: #1890ff;
+    color: white;
+    padding: 16px 20px;
+    text-align: center;
+}
+
+.waitlist-modal-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+.waitlist-modal-content {
+    padding: 24px 20px;
+    text-align: center;
+}
+
+.waitlist-modal-content p {
+    margin: 0 0 12px 0;
+    font-size: 1rem;
+    color: #333;
+}
+
+.waitlist-note {
+    font-size: 0.9rem;
+    color: #666;
+    background-color: #f8f9fa;
+    padding: 12px;
+    border-radius: 4px;
+    border-left: 4px solid #1890ff;
+}
+
+.waitlist-modal-footer {
+    padding: 16px 20px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    border-top: 1px solid #e8e8e8;
+}
+
+.waitlist-modal-footer .btn {
+    min-width: 100px;
+}

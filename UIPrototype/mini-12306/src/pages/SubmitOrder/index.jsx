@@ -4,7 +4,7 @@ import { message, Spin, Select, Input } from 'antd';
 import { useSelector, useDispatch } from 'react-redux';
 import { clearChangeTicket } from '../../store/actions/changeTicketActions';
 import AddPassenger from '../AddPassenger';
-import { orderAPI, passengerAPI, ticketAPI } from '../../services/api';
+import { orderAPI, passengerAPI, ticketAPI, waitlistAPI } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
 import './style.css';
 
@@ -112,6 +112,8 @@ const SubmitOrder = () => {
     const [submitting, setSubmitting] = useState(false);
     const [loading, setLoading] = useState(true);
     const [response, setResponse] = useState(null);
+    const [showWaitlistModal, setShowWaitlistModal] = useState(false);
+    const [waitlistSubmitting, setWaitlistSubmitting] = useState(false);
 
     const fetchPrepareOrderData = async () => {
         try {
@@ -171,9 +173,12 @@ const SubmitOrder = () => {
                         console.log('原始订单详情:', orderDetailResponse);
                         
                         if (orderDetailResponse && orderDetailResponse.tickets) {
-                            // 从原始订单的车票中获取乘客信息
+                            // 从原始订单的车票中获取乘客信息，只获取用户选择改签的车票
                             const originalPassengers = orderDetailResponse.tickets
-                                .filter(ticket => ticket.ticketStatus === 1) // 只获取未使用的车票
+                                .filter(ticket => 
+                                    ticket.ticketStatus === 1 && // 只获取未使用的车票
+                                    changeTicketState.ticketIds.includes(ticket.ticketId) // 只获取用户选择改签的车票
+                                )
                                 .map(ticket => ({
                                     realName: ticket.passengerName,
                                     passengerId: ticket.passengerId,
@@ -182,7 +187,8 @@ const SubmitOrder = () => {
                                     phoneNumber: ticket.phoneNumber || '' // 直接从车票信息中获取手机号
                                 }));
                             
-                            console.log('原始订单乘客信息:', originalPassengers);
+                            console.log('改签乘客信息:', originalPassengers);
+                            console.log('改签车票ID:', changeTicketState.ticketIds);
                             
                             // 设置乘客数据
                             const passengerNames = originalPassengers.map(p => p.realName);
@@ -640,6 +646,10 @@ const SubmitOrder = () => {
                     
                     // 开始轮询
                     setTimeout(pollOrderId, pollInterval);
+                } else if (bookingResponse.status === 'INSUFFICIENT_STOCK') {
+                    // 库存不足，显示候补订单弹窗
+                    setShowWaitlistModal(true);
+                    setSubmitting(false);
                 } else {
                     message.error(bookingResponse.message || '购票失败');
                     setSubmitting(false);
@@ -651,6 +661,62 @@ const SubmitOrder = () => {
             console.error('错误堆栈:', error.stack);
             message.error('购票失败，请稍后重试');
             setSubmitting(false);
+        }
+    };
+
+    // 候补订单处理函数
+    const handleCreateWaitlistOrder = async () => {
+        setWaitlistSubmitting(true);
+        
+        try {
+            const currentUserId = user?.userId;
+            
+            // 构建候补订单请求（与正常购票请求相同）
+            const bookingRequest = {
+                userId: currentUserId,
+                trainId: response.trainInfo.trainId,
+                departureStopId: response.trainInfo.departureStopId,
+                arrivalStopId: response.trainInfo.arrivalStopId,
+                travelDate: response.trainInfo.travelDate,
+                carriageTypeId: response.carriages[0].carriageTypeId, // 使用第一个车厢类型
+                passengers: selectedPassengers.map(name => {
+                    const passengerId = response.passengers.find(p => p.realName === name)?.passengerId;
+                    const ticketTypeValue = passengerDetails[name]?.ticketTypeValue || 1;
+                    const seatType = passengerDetails[name]?.seatType;
+                    const seatTypeToCarriageId = {};
+                    response.carriages.forEach(carriage => {
+                        seatTypeToCarriageId[carriage.carriageTypeName] = carriage.carriageTypeId;
+                    });
+                    const carriageTypeId = seatTypeToCarriageId[seatType];
+                    
+                    return {
+                        passengerId: passengerId,
+                        ticketType: ticketTypeValue,
+                        carriageTypeId: carriageTypeId
+                    };
+                })
+            };
+
+            console.log('发送候补订单请求:', bookingRequest);
+            
+            // 调用候补订单API
+            const result = await waitlistAPI.createWaitlistOrder(bookingRequest);
+            console.log('候补订单响应:', result);
+            
+            if (result.status === 'SUCCESS') {
+                message.success('候补订单创建成功！');
+                setShowWaitlistModal(false);
+                
+                // 跳转到支付页面
+                window.location.href = `/payment?waitlistId=${result.orderId}&isWaitlist=true`;
+            } else {
+                message.error(result.message || '候补订单创建失败');
+            }
+        } catch (error) {
+            console.error('创建候补订单失败:', error);
+            message.error('创建候补订单失败，请稍后重试');
+        } finally {
+            setWaitlistSubmitting(false);
         }
     };
 
@@ -705,9 +771,10 @@ const SubmitOrder = () => {
                             <hr />
                             <div className="ticket-info-seat">
                                 {response && response.carriages && response.carriages.map((carriage, index) => (
-                                    <span key={index} className="ticket-item ticket-available" style={{ marginRight: '20px' }}>
+                                    <span key={index} className={`ticket-item ${carriage.hasStock ? 'ticket-available' : 'ticket-unavailable'}`} style={{ marginRight: '20px' }}>
                                         <span className="seat-type">{carriage.carriageTypeName}</span>
-                                        （<span className="price price-available">¥{carriage.price}元</span>） 有票
+                                        （<span className={`price ${carriage.hasStock ? 'price-available' : 'price-unavailable'}`}>¥{carriage.price}元</span>） 
+                                        {carriage.hasStock ? `有票(${carriage.availableStock}张)` : '无票'}
                                     </span>
                                 ))}
                             </div>
@@ -930,9 +997,44 @@ const SubmitOrder = () => {
                 visible={false}
                 onClose={() => {}}
             />
+
+            {/* 候补订单弹窗 */}
+            {showWaitlistModal && (
+                <div className="waitlist-modal-overlay">
+                    <div className="waitlist-modal">
+                        <div className="waitlist-modal-header">
+                            <h3>候补订单</h3>
+                        </div>
+                        <div className="waitlist-modal-content">
+                            <p>当前订单所需余票不足，是否提交候补订单？</p>
+                            <p className="waitlist-note">
+                                候补订单将在有票时自动为您购票，候补期限为发车前2小时。
+                            </p>
+                        </div>
+                        <div className="waitlist-modal-footer">
+                            <button
+                                className="btn btn-white"
+                                onClick={() => setShowWaitlistModal(false)}
+                                disabled={waitlistSubmitting}
+                            >
+                                取消
+                            </button>
+                            <button
+                                className="btn btn-blue"
+                                onClick={handleCreateWaitlistOrder}
+                                disabled={waitlistSubmitting}
+                            >
+                                {waitlistSubmitting ? '提交中...' : '提交候补订单'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 };
+
+
 
 function formatDate(date) {
     if (!date) return '';
