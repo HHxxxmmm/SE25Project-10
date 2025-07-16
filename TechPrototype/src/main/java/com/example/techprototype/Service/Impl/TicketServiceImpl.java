@@ -21,6 +21,7 @@ import com.example.techprototype.Service.TicketService;
 import com.example.techprototype.Service.OrderService;
 import com.example.techprototype.Service.SeatService;
 import com.example.techprototype.Service.TimeConflictService;
+import com.example.techprototype.Service.DigitalTicketService;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -89,6 +90,9 @@ public class TicketServiceImpl implements TicketService {
     
     @Autowired
     private CarriageTypeRepository carriageTypeRepository;
+    
+    @Autowired
+    private DigitalTicketService digitalTicketService;
     
     private final Random random = new Random();
     
@@ -1173,5 +1177,175 @@ public class TicketServiceImpl implements TicketService {
         }
         
         System.out.println("库存回滚完成");
+    }
+    
+    @Override
+    @Transactional
+    public boolean updateDigitalSignature(Long ticketId) {
+        System.out.println("开始更新车票数字签名 - 票证ID: " + ticketId);
+        
+        Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
+        if (ticketOpt.isEmpty()) {
+            System.err.println("更新签名失败：车票不存在 ID=" + ticketId);
+            return false;
+        }
+        
+        Ticket ticket = ticketOpt.get();
+        System.out.println("车票信息获取成功 - 票证ID: " + ticketId + 
+                         ", 票证号: " + ticket.getTicketNumber() + 
+                         ", 状态: " + ticket.getTicketStatus());
+        
+        // 只有未使用的车票才可以更新签名
+        if (ticket.getTicketStatus() != 1) {
+            System.err.println("更新签名失败：车票状态非未使用 ID=" + ticketId + ", 状态=" + ticket.getTicketStatus());
+            return false;
+        }
+        
+        try {
+            // 生成签名数据
+            System.out.println("开始生成票证数字签名 - 票证ID: " + ticketId);
+            String qrData = digitalTicketService.generateSignedQRData(ticket);
+            System.out.println("获取票证签名数据成功 - 数据长度: " + qrData.length());
+            
+            // 确保签名长度不超过数据库字段限制
+            if (qrData.length() > 255) {
+                System.err.println("警告：签名数据长度(" + qrData.length() + ")超过数据库字段限制(255)");
+                System.out.println("将使用压缩后的签名数据");
+            }
+            
+            try {
+                // 将签名保存到车票中
+                ticket.setDigitalSignature(qrData);
+                ticketRepository.save(ticket);
+                
+                System.out.println("车票签名更新成功：ID=" + ticketId);
+                
+                // 确认数据已正确保存
+                Optional<Ticket> savedTicket = ticketRepository.findById(ticketId);
+                if (savedTicket.isPresent() && savedTicket.get().getDigitalSignature() != null) {
+                    System.out.println("确认签名已保存 - 长度: " + savedTicket.get().getDigitalSignature().length());
+                } else {
+                    System.err.println("警告：签名保存后无法确认 - 可能数据库未更新");
+                }
+                
+                return true;
+            } catch (Exception dbException) {
+                System.err.println("数据库操作异常：" + dbException.getMessage());
+                System.err.println("数据库错误类型: " + dbException.getClass().getName());
+                // 显示更多细节
+                Throwable rootCause = dbException;
+                while (rootCause.getCause() != null) {
+                    rootCause = rootCause.getCause();
+                }
+                System.err.println("根本原因: " + rootCause.getMessage() + " (" + rootCause.getClass().getName() + ")");
+                dbException.printStackTrace();
+                return false;
+            }
+        } catch (Exception e) {
+            System.err.println("更新车票签名异常：" + e.getMessage());
+            System.err.println("异常类型: " + e.getClass().getName());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    /**
+     * 验证用户是否有权限访问车票
+     */
+    private boolean validateUserTicketRelation(Long userId, Long ticketId) {
+        try {
+            System.out.println("验证用户票证权限 - 用户ID: " + userId + ", 票证ID: " + ticketId);
+            
+            // 获取车票信息
+            Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
+            if (ticketOpt.isEmpty()) {
+                System.err.println("权限验证失败：车票不存在 - 票证ID: " + ticketId);
+                return false;
+            }
+            Ticket ticket = ticketOpt.get();
+            System.out.println("票证信息获取成功 - 票证ID: " + ticketId + ", 乘客ID: " + ticket.getPassengerId());
+            
+            // 获取用户信息
+            Optional<User> userOpt = userRepository.findById(userId);
+            if (userOpt.isEmpty()) {
+                System.err.println("权限验证失败：用户不存在 - 用户ID: " + userId);
+                return false;
+            }
+            User user = userOpt.get();
+            System.out.println("用户信息获取成功 - 用户ID: " + userId + ", 关联乘客ID: " + user.getPassengerId());
+            
+            // 检查条件1：车票的乘客ID与用户的乘客ID一致
+            if (user.getPassengerId() != null && user.getPassengerId().equals(ticket.getPassengerId())) {
+                System.out.println("权限验证通过：车票乘客与用户关联乘客一致 - 乘客ID: " + ticket.getPassengerId());
+                return true;
+            }
+            
+            // 检查条件2：车票所属订单的用户ID与当前用户ID一致
+            Optional<Order> orderOpt = orderRepository.findById(ticket.getOrderId());
+            if (orderOpt.isPresent()) {
+                Order order = orderOpt.get();
+                System.out.println("订单信息获取成功 - 订单ID: " + ticket.getOrderId() + ", 订单用户ID: " + order.getUserId());
+                
+                if (order.getUserId().equals(userId)) {
+                    System.out.println("权限验证通过：车票订单用户与当前用户一致 - 用户ID: " + userId);
+                    return true;
+                }
+            } else {
+                System.err.println("权限验证过程中无法获取订单信息 - 订单ID: " + ticket.getOrderId());
+            }
+            
+            // 以上条件都不满足，表示没有权限
+            System.err.println("权限验证失败：用户与车票无关联 - 用户ID: " + userId + ", 票证ID: " + ticketId);
+            return false;
+        } catch (Exception e) {
+            System.err.println("验证用户车票权限异常：" + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    @Override
+    public String getTicketQRCodeData(Long ticketId, Long userId) {
+        System.out.println("请求获取车票二维码数据 - 车票ID: " + ticketId + ", 用户ID: " + userId);
+        
+        // 先检查权限
+        System.out.println("验证用户权限 - 车票ID: " + ticketId + ", 用户ID: " + userId);
+        if (!validateUserTicketRelation(userId, ticketId)) {
+            System.err.println("获取车票二维码数据失败：权限验证不通过 用户ID=" + userId + ", 车票ID=" + ticketId);
+            return null;
+        }
+        System.out.println("用户权限验证通过 - 车票ID: " + ticketId + ", 用户ID: " + userId);
+        
+        Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
+        if (ticketOpt.isEmpty()) {
+            System.err.println("获取车票二维码数据失败：车票不存在 ID=" + ticketId);
+            return null;
+        }
+        
+        Ticket ticket = ticketOpt.get();
+        System.out.println("车票信息获取成功 - 车票ID: " + ticketId + ", 票号: " + ticket.getTicketNumber());
+        
+        // 检查是否已有签名
+        if (ticket.getDigitalSignature() == null || ticket.getDigitalSignature().isEmpty()) {
+            System.out.println("车票尚无数字签名，开始生成 - 车票ID: " + ticketId);
+            // 如果没有签名，生成一个新的
+            boolean updated = updateDigitalSignature(ticketId);
+            if (!updated) {
+                System.err.println("更新数字签名失败 - 车票ID: " + ticketId);
+                return null;
+            }
+            
+            // 重新获取车票以获得更新后的签名
+            System.out.println("重新获取更新后的车票信息 - 车票ID: " + ticketId);
+            ticketOpt = ticketRepository.findById(ticketId);
+            if (ticketOpt.isEmpty()) {
+                System.err.println("重新获取车票信息失败 - 车票ID: " + ticketId);
+                return null;
+            }
+            ticket = ticketOpt.get();
+        }
+        
+        System.out.println("成功获取车票二维码数据 - 车票ID: " + ticketId + ", 数据长度: " + ticket.getDigitalSignature().length());
+        return ticket.getDigitalSignature();
     }
 } 

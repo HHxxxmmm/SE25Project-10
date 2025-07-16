@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Divider, message, Spin } from 'antd';
+import { Card, Typography, Divider, message, Spin, Button, Modal, Alert } from 'antd';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ticketAPI } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
+import QRCodeCanvas from '../../components/QRCodeCanvas';
 import './style.css'; // 样式文件
 
 const { Text } = Typography;
@@ -36,6 +37,9 @@ const PASSENGER_TYPE = {
 const TicketDetailPage = () => {
     const [ticket, setTicket] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [digitalTicket, setDigitalTicket] = useState(null);
+    const [digitalLoading, setDigitalLoading] = useState(false);
+    const [qrVisible, setQrVisible] = useState(false);
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const { user } = useAuth();
@@ -79,6 +83,80 @@ const TicketDetailPage = () => {
 
         fetchTicketDetail();
     }, [searchParams, navigate]);
+    
+    // 获取数字票证数据
+    const fetchDigitalTicket = async () => {
+        const ticketId = searchParams.get('ticketId');
+        const currentUserId = user?.userId;
+        
+        console.log('准备获取数字票证数据', { ticketId, currentUserId });
+        
+        if (!ticketId || !currentUserId) {
+            console.error('缺少必要参数', { ticketId, currentUserId });
+            return;
+        }
+        
+        setDigitalLoading(true);
+        try {
+            console.log('调用API获取数字票证数据...');
+            const response = await ticketAPI.getDigitalTicket(parseInt(ticketId), currentUserId);
+            console.log('获取数字票证响应:', response);
+            
+            if (response.status === 'SUCCESS' && response.ticketData) {
+                // 检查QR码数据格式
+                const qrData = response.ticketData.qrCodeData;
+                console.log('成功获取票证数据:', { 
+                    ticketId: response.ticketData.ticketId,
+                    ticketNumber: response.ticketData.ticketNumber,
+                    qrDataLength: qrData?.length,
+                    publicKeyLength: response.ticketData.publicKey?.length,
+                    qrDataCharCodes: qrData ? Array.from(qrData.substring(0, 20)).map(c => c.charCodeAt(0)) : []
+                });
+                
+                // 处理二维码数据，确保可以正确渲染
+                if (qrData && qrData.length > 0) {
+                    try {
+                        // 验证QR数据格式是否正确
+                        const parts = qrData.split('|');
+                        console.log('QR数据分段:', {
+                            partsCount: parts.length,
+                            partsLengths: parts.map(p => p.length)
+                        });
+                        
+                        if (parts.length !== 8) {
+                            console.warn('QR数据格式不正确，应有8个部分但实际有', parts.length);
+                        }
+                    } catch (e) {
+                        console.error('QR数据格式检查失败:', e);
+                    }
+                } else {
+                    console.error('获取到的QR码数据为空');
+                }
+                
+                setDigitalTicket(response.ticketData);
+            } else {
+                console.error('获取数字票证失败:', response.message);
+                message.error(response.message || '获取数字票证失败');
+            }
+        } catch (error) {
+            console.error('获取数字票证异常:', error);
+            message.error('获取数字票证失败，请稍后重试');
+        } finally {
+            setDigitalLoading(false);
+        }
+    };
+    
+    // 显示二维码
+    const showQRCode = () => {
+        console.log('显示二维码', { digitalTicket: !!digitalTicket });
+        if (!digitalTicket) {
+            console.log('未找到票证数据，正在获取...');
+            fetchDigitalTicket();
+        }
+        setQrVisible(true);
+    };
+    
+    // 这里删除了不再需要的票证验证相关函数
 
     if (loading) {
         return (
@@ -176,6 +254,76 @@ const TicketDetailPage = () => {
                     ))}
                 </ul>
             </div>
+            
+            {/* 电子票证按钮，只对未使用的车票显示 */}
+            {ticket.ticketStatus === 1 && (
+                <div style={{ textAlign: 'center', margin: '20px 0' }}>
+                    <Button type="primary" onClick={showQRCode} loading={digitalLoading}>
+                        查看电子票证
+                    </Button>
+                </div>
+            )}
+            
+            {/* 电子票证弹窗 */}
+            <Modal
+                title="电子票证"
+                open={qrVisible}
+                onCancel={() => setQrVisible(false)}
+                footer={null}
+                width={500}
+            >
+                <div style={{ textAlign: 'center', padding: '20px' }}>
+                    {digitalLoading ? (
+                        <Spin tip="正在加载票证数据..."/>
+                    ) : digitalTicket ? (
+                        <div>
+                            <div className="qrcode-container" style={{ marginBottom: '20px' }}>
+                                {digitalTicket.qrCodeData ? (
+                                    <div className="qrcode-wrapper" style={{ 
+                                        border: '1px solid #ddd', 
+                                        padding: '20px', 
+                                        display: 'inline-block',
+                                        backgroundColor: '#fff' 
+                                    }}>
+                                        <QRCodeCanvas
+                                            value={digitalTicket.qrCodeData}
+                                            size={280}
+                                            level="M"
+                                        />
+                                    </div>
+                                ) : (
+                                    <Alert
+                                        message="无法生成二维码"
+                                        description="未收到有效的二维码数据，请稍后再试"
+                                        type="error"
+                                        showIcon
+                                    />
+                                )}
+                            </div>
+                            <div className="ticket-info" style={{ marginTop: '20px', textAlign: 'left' }}>
+                                <div><strong>车次：</strong>{digitalTicket.trainNumber}</div>
+                                <div><strong>乘车日期：</strong>{digitalTicket.travelDate}</div>
+                                <div><strong>乘车人：</strong>{digitalTicket.passengerName}</div>
+                                <div><strong>票证编号：</strong>{digitalTicket.ticketNumber}</div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div>
+                            <Alert 
+                                message="无法加载数字票证数据" 
+                                type="error" 
+                                style={{marginTop: '20px'}} 
+                            />
+                            <Button 
+                                onClick={fetchDigitalTicket} 
+                                style={{marginTop: '10px'}}
+                            >
+                                重试
+                            </Button>
+                        </div>
+                    )}
+                </div>
+            </Modal>
         </Card>
     );
 };

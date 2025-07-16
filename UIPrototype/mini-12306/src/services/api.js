@@ -91,6 +91,27 @@ export const ticketAPI = {
     // 获取车票详情
     getTicketDetail: (ticketId, userId) => 
         request(`/ticket/detail?ticketId=${ticketId}&userId=${userId}`),
+        
+    // 获取数字车票数据
+    getDigitalTicket: async (ticketId, userId) => {
+        const result = await request(`/ticket/digital?ticketId=${ticketId}&userId=${userId}`);
+        
+        // 确保QR码数据是标准字符串格式
+        if (result && result.ticketData && result.ticketData.qrCodeData) {
+            // 删除可能导致QR码渲染问题的不可见字符
+            result.ticketData.qrCodeData = result.ticketData.qrCodeData
+                .replace(/\s+/g, '') // 移除所有空白字符
+                .trim();
+                
+            console.log('处理后的二维码数据:', {
+                length: result.ticketData.qrCodeData.length,
+                preview: result.ticketData.qrCodeData.substring(0, 30) + '...'
+            });
+        }
+        
+        return result;
+    },
+        
     
     // 退票
     refundTickets: (userId, orderId, ticketIds) => 
