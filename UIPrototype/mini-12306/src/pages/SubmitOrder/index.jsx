@@ -976,19 +976,17 @@ const SubmitOrder = () => {
                 </div>
             </div>
 
+            {/* 添加乘车人模态框 */}
             {showAddPassengerModal && (
-                <div className="add-passenger-page">
-                    <div className="modal-wrapper" role="dialog" aria-modal="true" aria-labelledby="modal-title" style={{ position: 'relative' }}>
-                        <AddPassenger 
-                            onClose={() => setShowAddPassengerModal(false)}
-                            onSuccess={() => {
-                                setShowAddPassengerModal(false);
-                                // 重新获取准备订单数据以更新乘客列表
-                                fetchPrepareOrderData();
-                            }}
-                        />
-                    </div>
-                </div>
+                <AddPassenger
+                    visible={showAddPassengerModal}
+                    onClose={() => setShowAddPassengerModal(false)}
+                    onSuccess={() => {
+                        setShowAddPassengerModal(false);
+                        // 重新获取准备订单数据以更新乘客列表
+                        fetchPrepareOrderData();
+                    }}
+                />
             )}
 
             <CustomMessage
