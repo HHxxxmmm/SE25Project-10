@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { Card, Tag, Pagination, Input, DatePicker, Button, Select, Space, Divider, message } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { SearchOutlined, EnvironmentOutlined, UserOutlined, FileTextOutlined } from '@ant-design/icons';
-import { orderAPI } from '../../services/api';
+import { orderAPI, waitlistAPI } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
 import "./style.css";
 
@@ -14,6 +14,14 @@ const ORDER_STATUS = {
     0: { text: '待支付', color: 'orange' },
     1: { text: '已支付', color: 'green' },
     2: { text: '已支付', color: 'green' }, // 已支付状态
+    3: { text: '已取消', color: 'red' },
+};
+
+// 候补订单状态映射
+const WAITLIST_STATUS = {
+    0: { text: '待支付', color: 'orange' },
+    1: { text: '待兑现', color: 'blue' },
+    2: { text: '已兑现', color: 'green' },
     3: { text: '已取消', color: 'red' },
 };
 
@@ -128,20 +136,54 @@ export default function OrdersPage() {
             setLoading(true);
             apiCallInProgress.current = true;
             console.log('获取订单，用户ID:', userId);
-            const response = await orderAPI.getMyOrders(userId);
             
-            console.log('订单API响应:', response);
+            // 获取普通订单
+            const orderResponse = await orderAPI.getMyOrders(userId);
+            console.log('普通订单API响应:', orderResponse);
             
-            if (response.status === 'SUCCESS') {
-                console.log('订单数据:', response.orders);
-
-                setOrders(response.orders || []);
-                setFilteredOrders(response.orders || []);
-            } else {
-                message.error('获取订单列表失败: ' + response.message);
-                setOrders([]);
-                setFilteredOrders([]);
+            // 获取候补订单
+            const waitlistResult = await waitlistAPI.getMyWaitlistOrders(userId);
+            console.log('候补订单API响应:', waitlistResult);
+            
+            let allOrders = [];
+            
+            if (orderResponse.status === 'SUCCESS') {
+                // 转换普通订单格式，添加类型标识
+                const normalOrders = (orderResponse.orders || []).map(order => ({
+                    ...order,
+                    orderType: 'normal',
+                    isWaitlist: false
+                }));
+                allOrders = allOrders.concat(normalOrders);
             }
+            
+            if (waitlistResult.status === 'SUCCESS') {
+                // 转换候补订单格式，添加类型标识
+                const waitlistOrders = (waitlistResult.waitlistOrders || []).map(order => ({
+                    ...order,
+                    orderType: 'waitlist',
+                    isWaitlist: true,
+                    orderId: order.waitlistId, // 使用waitlistId作为orderId
+                    orderNumber: order.orderNumber,
+                    orderTime: order.orderTime,
+                    totalAmount: order.totalAmount,
+                    orderStatus: order.orderStatus,
+                    trainId: order.trainId,
+                    trainNumber: order.trainNumber,
+                    departureDate: order.travelDate || order.departureDate, // 使用travelDate作为备选
+                    departureTime: order.departureTime,
+                    arrivalTime: order.arrivalTime,
+                    departureStationName: order.departureStationName,
+                    arrivalStationName: order.arrivalStationName,
+                    ticketCount: order.ticketCount
+                }));
+                allOrders = allOrders.concat(waitlistOrders);
+            }
+            
+            console.log('合并后的订单数据:', allOrders);
+            setOrders(allOrders);
+            setFilteredOrders(allOrders);
+            
         } catch (error) {
             console.error('获取订单列表失败:', error);
             message.error('获取订单列表失败，请稍后重试');
@@ -213,7 +255,13 @@ export default function OrdersPage() {
     };
 
     const handleOrderClick = (order) => {
-        navigate(`/order-detail?orderId=${order.orderId}`);
+        if (order.isWaitlist) {
+            // 候补订单跳转到候补订单详情页
+            navigate(`/order-detail?waitlistId=${order.orderId}`);
+        } else {
+            // 普通订单跳转到普通订单详情页
+            navigate(`/order-detail?orderId=${order.orderId}`);
+        }
     };
 
     const handlePayOrder = (order, e) => {
@@ -250,6 +298,33 @@ export default function OrdersPage() {
         } catch (error) {
             console.error('取消订单失败:', error);
             message.error('取消订单失败，请稍后重试');
+        }
+    };
+
+    const handlePayWaitlistOrder = async (order, e) => {
+        e.stopPropagation();
+        try {
+            // 跳转到支付页面
+            window.location.href = `/payment?waitlistId=${order.orderId}&isWaitlist=true`;
+        } catch (error) {
+            console.error('跳转支付页面失败:', error);
+            message.error('跳转支付页面失败');
+        }
+    };
+
+    const handleCancelWaitlistOrder = async (order, e) => {
+        e.stopPropagation();
+        try {
+            const result = await waitlistAPI.cancelWaitlistOrder(order.orderId, user.userId);
+            if (result.status === 'SUCCESS') {
+                message.success('候补订单取消成功');
+                fetchOrders(); // 重新获取订单列表
+            } else {
+                message.error(result.message || '取消候补订单失败');
+            }
+        } catch (error) {
+            console.error('取消候补订单失败:', error);
+            message.error('取消候补订单失败');
         }
     };
 
@@ -305,8 +380,8 @@ export default function OrdersPage() {
                                 >
                                     <Option value="all">全部状态</Option>
                                     <Option value="0">待支付</Option>
-                                    <Option value="1">已支付</Option>
-                                    <Option value="2">已支付</Option>
+                                    <Option value="1">已支付/待兑现</Option>
+                                    <Option value="2">已完成/已兑现</Option>
                                     <Option value="3">已取消</Option>
                                 </Select>
                             </div>
@@ -358,8 +433,8 @@ export default function OrdersPage() {
                                         <span className="order-number">订单号：{order.orderNumber}</span>
                                         <span className="order-time">下单时间：{formatDateTime(order.orderTime)}</span>
                                     </div>
-                                    <Tag color={ORDER_STATUS[order.orderStatus]?.color}>
-                                        {ORDER_STATUS[order.orderStatus]?.text}
+                                    <Tag color={order.isWaitlist ? WAITLIST_STATUS[order.orderStatus]?.color : ORDER_STATUS[order.orderStatus]?.color}>
+                                        {order.isWaitlist ? WAITLIST_STATUS[order.orderStatus]?.text : ORDER_STATUS[order.orderStatus]?.text}
                                     </Tag>
                                 </div>
 
@@ -418,37 +493,78 @@ export default function OrdersPage() {
 
                                 {/* 订单操作 */}
                                 <div className="order-actions">
-                                    {order.orderStatus === 0 && (
+                                    {order.isWaitlist ? (
+                                        // 候补订单操作
                                         <>
-                                            <Button 
-                                                type="primary" 
-                                                size="small"
-                                                onClick={(e) => handlePayOrder(order, e)}
-                                            >
-                                                立即支付
-                                            </Button>
-                                            <Button 
-                                                size="small"
-                                                onClick={(e) => handleCancelOrder(order, e)}
-                                            >
-                                                取消订单
-                                            </Button>
+                                            {order.orderStatus === 0 && (
+                                                <>
+                                                    <Button 
+                                                        type="primary" 
+                                                        size="small"
+                                                        onClick={(e) => handlePayWaitlistOrder(order, e)}
+                                                    >
+                                                        立即支付
+                                                    </Button>
+                                                    <Button 
+                                                        size="small"
+                                                        onClick={(e) => handleCancelWaitlistOrder(order, e)}
+                                                    >
+                                                        取消订单
+                                                    </Button>
+                                                </>
+                                            )}
+                                            {order.orderStatus === 1 && (
+                                                <Button size="small">
+                                                    等待兑现
+                                                </Button>
+                                            )}
+                                            {order.orderStatus === 2 && (
+                                                <Button size="small">
+                                                    查看详情
+                                                </Button>
+                                            )}
+                                            {order.orderStatus === 3 && (
+                                                <Button size="small">
+                                                    重新预订
+                                                </Button>
+                                            )}
                                         </>
-                                    )}
-                                    {order.orderStatus === 1 && (
-                                        <Button size="small">
-                                            查看详情
-                                        </Button>
-                                    )}
-                                    {order.orderStatus === 2 && (
-                                        <Button size="small">
-                                            查看详情
-                                        </Button>
-                                    )}
-                                    {order.orderStatus === 3 && (
-                                        <Button size="small">
-                                            重新预订
-                                        </Button>
+                                    ) : (
+                                        // 普通订单操作
+                                        <>
+                                            {order.orderStatus === 0 && (
+                                                <>
+                                                    <Button 
+                                                        type="primary" 
+                                                        size="small"
+                                                        onClick={(e) => handlePayOrder(order, e)}
+                                                    >
+                                                        立即支付
+                                                    </Button>
+                                                    <Button 
+                                                        size="small"
+                                                        onClick={(e) => handleCancelOrder(order, e)}
+                                                    >
+                                                        取消订单
+                                                    </Button>
+                                                </>
+                                            )}
+                                            {order.orderStatus === 1 && (
+                                                <Button size="small">
+                                                    查看详情
+                                                </Button>
+                                            )}
+                                            {order.orderStatus === 2 && (
+                                                <Button size="small">
+                                                    查看详情
+                                                </Button>
+                                            )}
+                                            {order.orderStatus === 3 && (
+                                                <Button size="small">
+                                                    重新预订
+                                                </Button>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </div>

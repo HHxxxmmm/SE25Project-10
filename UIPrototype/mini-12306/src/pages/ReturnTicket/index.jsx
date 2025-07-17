@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, Typography, Divider, Checkbox, Button, Row, message, Spin } from 'antd';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { orderAPI, ticketAPI } from '../../services/api';
+import { orderAPI, ticketAPI, waitlistAPI } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
 import './style.css';
 
@@ -34,6 +34,14 @@ const TICKET_STATUS = {
     4: '已改签',
 };
 
+// 候补订单项状态映射
+const WAITLIST_ITEM_STATUS = {
+    0: '待支付',
+    1: '待兑现',
+    2: '已兑现',
+    3: '已取消',
+};
+
 function formatDateTime(datetime) {
     if (!datetime) return '';
     const date = datetime.split('T')[0] || datetime.split(' ')[0] || '';
@@ -58,6 +66,7 @@ const ReturnTicketPage = () => {
     const [selectedTickets, setSelectedTickets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [isWaitlist, setIsWaitlist] = useState(false);
     const trainInfoCardRef = useRef(null);
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
@@ -67,13 +76,14 @@ const ReturnTicketPage = () => {
         const fetchRefundData = async () => {
             try {
                 const orderId = searchParams.get('orderId');
+                const waitlistId = searchParams.get('waitlistId');
                 const ticketIdsParam = searchParams.get('ticketIds');
                 const currentUserId = user?.userId || searchParams.get('userId');
                 
-                console.log('退票页面URL参数:', { orderId, ticketIdsParam, currentUserId });
+                console.log('退票页面URL参数:', { orderId, waitlistId, ticketIdsParam, currentUserId });
                 
-                if (!orderId || !ticketIdsParam) {
-                    console.error('缺少必要参数:', { orderId, ticketIdsParam });
+                if ((!orderId && !waitlistId) || !ticketIdsParam) {
+                    console.error('缺少必要参数:', { orderId, waitlistId, ticketIdsParam });
                     message.error('缺少必要参数');
                     navigate('/orders');
                     return;
@@ -88,24 +98,78 @@ const ReturnTicketPage = () => {
                 // 解析车票ID列表
                 const ticketIds = ticketIdsParam.split(',').map(id => parseInt(id));
                 
-                console.log('获取退票准备信息:', { orderId, currentUserId, ticketIds });
-                // 调用退票准备阶段API
-                const response = await orderAPI.getRefundPreparation(currentUserId, orderId, ticketIds);
-                console.log('退票准备信息响应:', response);
-                
-                if (response && response.orderNumber) {
-                    setRefundData(response);
-                    // 默认选中所有车票
-                    const allTicketIds = response.refundableTickets.map(ticket => ticket.ticketId);
-                    setSelectedTickets(allTicketIds);
+                if (waitlistId) {
+                    // 候补订单退款
+                    setIsWaitlist(true);
+                    console.log('获取候补订单退款信息:', { waitlistId, currentUserId, ticketIds });
+                    
+                    // 获取候补订单详情
+                    const response = await waitlistAPI.getWaitlistOrderDetail(currentUserId, waitlistId);
+                    console.log('候补订单详情响应:', response);
+                    
+                    if (response && response.status === 'SUCCESS' && response.waitlistOrder) {
+                        const waitlistOrder = response.waitlistOrder;
+                        // 过滤出可退款的候补订单项（待兑现或已兑现状态）
+                        const refundableItems = waitlistOrder.items.filter(item => 
+                            item.itemStatus === 1 || item.itemStatus === 2
+                        );
+                        
+                        setRefundData({
+                            orderNumber: waitlistOrder.orderNumber,
+                            orderTime: waitlistOrder.orderTime,
+                            totalAmount: waitlistOrder.totalAmount,
+                            ticketCount: waitlistOrder.ticketCount,
+                            trainNumber: waitlistOrder.trainNumber,
+                            departureStation: waitlistOrder.departureStation,
+                            arrivalStation: waitlistOrder.arrivalStation,
+                            departureTime: waitlistOrder.departureTime,
+                            arrivalTime: waitlistOrder.arrivalTime,
+                            travelDate: waitlistOrder.travelDate,
+                            refundableTickets: refundableItems.map(item => ({
+                                ticketId: item.itemId,
+                                passengerName: item.passengerName,
+                                idCardNumber: item.idCardNumber,
+                                passengerType: item.passengerType,
+                                passengerTypeText: item.passengerTypeText,
+                                ticketType: item.ticketType,
+                                ticketTypeText: item.ticketTypeText,
+                                carriageType: item.carriageTypeName,
+                                price: item.price,
+                                ticketStatus: item.itemStatus,
+                                ticketStatusText: item.itemStatusText,
+                            }))
+                        });
+                        
+                        // 默认选中所有可退款的候补订单项
+                        const allItemIds = refundableItems.map(item => item.itemId);
+                        setSelectedTickets(allItemIds);
+                    } else {
+                        console.error('获取候补订单信息失败，响应数据:', response);
+                        message.error('获取候补订单信息失败');
+                        navigate('/orders');
+                    }
                 } else {
-                    console.error('获取退票信息失败，响应数据:', response);
-                    message.error('获取退票信息失败');
-                    navigate('/orders');
+                    // 普通订单退票
+                    setIsWaitlist(false);
+                    console.log('获取退票准备信息:', { orderId, currentUserId, ticketIds });
+                    // 调用退票准备阶段API
+                    const response = await orderAPI.getRefundPreparation(currentUserId, orderId, ticketIds);
+                    console.log('退票准备信息响应:', response);
+                    
+                    if (response && response.orderNumber) {
+                        setRefundData(response);
+                        // 默认选中所有车票
+                        const allTicketIds = response.refundableTickets.map(ticket => ticket.ticketId);
+                        setSelectedTickets(allTicketIds);
+                    } else {
+                        console.error('获取退票信息失败，响应数据:', response);
+                        message.error('获取退票信息失败');
+                        navigate('/orders');
+                    }
                 }
             } catch (error) {
-                console.error('获取退票信息失败:', error);
-                message.error('获取退票信息失败，请稍后重试');
+                console.error('获取退款信息失败:', error);
+                message.error('获取退款信息失败，请稍后重试');
                 navigate('/orders');
             } finally {
                 setLoading(false);
@@ -125,7 +189,7 @@ const ReturnTicketPage = () => {
     }
 
     if (!refundData) {
-        return <div>退票信息不存在</div>;
+        return <div>退款信息不存在</div>;
     }
 
     const allSelected = selectedTickets.length === refundData.refundableTickets.length;
@@ -145,10 +209,10 @@ const ReturnTicketPage = () => {
         }
     };
 
-    // 确认退票按钮点击处理函数 - 正式退票阶段
+    // 确认退款按钮点击处理函数
     const handleConfirmReturn = async () => {
         if (selectedTickets.length === 0) {
-            message.warning('请选择要退票的车票');
+            message.warning(`请选择要${isWaitlist ? '退款' : '退票'}的项目`);
             return;
         }
 
@@ -156,22 +220,36 @@ const ReturnTicketPage = () => {
         try {
             const currentUserId = user?.userId || searchParams.get('userId');
             const orderId = searchParams.get('orderId');
+            const waitlistId = searchParams.get('waitlistId');
             
-            console.log('提交正式退票请求:', { currentUserId, orderId, selectedTickets });
-            // 调用正式退票API
-            const response = await ticketAPI.refundTickets(currentUserId, orderId, selectedTickets);
-            console.log('正式退票响应:', response);
-            
-            if (response && response.status === 'SUCCESS') {
-                message.success('退票成功');
-                // 跳转回订单详情页，刷新订单信息
-                navigate(`/order-detail?orderId=${orderId}&userId=${currentUserId}`);
+            if (isWaitlist) {
+                // 候补订单退款
+                console.log('提交候补订单退款请求:', { currentUserId, waitlistId, selectedTickets });
+                const response = await waitlistAPI.refundWaitlistOrderItems(waitlistId, currentUserId, selectedTickets);
+                console.log('候补订单退款响应:', response);
+                
+                if (response && response.status === 'SUCCESS') {
+                    message.success('候补订单退款成功');
+                    navigate(`/order-detail?waitlistId=${waitlistId}`);
+                } else {
+                    message.error(response.message || '候补订单退款失败');
+                }
             } else {
-                message.error(response.message || '退票失败');
+                // 普通订单退票
+                console.log('提交正式退票请求:', { currentUserId, orderId, selectedTickets });
+                const response = await ticketAPI.refundTickets(currentUserId, orderId, selectedTickets);
+                console.log('正式退票响应:', response);
+                
+                if (response && response.status === 'SUCCESS') {
+                    message.success('退票成功');
+                    navigate(`/order-detail?orderId=${orderId}&userId=${currentUserId}`);
+                } else {
+                    message.error(response.message || '退票失败');
+                }
             }
         } catch (error) {
-            console.error('退票失败:', error);
-            message.error('退票失败，请稍后重试');
+            console.error(`${isWaitlist ? '退款' : '退票'}失败:`, error);
+            message.error(`${isWaitlist ? '退款' : '退票'}失败，请稍后重试`);
         } finally {
             setSubmitting(false);
         }
@@ -185,11 +263,11 @@ const ReturnTicketPage = () => {
     return (
         <>
             <Card className="return-ticket-card" bordered={false} bodyStyle={{ padding: 0 }}>
-                <div className="card-title">退票</div>
+                <div className="card-title">{isWaitlist ? '候补订单退款' : '退票'}</div>
 
                 <Row justify="space-between" className="info-row">
                     <Text type="secondary" className="order-info-text">
-                        订单号: {refundData.orderNumber}
+                        {isWaitlist ? '候补订单号' : '订单号'}: {refundData.orderNumber}
                     </Text>
                     <Text type="secondary" className="order-info-text">
                         下单时间: {formatDateTime(refundData.orderTime)}
@@ -261,9 +339,9 @@ const ReturnTicketPage = () => {
                                 <td>{ticket.carriageType}</td>
                                 <td>{TICKET_TYPE[ticket.ticketType] || '未知'}</td>
                                 <td>
-                                    <Text className="price-text">¥{ticket.originalPrice}</Text>
+                                    <Text className="price-text">¥{isWaitlist ? ticket.price : ticket.originalPrice}</Text>
                                 </td>
-                                <td>{TICKET_STATUS[ticket.ticketStatus] || '未知'}</td>
+                                <td>{isWaitlist ? (WAITLIST_ITEM_STATUS[ticket.ticketStatus] || '未知') : (TICKET_STATUS[ticket.ticketStatus] || '未知')}</td>
                             </tr>
                         ))}
                         </tbody>
@@ -274,7 +352,7 @@ const ReturnTicketPage = () => {
 
                 <Row justify="space-between" align="middle" className="footer-row">
                     <div>订单总价: ¥{refundData.totalAmount}</div>
-                    <div>已选择: {selectedTickets.length}张车票</div>
+                    <div>已选择: {selectedTickets.length}{isWaitlist ? '项' : '张车票'}</div>
                 </Row>
 
                 <div className="button-row">
@@ -285,7 +363,7 @@ const ReturnTicketPage = () => {
                         disabled={selectedTickets.length === 0 || submitting}
                         loading={submitting}
                     >
-                        {submitting ? '退票中...' : `确认退票 (${selectedTickets.length})`}
+                        {submitting ? `${isWaitlist ? '退款中' : '退票中'}...` : `确认${isWaitlist ? '退款' : '退票'} (${selectedTickets.length})`}
                     </Button>
                     <Button className="btn-white" onClick={handleCancel} disabled={submitting}>
                         取消
@@ -296,8 +374,8 @@ const ReturnTicketPage = () => {
             <div className="tip-wrapper">
                 <div className="tip-content">
                     <p>温馨提示：</p>
-                    <p>确认退票后，车票将无法恢复，请谨慎操作。</p>
-                    <p>退票后，退款将按原支付方式退回，到账时间以银行处理为准。</p>
+                    <p>确认{isWaitlist ? '退款' : '退票'}后，{isWaitlist ? '候补订单项' : '车票'}将无法恢复，请谨慎操作。</p>
+                    <p>{isWaitlist ? '退款' : '退票'}后，退款将按原支付方式退回，到账时间以银行处理为准。</p>
                 </div>
             </div>
         </>

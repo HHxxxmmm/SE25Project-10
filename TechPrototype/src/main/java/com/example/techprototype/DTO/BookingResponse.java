@@ -29,4 +29,8 @@ public class BookingResponse {
     public static BookingResponse failure(String message) {
         return new BookingResponse(null, null, null, null, "FAILED", message);
     }
+    
+    public static BookingResponse insufficientStock(String message) {
+        return new BookingResponse(null, null, null, null, "INSUFFICIENT_STOCK", message);
+    }
 } 

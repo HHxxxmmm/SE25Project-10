@@ -3,7 +3,7 @@ import { Card, Radio, Button, message, Row, Col, Divider, Typography } from 'ant
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { ArrowLeftOutlined, AlipayCircleOutlined, WechatOutlined, CreditCardOutlined } from '@ant-design/icons';
 import './style.css';
-import { orderAPI } from '../../services/api';
+import { orderAPI, waitlistAPI } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
 
 const { Title, Text } = Typography;
@@ -17,6 +17,8 @@ const PaymentPage = () => {
     const [searchParams] = useSearchParams();
     const { user } = useAuth();
     const orderId = searchParams.get('orderId');
+    const waitlistId = searchParams.get('waitlistId');
+    const isWaitlist = searchParams.get('isWaitlist') === 'true';
     
     // 加载订单数据
     useEffect(() => {
@@ -44,17 +46,31 @@ const PaymentPage = () => {
                 
                 // 使用URL参数或本地存储的ID
                 const orderIdToUse = orderId || localStorage.getItem('current_order_id');
+                const waitlistIdToUse = waitlistId || localStorage.getItem('current_waitlist_id');
                 
-                if (!orderIdToUse) {
-                    console.error('未找到订单ID');
+                if (!orderIdToUse && !waitlistIdToUse) {
+                    console.error('未找到订单ID或候补订单ID');
                     message.error('未找到有效的订单ID');
                     navigate('/orders');
                     return;
                 }
                 
                 // 调用后端API获取订单详情
-                console.log('获取订单详情，用户ID:', userId);
-                const orderDetail = await orderAPI.getOrderDetail(orderIdToUse, userId);
+                console.log('获取订单详情，用户ID:', userId, '是否候补订单:', isWaitlist);
+                
+                let orderDetail;
+                if (isWaitlist && waitlistIdToUse) {
+                    // 获取候补订单详情
+                    const result = await waitlistAPI.getWaitlistOrderDetail(userId, waitlistIdToUse);
+                    if (result.status === 'SUCCESS') {
+                        orderDetail = result.waitlistOrder;
+                    } else {
+                        throw new Error(result.message || '获取候补订单详情失败');
+                    }
+                } else {
+                    // 获取普通订单详情
+                    orderDetail = await orderAPI.getOrderDetail(orderIdToUse, userId);
+                }
                 console.log('订单详情:', orderDetail);
                 
                 if (orderDetail) {
@@ -102,10 +118,10 @@ const PaymentPage = () => {
             setTimeLeft(remaining);
             
             if (remaining <= 0) {
-                clearInterval(timer);
-                message.warning('支付超时，订单已取消');
-                navigate('/orders');
-            }
+                    clearInterval(timer);
+                    message.warning('支付超时，订单已取消');
+                    navigate('/orders');
+                }
         }, 1000);
         
         return () => clearInterval(timer);
@@ -165,9 +181,11 @@ const PaymentPage = () => {
             return;
         }
         
-        // 确保有有效的orderId
+        // 确保有有效的orderId或waitlistId
         const orderIdToUse = orderId || localStorage.getItem('current_order_id');
-        if (!orderIdToUse) {
+        const waitlistIdToUse = waitlistId || localStorage.getItem('current_waitlist_id');
+        
+        if (!orderIdToUse && !waitlistIdToUse) {
             message.error('订单ID不能为空');
             return;
         }
@@ -175,14 +193,25 @@ const PaymentPage = () => {
         try {
             setLoading(true);
             
-            // 调用后端支付API
+            let paymentResponse;
+            if (isWaitlist && waitlistIdToUse) {
+                // 支付候补订单
+                console.log('提交候补订单支付，用户ID:', userId, '候补订单ID:', waitlistIdToUse);
+                paymentResponse = await waitlistAPI.payWaitlistOrder(waitlistIdToUse, userId);
+            } else {
+                // 支付普通订单
             console.log('提交支付，用户ID:', userId, '订单ID:', orderIdToUse);
-            const paymentResponse = await orderAPI.payOrder(orderIdToUse, userId);
+                paymentResponse = await orderAPI.payOrder(orderIdToUse, userId);
+            }
             console.log('支付响应:', paymentResponse);
             
             if (paymentResponse.status === 'SUCCESS') {
                 message.success('支付成功');
+                if (isWaitlist && waitlistIdToUse) {
+                    navigate(`/order-detail?waitlistId=${waitlistIdToUse}`);
+                } else {
                 navigate(`/order-detail?orderId=${orderIdToUse}`);
+                }
             } else {
                 message.error('支付失败: ' + paymentResponse.message);
             }
@@ -225,7 +254,7 @@ const PaymentPage = () => {
                 <div className="order-summary">
                     <Row gutter={[16, 16]}>
                         <Col span={24}>
-                            <Title level={4}>订单信息</Title>
+                            <Title level={4}>{isWaitlist ? '候补订单信息' : '订单信息'}</Title>
                         </Col>
                         
                         <Col span={24}>
@@ -233,8 +262,8 @@ const PaymentPage = () => {
                                 <div className="train-date">发车时间：{order.travelDate}</div>
                                 <div className="train-route">
                                     <div className="station-block">
-                                        <div className="station-time">{order.departureTime}</div>
                                         <div className="station-name">{order.departureStation}</div>
+                                        <div className="station-time">{order.departureTime}</div>
                                     </div>
                                     
                                     <div className="arrow-block">
@@ -243,8 +272,8 @@ const PaymentPage = () => {
                                     </div>
                                     
                                     <div className="station-block">
-                                        <div className="station-time">{order.arrivalTime}</div>
                                         <div className="station-name">{order.arrivalStation}</div>
+                                        <div className="station-time">{order.arrivalTime}</div>
                                     </div>
                                 </div>
                             </div>
@@ -253,16 +282,16 @@ const PaymentPage = () => {
                         <Col span={24}>
                             <div className="passengers-detail">
                                 <div className="detail-label">乘车人信息：</div>
-                                {order.tickets.map((ticket, index) => (
+                                {(isWaitlist ? order.items : order.tickets).map((item, index) => (
                                     <div key={index} className="passenger-detail-item">
                                         <div className="passenger-info">
-                                            <span className="passenger-name">{ticket.passengerName}</span>
-                                            <span className="passenger-id">（{ticket.idCardNumber}）</span>
+                                            <span className="passenger-name">{isWaitlist ? item.passengerName : item.passengerName}</span>
+                                            <span className="passenger-id">（{isWaitlist ? item.idCardNumber : item.idCardNumber}）</span>
                                             <span className="passenger-seat">
-                                                {ticket.carriageType}
+                                                {isWaitlist ? item.carriageTypeName : item.carriageType}
                                             </span>
                                             <span className="passenger-price">
-                                                ¥{ticket.price}
+                                                ¥{item.price || '待定'}
                                             </span>
                                         </div>
                                     </div>

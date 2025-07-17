@@ -2,13 +2,15 @@ package com.example.techprototype.Service;
 
 import com.example.techprototype.Entity.Order;
 import com.example.techprototype.Entity.Ticket;
-import com.example.techprototype.Entity.Seat;
-import com.example.techprototype.Entity.TrainCarriage;
+import com.example.techprototype.Entity.WaitlistOrder;
+import com.example.techprototype.Entity.WaitlistItem;
 import com.example.techprototype.Enums.OrderStatus;
+import com.example.techprototype.Enums.WaitlistOrderStatus;
+import com.example.techprototype.Enums.WaitlistItemStatus;
 import com.example.techprototype.Repository.OrderRepository;
 import com.example.techprototype.Repository.TicketRepository;
-import com.example.techprototype.Repository.SeatRepository;
-import com.example.techprototype.Repository.TrainCarriageRepository;
+import com.example.techprototype.Repository.WaitlistOrderRepository;
+import com.example.techprototype.Repository.WaitlistItemRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -27,16 +29,16 @@ public class OrderTimeoutService {
     private TicketRepository ticketRepository;
     
     @Autowired
-    private SeatRepository seatRepository;
-    
-    @Autowired
-    private TrainCarriageRepository trainCarriageRepository;
-    
-    @Autowired
     private SeatService seatService;
     
     @Autowired
     private RedisService redisService;
+    
+    @Autowired
+    private WaitlistOrderRepository waitlistOrderRepository;
+    
+    @Autowired
+    private WaitlistItemRepository waitlistItemRepository;
     
     /**
      * 每30秒检查一次超时订单
@@ -58,6 +60,10 @@ public class OrderTimeoutService {
             if (!timeoutOrders.isEmpty()) {
                 System.out.println("处理超时订单: " + timeoutOrders.size() + "个");
             }
+            
+            // 候补订单兑现现在由库存回滚触发，不再需要定时检查
+            // processWaitlistFulfillment();
+            
         } catch (Exception e) {
             System.err.println("处理超时订单失败: " + e.getMessage());
         }
@@ -93,6 +99,44 @@ public class OrderTimeoutService {
             
         } catch (Exception e) {
             System.err.println("处理超时订单失败: " + order.getOrderNumber() + ", 错误: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 处理候补订单兑现
+     * 注意：这个方法现在只监测库存回滚，不主动尝试减库存
+     */
+    private void processWaitlistFulfillment() {
+        // 暂时禁用主动兑现逻辑，改为监测库存回滚操作
+        // 库存回滚操作会在其他地方触发候补订单兑现
+        System.out.println("候补订单兑现：等待库存回滚触发...");
+    }
+    
+    /**
+     * 兑现候补订单项
+     */
+    private boolean fulfillWaitlistItem(WaitlistItem item, WaitlistOrder order) {
+        try {
+            // 这里实现具体的兑现逻辑
+            // 1. 创建正式订单和车票
+            // 2. 更新候补订单项状态
+            // 3. 检查候补订单是否全部兑现
+            
+            // 简化实现，实际需要完整的订单创建逻辑
+            item.setItemStatus((byte) WaitlistItemStatus.FULFILLED.getCode());
+            waitlistItemRepository.save(item);
+            
+            // 检查候补订单是否全部兑现
+            List<WaitlistItem> remainingItems = waitlistItemRepository.findPendingItemsByWaitlistId(order.getWaitlistId());
+            if (remainingItems.isEmpty()) {
+                order.setOrderStatus((byte) WaitlistOrderStatus.FULFILLED.getCode());
+                waitlistOrderRepository.save(order);
+            }
+            
+            return true;
+        } catch (Exception e) {
+            System.err.println("兑现候补订单项失败: " + e.getMessage());
+            return false;
         }
     }
 } 

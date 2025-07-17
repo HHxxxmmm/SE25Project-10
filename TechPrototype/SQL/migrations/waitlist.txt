@@ -1,0 +1,59 @@
+首先是新增表
+create table mini12306.waitlist_items
+(
+    item_id           bigint auto_increment
+        primary key,
+    waitlist_id       bigint                             not null,
+    passenger_id      bigint                             not null,
+    train_id          int                                not null,
+    departure_stop_id bigint                             not null,
+    arrival_stop_id   bigint                             not null,
+    travel_date       date                               not null,
+    carriage_type_id  int                                not null,
+    ticket_type       tinyint                            not null comment '1-成人,2-儿童,3-学生,4-残疾,5-军人',
+    item_status       tinyint  default 0                 null comment '0-待兑现,1-兑现中,2-兑现成功,3-兑现失败',
+    created_time      datetime default CURRENT_TIMESTAMP null,
+    price             decimal(10, 2)                     null,
+    constraint fk_item_passenger
+        foreign key (passenger_id) references mini12306.passengers (passenger_id),
+    constraint fk_item_waitlist
+        foreign key (waitlist_id) references mini12306.waitlist_orders (waitlist_id)
+)
+    charset = utf8mb4;
+
+create index idx_waitlist_match
+    on mini12306.waitlist_items (train_id, travel_date, departure_stop_id, arrival_stop_id, carriage_type_id,
+                                 item_status);
+
+create index idx_waitlist_priority
+    on mini12306.waitlist_items (created_time);
+
+
+create table mini12306.waitlist_orders
+(
+    waitlist_id  bigint auto_increment
+        primary key,
+    order_number varchar(32)                        not null comment 'WL+日期+序列',
+    user_id      bigint                             not null,
+    order_time   datetime default CURRENT_TIMESTAMP null,
+    total_amount decimal(10, 2)                     not null,
+    expire_time  datetime                           not null comment '开车前2小时',
+    order_status tinyint  default 0                 null comment '0-待兑现,1-部分成功,2-全部成功,3-已取消',
+    item_count   int                                null,
+    constraint uk_waitlist_order_number
+        unique (order_number),
+    constraint fk_waitlist_user
+        foreign key (user_id) references mini12306.users (user_id)
+)
+    charset = utf8mb4;
+
+create index idx_waitlist_user
+    on mini12306.waitlist_orders (user_id, order_status);
+
+
+
+然后，需要修改部分数据
+UPDATE ticket_inventory
+SET travel_date = DATE_ADD(travel_date, INTERVAL 15 DAY);
+
+
