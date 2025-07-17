@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserPassengerRelationDAOImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">TechPrototype</a> &gt; <a href="index.source.html" class="el_package">com.example.techprototype.DAO.Impl</a> &gt; <span class="el_source">UserPassengerRelationDAOImpl.java</span></div><h1>UserPassengerRelationDAOImpl.java</h1><pre class="source lang-java linenums">package com.example.techprototype.DAO.Impl;
+
+import com.example.techprototype.DAO.UserPassengerRelationDAO;
+import com.example.techprototype.Entity.UserPassengerRelation;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.TypedQuery;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+<span class="fc" id="L18">public class UserPassengerRelationDAOImpl implements UserPassengerRelationDAO {</span>
+
+<span class="fc" id="L20">    private static final Logger logger = LoggerFactory.getLogger(UserPassengerRelationDAOImpl.class);</span>
+    
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    @Override
+    @Transactional
+    public UserPassengerRelation save(UserPassengerRelation relation) {
+<span class="fc" id="L28">        logger.info(&quot;保存用户(ID:{})和乘客(ID:{})的关系&quot;, relation.getUserId(), relation.getPassengerId());</span>
+        try {
+<span class="fc" id="L30">            entityManager.persist(relation);</span>
+<span class="fc" id="L31">            entityManager.flush();</span>
+<span class="fc" id="L32">            logger.info(&quot;关系保存成功，ID: {}&quot;, relation.getRelationId());</span>
+<span class="fc" id="L33">            return relation;</span>
+<span class="nc" id="L34">        } catch (Exception e) {</span>
+<span class="nc" id="L35">            logger.error(&quot;保存用户和乘客关系时发生错误: {}&quot;, e.getMessage());</span>
+<span class="nc" id="L36">            throw e;</span>
+        }
+    }
+
+    @Override
+    public List&lt;UserPassengerRelation&gt; findAllByUserId(Long userId) {
+<span class="fc" id="L42">        logger.info(&quot;查询用户ID为: {} 的所有关联乘客&quot;, userId);</span>
+        try {
+<span class="fc" id="L44">            TypedQuery&lt;UserPassengerRelation&gt; query = entityManager.createQuery(</span>
+                    &quot;SELECT r FROM UserPassengerRelation r WHERE r.userId = :userId&quot;, UserPassengerRelation.class);
+<span class="fc" id="L46">            query.setParameter(&quot;userId&quot;, userId);</span>
+<span class="fc" id="L47">            return query.getResultList();</span>
+<span class="fc" id="L48">        } catch (Exception e) {</span>
+<span class="fc" id="L49">            logger.error(&quot;查询用户ID为 {} 的关联乘客时发生错误: {}&quot;, userId, e.getMessage());</span>
+<span class="fc" id="L50">            return Collections.emptyList();</span>
+        }
+    }
+
+    @Override
+    public Optional&lt;UserPassengerRelation&gt; findByUserIdAndPassengerId(Long userId, Long passengerId) {
+<span class="fc" id="L56">        logger.info(&quot;查询用户ID为: {} 与乘客ID为: {} 的关系&quot;, userId, passengerId);</span>
+        try {
+<span class="fc" id="L58">            TypedQuery&lt;UserPassengerRelation&gt; query = entityManager.createQuery(</span>
+                    &quot;SELECT r FROM UserPassengerRelation r WHERE r.userId = :userId AND r.passengerId = :passengerId&quot;, 
+                    UserPassengerRelation.class);
+<span class="fc" id="L61">            query.setParameter(&quot;userId&quot;, userId);</span>
+<span class="fc" id="L62">            query.setParameter(&quot;passengerId&quot;, passengerId);</span>
+<span class="fc" id="L63">            return Optional.ofNullable(query.getSingleResult());</span>
+<span class="fc" id="L64">        } catch (NoResultException e) {</span>
+<span class="fc" id="L65">            logger.warn(&quot;未找到用户ID为 {} 与乘客ID为 {} 的关系&quot;, userId, passengerId);</span>
+<span class="fc" id="L66">            return Optional.empty();</span>
+<span class="fc" id="L67">        } catch (Exception e) {</span>
+<span class="fc" id="L68">            logger.error(&quot;查询用户与乘客关系时发生错误: {}&quot;, e.getMessage());</span>
+<span class="fc" id="L69">            throw e;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

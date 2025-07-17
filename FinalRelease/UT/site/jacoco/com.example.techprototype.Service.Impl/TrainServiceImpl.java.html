@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TrainServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">TechPrototype</a> &gt; <a href="index.source.html" class="el_package">com.example.techprototype.Service.Impl</a> &gt; <span class="el_source">TrainServiceImpl.java</span></div><h1>TrainServiceImpl.java</h1><pre class="source lang-java linenums">package com.example.techprototype.Service.Impl;
+
+import com.example.techprototype.DAO.TrainDAO;
+import com.example.techprototype.DTO.TrainListDTO;
+import com.example.techprototype.Entity.Train;
+import com.example.techprototype.Entity.TrainStop;
+import com.example.techprototype.Entity.Station;
+import com.example.techprototype.Entity.TicketInventory;
+import com.example.techprototype.Repository.TrainRepository;
+import com.example.techprototype.Repository.TrainStopRepository;
+import com.example.techprototype.Repository.StationRepository;
+import com.example.techprototype.Repository.TicketInventoryRepository;
+import com.example.techprototype.Service.TrainService;
+import com.example.techprototype.Service.RedisService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalTime;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Service
+<span class="fc" id="L26">public class TrainServiceImpl implements TrainService {</span>
+    @Autowired
+    private TrainDAO trainDAO;
+    @Autowired
+    private TrainRepository trainRepository;
+    @Autowired
+    private TrainStopRepository trainStopRepository;
+    @Autowired
+    private StationRepository stationRepository;
+    @Autowired
+    private TicketInventoryRepository ticketInventoryRepository;
+    @Autowired
+    private RedisService redisService;
+
+    @Override
+    public List&lt;Train&gt; findDirectTrains(Integer startStationId, Integer endStationId) {
+<span class="fc" id="L42">        return trainDAO.findDirectTrains(startStationId, endStationId);</span>
+    }
+
+    @Override
+    public List&lt;Train&gt; findTrainsByDepartureTime(LocalTime start, LocalTime end) {
+<span class="fc" id="L47">        return trainDAO.findByDepartureTimeBetween(start, end);</span>
+    }
+
+    @Override
+    public List&lt;Map&lt;String, Object&gt;&gt; findTransferTrains(Integer startStationId, Integer endStationId) {
+        // 使用DAO层查询中转站
+<span class="fc" id="L53">        List&lt;Integer&gt; transferStations = trainDAO.findAllTransferStations(startStationId, endStationId);</span>
+
+<span class="fc" id="L55">        List&lt;Map&lt;String, Object&gt;&gt; result = new ArrayList&lt;&gt;();</span>
+        // 性能优化：限制最大中转站数量
+<span class="fc" id="L57">        int maxTransferStations = Math.min(transferStations.size(), 10);</span>
+
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        for (int i = 0; i &lt; maxTransferStations; i++) {</span>
+<span class="fc" id="L60">            Integer transferStationId = transferStations.get(i);</span>
+<span class="fc" id="L61">            result.addAll(trainDAO.findTransferTrains(startStationId, transferStationId, endStationId));</span>
+        }
+<span class="fc" id="L63">        return result;</span>
+    }
+
+    @Override
+    public List&lt;TrainListDTO&gt; getAllTrainListDTO() {
+<span class="fc" id="L68">        List&lt;Train&gt; trains = trainRepository.findAll();</span>
+<span class="fc" id="L69">        List&lt;TrainListDTO&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L70">        DateTimeFormatter dtf = DateTimeFormatter.ofPattern(&quot;yyyy-MM-dd HH:mm:ss&quot;);</span>
+        // 强制以2025-07-01为标准日期
+<span class="fc" id="L72">        LocalDate today = LocalDate.of(2025, 7, 1);</span>
+        
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        for (Train train : trains) {</span>
+<span class="fc" id="L75">            TrainListDTO dto = new TrainListDTO();</span>
+<span class="fc" id="L76">            dto.setTrain_id(train.getTrainNumber());</span>
+            
+            // 查询所有停靠站
+<span class="fc" id="L79">            List&lt;TrainStop&gt; stops = trainStopRepository.findByTrainIdOrderBySequenceNumberAsc(train.getTrainId());</span>
+<span class="fc" id="L80">            List&lt;String&gt; path = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">            for (TrainStop stop : stops) {</span>
+<span class="fc" id="L82">                stationRepository.findById(stop.getStationId()).ifPresent(station -&gt; path.add(station.getStationName()));</span>
+<span class="fc" id="L83">            }</span>
+<span class="fc" id="L84">            dto.setT_path(path);</span>
+            
+<span class="fc bfc" id="L86" title="All 2 branches covered.">            if (!path.isEmpty()) {</span>
+<span class="fc" id="L87">                dto.setT_from(path.get(0));</span>
+<span class="fc" id="L88">                dto.setT_to(path.get(path.size() - 1));</span>
+                
+                // 计算当前区间的站数（从首站到末站）
+<span class="fc bfc" id="L91" title="All 2 branches covered.">                if (stops.size() &gt;= 2) {</span>
+<span class="fc" id="L92">                    TrainStop firstStop = stops.get(0);</span>
+<span class="fc" id="L93">                    TrainStop lastStop = stops.get(stops.size() - 1);</span>
+<span class="fc" id="L94">                    int stationCount = lastStop.getSequenceNumber() - firstStop.getSequenceNumber() + 1;</span>
+<span class="fc" id="L95">                    dto.setT_station_number(stationCount);</span>
+<span class="fc" id="L96">                } else {</span>
+<span class="fc" id="L97">                    dto.setT_station_number(path.size());</span>
+                }
+            } else {
+<span class="fc" id="L100">                dto.setT_station_number(0);</span>
+            }
+            
+<span class="fc" id="L103">            dto.setT_start_time(train.getDepartureTime().atDate(today).format(dtf));</span>
+<span class="fc" id="L104">            dto.setT_end_time(train.getArrivalTime().atDate(today).format(dtf));</span>
+            
+            // 获取真实的座位信息（使用首站到末站作为代表性路线）
+<span class="fc" id="L107">            List&lt;Integer&gt; seatTypes = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L108">            List&lt;Integer&gt; seatNumbers = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L109">            List&lt;Integer&gt; seatPrices = new ArrayList&lt;&gt;();</span>
+            
+<span class="fc bfc" id="L111" title="All 2 branches covered.">            if (stops.size() &gt;= 2) {</span>
+<span class="fc" id="L112">                TrainStop firstStop = stops.get(0);</span>
+<span class="fc" id="L113">                TrainStop lastStop = stops.get(stops.size() - 1);</span>
+                
+<span class="fc" id="L115">                List&lt;Map&lt;String, Object&gt;&gt; seatInfo = getRealSeatInfo(train.getTrainId(), firstStop.getStopId(), lastStop.getStopId(), today);</span>
+                
+<span class="fc bfc" id="L117" title="All 2 branches covered.">                for (Map&lt;String, Object&gt; seat : seatInfo) {</span>
+<span class="fc" id="L118">                    seatTypes.add((Integer) seat.get(&quot;type&quot;));</span>
+<span class="fc" id="L119">                    seatNumbers.add((Integer) seat.get(&quot;available&quot;));</span>
+                    // 正确处理BigDecimal价格，转换为Integer（价格以分为单位）
+<span class="fc" id="L121">                    Object priceObj = seat.get(&quot;price&quot;);</span>
+                    Integer price;
+<span class="fc bfc" id="L123" title="All 2 branches covered.">                    if (priceObj instanceof BigDecimal) {</span>
+<span class="fc" id="L124">                        price = ((BigDecimal) priceObj).intValue();</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">                    } else if (priceObj instanceof Double) {</span>
+<span class="fc" id="L126">                        price = ((Double) priceObj).intValue();</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">                    } else if (priceObj instanceof Integer) {</span>
+<span class="nc" id="L128">                        price = (Integer) priceObj;</span>
+                    } else {
+<span class="nc" id="L130">                        price = 150; // 默认价格</span>
+                    }
+<span class="fc" id="L132">                    seatPrices.add(price);</span>
+<span class="fc" id="L133">                }</span>
+            }
+            
+            // 如果没有找到真实数据，或者只找到了默认数据（只有一个类型为3的座位），使用完整的默认数据
+<span class="pc bpc" id="L137" title="2 of 8 branches missed.">            if (seatTypes.isEmpty() || (seatTypes.size() == 1 &amp;&amp; seatTypes.get(0) == 3 &amp;&amp; seatNumbers.get(0) == 0)) {</span>
+<span class="fc" id="L138">                seatTypes = Arrays.asList(1, 3, 4);</span>
+<span class="fc" id="L139">                seatNumbers = Arrays.asList(100, 200, 50);</span>
+<span class="fc" id="L140">                seatPrices = Arrays.asList(200, 150, 80);</span>
+            }
+            
+<span class="fc" id="L143">            dto.setSeat(seatTypes);</span>
+<span class="fc" id="L144">            dto.setSeat_number(seatNumbers);</span>
+<span class="fc" id="L145">            dto.setSeat_price(seatPrices);</span>
+            
+<span class="fc" id="L147">            result.add(dto);</span>
+<span class="fc" id="L148">        }</span>
+<span class="fc" id="L149">        return result;</span>
+    }
+
+    @Override
+    public List&lt;Map&lt;String, Object&gt;&gt; searchTrainsByStations(String fromStation, String toStation, String travelDate) {
+<span class="fc" id="L154">        List&lt;Map&lt;String, Object&gt;&gt; result = new ArrayList&lt;&gt;();</span>
+        
+<span class="fc" id="L156">        System.out.println(&quot;搜索车次 - 出发站: &quot; + fromStation + &quot;, 到达站: &quot; + toStation + &quot;, 日期: &quot; + travelDate);</span>
+        
+        try {
+            // 1. 根据站点名称查找站点ID
+<span class="fc" id="L160">            List&lt;Station&gt; fromStations = stationRepository.findByStationNameContainingOrCityContaining(fromStation, fromStation);</span>
+<span class="fc" id="L161">            List&lt;Station&gt; toStations = stationRepository.findByStationNameContainingOrCityContaining(toStation, toStation);</span>
+            
+<span class="fc" id="L163">            System.out.println(&quot;找到出发站: &quot; + fromStations.size() + &quot; 个&quot;);</span>
+<span class="fc" id="L164">            System.out.println(&quot;找到到达站: &quot; + toStations.size() + &quot; 个&quot;);</span>
+            
+<span class="fc bfc" id="L166" title="All 4 branches covered.">            if (fromStations.isEmpty() || toStations.isEmpty()) {</span>
+<span class="fc" id="L167">                System.out.println(&quot;未找到匹配的站点，返回空结果&quot;);</span>
+<span class="fc" id="L168">                return result;</span>
+            }
+            
+<span class="fc" id="L171">            LocalDate travelDateObj = LocalDate.parse(travelDate);</span>
+            
+            // 2. 查找包含这些站点的车次
+<span class="fc bfc" id="L174" title="All 2 branches covered.">            for (Station fromStationObj : fromStations) {</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">                for (Station toStationObj : toStations) {</span>
+<span class="fc" id="L176">                    System.out.println(&quot;检查路线: &quot; + fromStationObj.getStationName() + &quot; -&gt; &quot; + toStationObj.getStationName());</span>
+                    
+                    // 查找从fromStation到toStation的车次
+<span class="fc" id="L179">                    List&lt;TrainStop&gt; fromStops = trainStopRepository.findByStationId(fromStationObj.getStationId());</span>
+<span class="fc" id="L180">                    List&lt;TrainStop&gt; toStops = trainStopRepository.findByStationId(toStationObj.getStationId());</span>
+                    
+<span class="fc" id="L182">                    System.out.println(&quot;出发站停靠车次: &quot; + fromStops.size() + &quot; 个&quot;);</span>
+<span class="fc" id="L183">                    System.out.println(&quot;到达站停靠车次: &quot; + toStops.size() + &quot; 个&quot;);</span>
+                    
+                    // 找到同时包含两个站点的车次
+<span class="fc" id="L186">                    Set&lt;Integer&gt; commonTrainIds = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">                    for (TrainStop fromStop : fromStops) {</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">                        for (TrainStop toStop : toStops) {</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">                            if (fromStop.getTrainId().equals(toStop.getTrainId()) &amp;&amp; </span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">                                fromStop.getSequenceNumber() &lt; toStop.getSequenceNumber()) {</span>
+<span class="fc" id="L191">                                commonTrainIds.add(fromStop.getTrainId());</span>
+                            }
+<span class="fc" id="L193">                        }</span>
+<span class="fc" id="L194">                    }</span>
+                    
+<span class="fc" id="L196">                    System.out.println(&quot;找到符合条件的车次: &quot; + commonTrainIds.size() + &quot; 个&quot;);</span>
+                    
+                    // 3. 为每个车次构建详细信息
+<span class="fc bfc" id="L199" title="All 2 branches covered.">                    for (Integer trainId : commonTrainIds) {</span>
+<span class="fc" id="L200">                        Train train = trainRepository.findById(trainId).orElse(null);</span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">                        if (train == null) continue;</span>
+                        
+<span class="fc" id="L203">                        TrainStop fromStop = trainStopRepository.findByTrainIdAndStationId(trainId, fromStationObj.getStationId());</span>
+<span class="fc" id="L204">                        TrainStop toStop = trainStopRepository.findByTrainIdAndStationId(trainId, toStationObj.getStationId());</span>
+                        
+<span class="fc bfc" id="L206" title="All 4 branches covered.">                        if (fromStop == null || toStop == null) continue;</span>
+                        
+<span class="fc" id="L208">                        System.out.println(&quot;构建车次信息: &quot; + train.getTrainNumber());</span>
+                        
+                        // 构建与TrainListDTO格式一致的数据
+<span class="fc" id="L211">                        Map&lt;String, Object&gt; trainInfo = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L212">                        trainInfo.put(&quot;train_id&quot;, train.getTrainNumber());</span>
+<span class="fc" id="L213">                        trainInfo.put(&quot;trainId&quot;, train.getTrainId());</span>
+<span class="fc" id="L214">                        trainInfo.put(&quot;t_from&quot;, fromStationObj.getStationName());</span>
+<span class="fc" id="L215">                        trainInfo.put(&quot;t_to&quot;, toStationObj.getStationName());</span>
+<span class="fc" id="L216">                        trainInfo.put(&quot;t_start_time&quot;, fromStop.getDepartureTime().atDate(travelDateObj).format(DateTimeFormatter.ofPattern(&quot;yyyy-MM-dd HH:mm:ss&quot;)));</span>
+<span class="fc" id="L217">                        trainInfo.put(&quot;t_end_time&quot;, toStop.getArrivalTime().atDate(travelDateObj).format(DateTimeFormatter.ofPattern(&quot;yyyy-MM-dd HH:mm:ss&quot;)));</span>
+<span class="fc" id="L218">                        trainInfo.put(&quot;travelDate&quot;, travelDate);</span>
+                        
+                        // 构建途经站点信息
+<span class="fc" id="L221">                        List&lt;TrainStop&gt; allStops = trainStopRepository.findByTrainIdOrderBySequenceNumberAsc(trainId);</span>
+<span class="fc" id="L222">                        List&lt;String&gt; path = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">                        for (TrainStop stop : allStops) {</span>
+<span class="fc" id="L224">                            stationRepository.findById(stop.getStationId()).ifPresent(station -&gt; path.add(station.getStationName()));</span>
+<span class="fc" id="L225">                        }</span>
+<span class="fc" id="L226">                        trainInfo.put(&quot;t_path&quot;, path);</span>
+                        
+                        // 计算当前区间的站数（从出发站到到达站）
+<span class="fc" id="L229">                        int stationCount = toStop.getSequenceNumber() - fromStop.getSequenceNumber() + 1;</span>
+<span class="fc" id="L230">                        trainInfo.put(&quot;t_station_number&quot;, stationCount);</span>
+                        
+                        // 从ticket_inventory获取真实票价和从Redis获取库存
+<span class="fc" id="L233">                        List&lt;Map&lt;String, Object&gt;&gt; seatInfo = getRealSeatInfo(trainId, fromStop.getStopId(), toStop.getStopId(), travelDateObj);</span>
+<span class="fc" id="L234">                        trainInfo.put(&quot;seat&quot;, seatInfo.stream().map(seat -&gt; seat.get(&quot;type&quot;)).collect(Collectors.toList()));</span>
+<span class="fc" id="L235">                        trainInfo.put(&quot;seat_number&quot;, seatInfo.stream().map(seat -&gt; seat.get(&quot;available&quot;)).collect(Collectors.toList()));</span>
+<span class="fc" id="L236">                        trainInfo.put(&quot;seat_price&quot;, seatInfo.stream().map(seat -&gt; seat.get(&quot;price&quot;)).collect(Collectors.toList()));</span>
+                        
+                        // 添加库存ID列表
+<span class="fc" id="L239">                        List&lt;Long&gt; inventoryIds = seatInfo.stream()</span>
+<span class="fc" id="L240">                            .map(seat -&gt; (Long) seat.get(&quot;inventoryId&quot;))</span>
+<span class="fc bfc" id="L241" title="All 2 branches covered.">                            .filter(id -&gt; id != null)</span>
+<span class="fc" id="L242">                            .collect(Collectors.toList());</span>
+<span class="fc" id="L243">                        trainInfo.put(&quot;inventory_ids&quot;, inventoryIds);</span>
+                        
+<span class="fc" id="L245">                        result.add(trainInfo);</span>
+<span class="fc" id="L246">                    }</span>
+<span class="fc" id="L247">                }</span>
+<span class="fc" id="L248">            }</span>
+            
+            // 按车次号排序
+<span class="fc" id="L251">            result.sort((a, b) -&gt; {</span>
+<span class="fc" id="L252">                String trainA = (String) a.get(&quot;train_id&quot;);</span>
+<span class="fc" id="L253">                String trainB = (String) b.get(&quot;train_id&quot;);</span>
+<span class="fc" id="L254">                return trainA.compareTo(trainB);</span>
+            });
+            
+<span class="fc" id="L257">            System.out.println(&quot;最终搜索结果: &quot; + result.size() + &quot; 个车次&quot;);</span>
+            
+<span class="fc" id="L259">        } catch (Exception e) {</span>
+<span class="fc" id="L260">            System.out.println(&quot;搜索车次时发生错误: &quot; + e.getMessage());</span>
+<span class="fc" id="L261">            e.printStackTrace();</span>
+<span class="fc" id="L262">        }</span>
+        
+<span class="fc" id="L264">        return result;</span>
+    }
+    
+    private List&lt;Map&lt;String, Object&gt;&gt; getRealSeatInfo(Integer trainId, Long fromStopId, Long toStopId, LocalDate travelDate) {
+<span class="fc" id="L268">        List&lt;Map&lt;String, Object&gt;&gt; seatInfo = new ArrayList&lt;&gt;();</span>
+        
+        try {
+<span class="fc" id="L271">            System.out.println(&quot;查询座位信息 - 车次ID: &quot; + trainId + &quot;, 出发站ID: &quot; + fromStopId + &quot;, 到达站ID: &quot; + toStopId + &quot;, 日期: &quot; + travelDate);</span>
+            
+            // 查询ticket_inventory表获取票价信息
+<span class="fc" id="L274">            List&lt;TicketInventory&gt; inventories = ticketInventoryRepository.findByTrainAndDate(trainId, travelDate);</span>
+            
+<span class="fc" id="L276">            System.out.println(&quot;找到库存记录: &quot; + inventories.size() + &quot; 条&quot;);</span>
+            
+<span class="fc bfc" id="L278" title="All 2 branches covered.">            for (TicketInventory inventory : inventories) {</span>
+<span class="fc" id="L279">                System.out.println(&quot;检查库存记录 - 出发站ID: &quot; + inventory.getDepartureStopId() + &quot;, 到达站ID: &quot; + inventory.getArrivalStopId() + </span>
+<span class="fc" id="L280">                                 &quot;, 车厢类型: &quot; + inventory.getCarriageTypeId() + &quot;, 票价: &quot; + inventory.getPrice());</span>
+                
+                // 只处理匹配的出发站和到达站
+<span class="fc bfc" id="L283" title="All 4 branches covered.">                if (inventory.getDepartureStopId().equals(fromStopId) &amp;&amp; inventory.getArrivalStopId().equals(toStopId)) {</span>
+<span class="fc" id="L284">                    Map&lt;String, Object&gt; seat = new HashMap&lt;&gt;();</span>
+                    
+                    // 获取席别类型名称
+<span class="fc" id="L287">                    String seatTypeName = getSeatTypeName(inventory.getCarriageTypeId());</span>
+<span class="fc" id="L288">                    seat.put(&quot;type&quot;, inventory.getCarriageTypeId());</span>
+<span class="fc" id="L289">                    seat.put(&quot;typeName&quot;, seatTypeName);</span>
+<span class="fc" id="L290">                    seat.put(&quot;price&quot;, inventory.getPrice());</span>
+<span class="fc" id="L291">                    seat.put(&quot;inventoryId&quot;, inventory.getInventoryId()); // 添加库存ID</span>
+                    
+                    // 从Redis获取库存
+<span class="fc" id="L294">                    Optional&lt;Integer&gt; available = redisService.getStock(trainId, fromStopId, toStopId, travelDate, inventory.getCarriageTypeId());</span>
+<span class="fc" id="L295">                    int stockCount = available.orElse(inventory.getAvailableSeats()); // 如果Redis没有，使用数据库中的值</span>
+<span class="fc" id="L296">                    seat.put(&quot;available&quot;, stockCount);</span>
+                    
+<span class="fc" id="L298">                    System.out.println(&quot;添加座位信息 - 类型: &quot; + seatTypeName + &quot;, 票价: &quot; + inventory.getPrice() + &quot;, 库存: &quot; + stockCount);</span>
+<span class="fc" id="L299">                    seatInfo.add(seat);</span>
+                }
+<span class="fc" id="L301">            }</span>
+            
+<span class="fc bfc" id="L303" title="All 2 branches covered.">            if (seatInfo.isEmpty()) {</span>
+<span class="fc" id="L304">                System.out.println(&quot;未找到匹配的座位信息，返回默认数据&quot;);</span>
+                // 如果没找到匹配的记录，返回默认数据
+<span class="fc" id="L306">                Map&lt;String, Object&gt; defaultSeat = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L307">                defaultSeat.put(&quot;type&quot;, 3);</span>
+<span class="fc" id="L308">                defaultSeat.put(&quot;typeName&quot;, &quot;二等座&quot;);</span>
+<span class="fc" id="L309">                defaultSeat.put(&quot;price&quot;, 150.0);</span>
+<span class="fc" id="L310">                defaultSeat.put(&quot;available&quot;, 0);</span>
+<span class="fc" id="L311">                seatInfo.add(defaultSeat);</span>
+            }
+            
+<span class="fc" id="L314">        } catch (Exception e) {</span>
+<span class="fc" id="L315">            System.out.println(&quot;获取座位信息时发生错误: &quot; + e.getMessage());</span>
+<span class="fc" id="L316">            e.printStackTrace();</span>
+            // 如果出错，返回默认数据
+<span class="fc" id="L318">            Map&lt;String, Object&gt; defaultSeat = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L319">            defaultSeat.put(&quot;type&quot;, 3);</span>
+<span class="fc" id="L320">            defaultSeat.put(&quot;typeName&quot;, &quot;二等座&quot;);</span>
+<span class="fc" id="L321">            defaultSeat.put(&quot;price&quot;, 150.0);</span>
+<span class="fc" id="L322">            defaultSeat.put(&quot;available&quot;, 0);</span>
+<span class="fc" id="L323">            seatInfo.add(defaultSeat);</span>
+<span class="fc" id="L324">        }</span>
+        
+<span class="fc" id="L326">        return seatInfo;</span>
+    }
+    
+    private String getSeatTypeName(Integer carriageTypeId) {
+<span class="fc bfc" id="L330" title="All 7 branches covered.">        switch (carriageTypeId) {</span>
+<span class="fc" id="L331">            case 1: return &quot;商务座&quot;;</span>
+<span class="fc" id="L332">            case 2: return &quot;一等座&quot;;</span>
+<span class="fc" id="L333">            case 3: return &quot;二等座&quot;;</span>
+<span class="fc" id="L334">            case 4: return &quot;硬座&quot;;</span>
+<span class="fc" id="L335">            case 5: return &quot;硬卧&quot;;</span>
+<span class="fc" id="L336">            case 6: return &quot;无座&quot;;</span>
+<span class="fc" id="L337">            default: return &quot;未知&quot;;</span>
+        }
+    }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

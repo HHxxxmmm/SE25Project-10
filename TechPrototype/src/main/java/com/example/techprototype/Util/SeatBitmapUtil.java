@@ -5,8 +5,8 @@ import java.time.LocalDate;
 /**
  * 座位位图管理工具类
  * 用于处理日期和区间的位图操作
- * 全局基准日期：2025-07-01
- * 日期范围：2025-07-01 到 2025-07-10 (date_1 到 date_10)
+ * 全局基准日期：当前日期+1天
+ * 日期范围：基准日期 到 基准日期+9天 (date_1 到 date_10)
  * 区间位图：使用最后10位表示区间占用，每个站点用2个bit表示
  * 从最低位开始，每2个bit表示一个站点：
  * - 低位：1表示到达该站点
@@ -15,8 +15,8 @@ import java.time.LocalDate;
  */
 public class SeatBitmapUtil {
     
-    // 全局基准日期
-    public static final LocalDate BASE_DATE = LocalDate.of(2025, 7, 1);
+    // 全局基准日期 - 动态设置为当前日期加1天
+    public static final LocalDate BASE_DATE = LocalDate.now().plusDays(1);
     
     /**
      * 将日期转换为对应的日期索引 (1-10)

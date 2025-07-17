@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderProcessor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">TechPrototype</a> &gt; <a href="index.source.html" class="el_package">com.example.techprototype.Component</a> &gt; <span class="el_source">OrderProcessor.java</span></div><h1>OrderProcessor.java</h1><pre class="source lang-java linenums">package com.example.techprototype.Component;
+
+import com.example.techprototype.DTO.OrderMessage;
+import com.example.techprototype.Entity.Order;
+import com.example.techprototype.Entity.Ticket;
+import com.example.techprototype.Entity.TicketInventory;
+import com.example.techprototype.Enums.OrderStatus;
+import com.example.techprototype.Enums.TicketStatus;
+import com.example.techprototype.Repository.OrderRepository;
+import com.example.techprototype.Repository.TicketRepository;
+import com.example.techprototype.Service.SeatService;
+import com.example.techprototype.Service.RedisService;
+import com.example.techprototype.DAO.TicketInventoryDAO;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+@Component
+<span class="fc" id="L27">public class OrderProcessor {</span>
+    
+    @Autowired
+    private OrderRepository orderRepository;
+    
+    @Autowired
+    private TicketRepository ticketRepository;
+    
+    @Autowired
+    private SeatService seatService;
+    
+    @Autowired
+    private TicketInventoryDAO ticketInventoryDAO;
+    
+    @Autowired
+    private RedisService redisService;
+    
+    @RabbitListener(queues = &quot;order.queue&quot;)
+    @Transactional
+    public void processOrder(OrderMessage orderMessage) {
+<span class="fc" id="L47">        System.out.println(&quot;收到订单消息: &quot; + orderMessage.getOrderNumber());</span>
+        
+        // 记录已创建的车票，用于异常时回滚
+<span class="fc" id="L50">        List&lt;Ticket&gt; createdTickets = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L51">        Order createdOrder = null;</span>
+        
+        try {
+            // 1. 创建订单
+<span class="fc" id="L55">            Order order = new Order();</span>
+<span class="fc" id="L56">            order.setOrderNumber(orderMessage.getOrderNumber());</span>
+<span class="fc" id="L57">            order.setUserId(orderMessage.getUserId());</span>
+<span class="fc" id="L58">            order.setOrderTime(LocalDateTime.now());</span>
+<span class="fc" id="L59">            order.setOrderStatus((byte) OrderStatus.PENDING_PAYMENT.getCode());</span>
+            
+            // 计算总金额
+<span class="fc" id="L62">            BigDecimal totalAmount = calculateTotalAmount(orderMessage);</span>
+<span class="fc" id="L63">            order.setTotalAmount(totalAmount);</span>
+            
+<span class="fc" id="L65">            orderRepository.save(order);</span>
+<span class="fc" id="L66">            createdOrder = order;</span>
+<span class="fc" id="L67">            System.out.println(&quot;订单创建成功: &quot; + order.getOrderNumber() + &quot;, ID: &quot; + order.getOrderId());</span>
+            
+            // 2. 创建车票记录（未支付状态）
+<span class="fc" id="L70">            List&lt;Ticket&gt; tickets = new ArrayList&lt;&gt;();</span>
+            
+<span class="fc bfc" id="L72" title="All 2 branches covered.">            for (OrderMessage.PassengerInfo passengerInfo : orderMessage.getPassengers()) {</span>
+<span class="fc" id="L73">                Ticket ticket = new Ticket();</span>
+<span class="fc" id="L74">                ticket.setTicketNumber(generateTicketNumber());</span>
+<span class="fc" id="L75">                ticket.setOrderId(order.getOrderId());</span>
+<span class="fc" id="L76">                ticket.setPassengerId(passengerInfo.getPassengerId());</span>
+<span class="fc" id="L77">                ticket.setTrainId(orderMessage.getTrainId());</span>
+<span class="fc" id="L78">                ticket.setDepartureStopId(orderMessage.getDepartureStopId());</span>
+<span class="fc" id="L79">                ticket.setArrivalStopId(orderMessage.getArrivalStopId());</span>
+<span class="fc" id="L80">                ticket.setTravelDate(orderMessage.getTravelDate());</span>
+<span class="fc" id="L81">                ticket.setCarriageTypeId(passengerInfo.getCarriageTypeId());</span>
+                // 从库存表获取基础票价，然后根据票种计算优惠
+<span class="fc" id="L83">                BigDecimal ticketPrice = calculateTicketPrice(</span>
+<span class="fc" id="L84">                    orderMessage.getTrainId(),</span>
+<span class="fc" id="L85">                    orderMessage.getDepartureStopId(),</span>
+<span class="fc" id="L86">                    orderMessage.getArrivalStopId(),</span>
+<span class="fc" id="L87">                    orderMessage.getTravelDate(),</span>
+<span class="fc" id="L88">                    passengerInfo.getCarriageTypeId(),</span>
+<span class="fc" id="L89">                    passengerInfo.getTicketType()</span>
+                );
+<span class="fc" id="L91">                ticket.setPrice(ticketPrice);</span>
+<span class="fc" id="L92">                ticket.setTicketStatus((byte) TicketStatus.PENDING.getCode());</span>
+<span class="fc" id="L93">                ticket.setTicketType(passengerInfo.getTicketType());</span>
+<span class="fc" id="L94">                ticket.setCreatedTime(LocalDateTime.now());</span>
+                
+                // 分配座位
+<span class="fc" id="L97">                seatService.assignSeat(ticket);</span>
+                
+<span class="fc" id="L99">                tickets.add(ticket);</span>
+<span class="fc" id="L100">            }</span>
+            
+<span class="fc" id="L102">            ticketRepository.saveAll(tickets);</span>
+<span class="fc" id="L103">            createdTickets.addAll(tickets);</span>
+<span class="fc" id="L104">            System.out.println(&quot;车票创建成功: &quot; + tickets.size() + &quot;张&quot;);</span>
+            
+<span class="fc" id="L106">        } catch (Exception e) {</span>
+<span class="fc" id="L107">            System.err.println(&quot;订单处理失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L108">            e.printStackTrace();</span>
+            
+            // 回滚库存
+<span class="fc" id="L111">            rollbackInventory(orderMessage);</span>
+            
+            // 清理已创建的数据
+<span class="fc" id="L114">            cleanupCreatedData(createdTickets, createdOrder);</span>
+            
+            // 重新抛出异常，确保事务回滚
+<span class="fc" id="L117">            throw new RuntimeException(&quot;订单处理失败，已回滚库存: &quot; + e.getMessage(), e);</span>
+<span class="fc" id="L118">        }</span>
+<span class="fc" id="L119">    }</span>
+    
+    private BigDecimal calculateTotalAmount(OrderMessage orderMessage) {
+<span class="fc" id="L122">        BigDecimal totalAmount = BigDecimal.ZERO;</span>
+        
+<span class="fc bfc" id="L124" title="All 2 branches covered.">        for (OrderMessage.PassengerInfo passengerInfo : orderMessage.getPassengers()) {</span>
+<span class="fc" id="L125">            BigDecimal ticketPrice = calculateTicketPrice(</span>
+<span class="fc" id="L126">                orderMessage.getTrainId(),</span>
+<span class="fc" id="L127">                orderMessage.getDepartureStopId(),</span>
+<span class="fc" id="L128">                orderMessage.getArrivalStopId(),</span>
+<span class="fc" id="L129">                orderMessage.getTravelDate(),</span>
+<span class="fc" id="L130">                passengerInfo.getCarriageTypeId(),</span>
+<span class="fc" id="L131">                passengerInfo.getTicketType()</span>
+            );
+<span class="fc" id="L133">            totalAmount = totalAmount.add(ticketPrice);</span>
+<span class="fc" id="L134">        }</span>
+        
+<span class="fc" id="L136">        return totalAmount;</span>
+    }
+    
+    /**
+     * 计算票价 - 从库存信息获取基础票价，然后根据票种计算优惠
+     */
+    private BigDecimal calculateTicketPrice(Integer trainId, Long departureStopId, Long arrivalStopId, 
+                                          LocalDate travelDate, Integer carriageTypeId, Byte ticketType) {
+        // 从库存信息获取基础票价
+<span class="fc" id="L145">        Optional&lt;TicketInventory&gt; inventory = ticketInventoryDAO.findByKey(trainId, departureStopId, arrivalStopId, travelDate, carriageTypeId);</span>
+        
+<span class="fc" id="L147">        System.out.println(&quot;查询库存 - 车次:&quot; + trainId + &quot;, 出发站:&quot; + departureStopId + &quot;, 到达站:&quot; + arrivalStopId + </span>
+<span class="fc" id="L148">                          &quot;, 日期:&quot; + travelDate + &quot;, 车厢类型:&quot; + carriageTypeId + &quot;, 找到:&quot; + inventory.isPresent());</span>
+        
+<span class="fc bfc" id="L150" title="All 2 branches covered.">        if (inventory.isEmpty()) {</span>
+<span class="fc" id="L151">            System.out.println(&quot;未找到库存记录，使用默认票价100元&quot;);</span>
+<span class="fc" id="L152">            return BigDecimal.valueOf(100.0); // 默认票价</span>
+        }
+        
+<span class="fc" id="L155">        BigDecimal basePrice = inventory.get().getPrice();</span>
+<span class="fc" id="L156">        System.out.println(&quot;找到库存记录，基础票价:&quot; + basePrice + &quot;元&quot;);</span>
+        
+        // 根据票种计算优惠
+        BigDecimal finalPrice;
+<span class="pc bpc" id="L160" title="3 of 6 branches missed.">        switch (ticketType) {</span>
+            case 1: // 成人票 - 无优惠
+<span class="fc" id="L162">                finalPrice = basePrice;</span>
+<span class="fc" id="L163">                break;</span>
+            case 2: // 儿童票 - 5折
+<span class="fc" id="L165">                finalPrice = basePrice.multiply(BigDecimal.valueOf(0.5));</span>
+<span class="fc" id="L166">                break;</span>
+            case 3: // 学生票 - 8折
+<span class="fc" id="L168">                finalPrice = basePrice.multiply(BigDecimal.valueOf(0.8));</span>
+<span class="fc" id="L169">                break;</span>
+            case 4: // 残疾票 - 5折
+<span class="nc" id="L171">                finalPrice = basePrice.multiply(BigDecimal.valueOf(0.5));</span>
+<span class="nc" id="L172">                break;</span>
+            case 5: // 军人票 - 5折
+<span class="nc" id="L174">                finalPrice = basePrice.multiply(BigDecimal.valueOf(0.5));</span>
+<span class="nc" id="L175">                break;</span>
+            default:
+<span class="nc" id="L177">                finalPrice = basePrice;</span>
+                break;
+        }
+        
+<span class="fc" id="L181">        System.out.println(&quot;票种:&quot; + ticketType + &quot;, 最终票价:&quot; + finalPrice + &quot;元&quot;);</span>
+<span class="fc" id="L182">        return finalPrice;</span>
+    }
+    
+    private String generateTicketNumber() {
+<span class="fc" id="L186">        return &quot;T&quot; + System.currentTimeMillis() + (int)(Math.random() * 1000);</span>
+    }
+    
+    /**
+     * 回滚库存 - 当订单处理失败时，将Redis中的库存加回
+     */
+    private void rollbackInventory(OrderMessage orderMessage) {
+        try {
+<span class="fc" id="L194">            System.out.println(&quot;开始回滚库存: &quot; + orderMessage.getOrderNumber());</span>
+            
+<span class="fc bfc" id="L196" title="All 2 branches covered.">            for (OrderMessage.PassengerInfo passengerInfo : orderMessage.getPassengers()) {</span>
+<span class="fc" id="L197">                boolean success = redisService.incrStock(</span>
+<span class="fc" id="L198">                    orderMessage.getTrainId(),</span>
+<span class="fc" id="L199">                    orderMessage.getDepartureStopId(),</span>
+<span class="fc" id="L200">                    orderMessage.getArrivalStopId(),</span>
+<span class="fc" id="L201">                    orderMessage.getTravelDate(),</span>
+<span class="fc" id="L202">                    passengerInfo.getCarriageTypeId(),</span>
+                    1
+                );
+                
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">                if (success) {</span>
+<span class="fc" id="L207">                    System.out.println(&quot;库存回滚成功: 车次&quot; + orderMessage.getTrainId() + </span>
+<span class="fc" id="L208">                                     &quot;, 席别&quot; + passengerInfo.getCarriageTypeId() + </span>
+                                     &quot;, 数量+1&quot;);
+                } else {
+<span class="nc" id="L211">                    System.err.println(&quot;库存回滚失败: 车次&quot; + orderMessage.getTrainId() + </span>
+<span class="nc" id="L212">                                     &quot;, 席别&quot; + passengerInfo.getCarriageTypeId());</span>
+                }
+<span class="fc" id="L214">            }</span>
+            
+<span class="fc" id="L216">            System.out.println(&quot;库存回滚完成: &quot; + orderMessage.getOrderNumber());</span>
+<span class="nc" id="L217">        } catch (Exception e) {</span>
+<span class="nc" id="L218">            System.err.println(&quot;库存回滚异常: &quot; + e.getMessage());</span>
+<span class="nc" id="L219">            e.printStackTrace();</span>
+<span class="fc" id="L220">        }</span>
+<span class="fc" id="L221">    }</span>
+    
+    /**
+     * 清理已创建的数据 - 当订单处理失败时，清理已创建的订单和车票
+     */
+    private void cleanupCreatedData(List&lt;Ticket&gt; createdTickets, Order createdOrder) {
+        try {
+            // 删除已创建的车票
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">            if (!createdTickets.isEmpty()) {</span>
+<span class="nc" id="L230">                ticketRepository.deleteAll(createdTickets);</span>
+<span class="nc" id="L231">                System.out.println(&quot;已删除 &quot; + createdTickets.size() + &quot; 张车票&quot;);</span>
+            }
+            
+            // 删除已创建的订单
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">            if (createdOrder != null) {</span>
+<span class="nc" id="L236">                orderRepository.delete(createdOrder);</span>
+<span class="nc" id="L237">                System.out.println(&quot;已删除订单: &quot; + createdOrder.getOrderNumber());</span>
+            }
+<span class="nc" id="L239">        } catch (Exception e) {</span>
+<span class="nc" id="L240">            System.err.println(&quot;清理已创建数据失败: &quot; + e.getMessage());</span>
+<span class="nc" id="L241">            e.printStackTrace();</span>
+<span class="fc" id="L242">        }</span>
+<span class="fc" id="L243">    }</span>
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

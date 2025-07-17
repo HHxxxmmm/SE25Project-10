@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TicketInventoryDAOImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">TechPrototype</a> &gt; <a href="index.source.html" class="el_package">com.example.techprototype.DAO.Impl</a> &gt; <span class="el_source">TicketInventoryDAOImpl.java</span></div><h1>TicketInventoryDAOImpl.java</h1><pre class="source lang-java linenums">package com.example.techprototype.DAO.Impl;
+
+import com.example.techprototype.DAO.TicketInventoryDAO;
+import com.example.techprototype.Entity.TicketInventory;
+import com.example.techprototype.Repository.TicketInventoryRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+<span class="fc" id="L14">public class TicketInventoryDAOImpl implements TicketInventoryDAO {</span>
+    
+    @Autowired
+    private TicketInventoryRepository ticketInventoryRepository;
+    
+    @Override
+    public Optional&lt;TicketInventory&gt; findByKey(Integer trainId, Long departureStopId, Long arrivalStopId, LocalDate travelDate, Integer carriageTypeId) {
+<span class="nc" id="L21">        return ticketInventoryRepository.findByKeyWithLock(trainId, departureStopId, arrivalStopId, travelDate, carriageTypeId);</span>
+    }
+    
+    @Override
+    @Transactional
+    public boolean updateAvailableSeats(Long inventoryId, Integer availableSeats, Long cacheVersion, Integer dbVersion) {
+<span class="nc" id="L27">        Optional&lt;TicketInventory&gt; optional = ticketInventoryRepository.findById(inventoryId);</span>
+<span class="nc bnc" id="L28" title="All 2 branches missed.">        if (optional.isPresent()) {</span>
+<span class="nc" id="L29">            TicketInventory inventory = optional.get();</span>
+<span class="nc bnc" id="L30" title="All 4 branches missed.">            if (inventory.getCacheVersion().equals(cacheVersion) &amp;&amp; inventory.getDbVersion().equals(dbVersion)) {</span>
+<span class="nc" id="L31">                inventory.setAvailableSeats(availableSeats);</span>
+<span class="nc" id="L32">                inventory.setCacheVersion(cacheVersion + 1);</span>
+<span class="nc" id="L33">                inventory.setDbVersion(dbVersion + 1);</span>
+<span class="nc" id="L34">                ticketInventoryRepository.save(inventory);</span>
+<span class="nc" id="L35">                return true;</span>
+            }
+        }
+<span class="nc" id="L38">        return false;</span>
+    }
+    
+    @Override
+    public List&lt;TicketInventory&gt; findByTrainAndDate(Integer trainId, LocalDate travelDate) {
+<span class="nc" id="L43">        return ticketInventoryRepository.findByTrainAndDate(trainId, travelDate);</span>
+    }
+    
+    @Override
+    public List&lt;TicketInventory&gt; findByTrainAndDateAndType(Integer trainId, LocalDate travelDate, Integer carriageTypeId) {
+<span class="nc" id="L48">        return ticketInventoryRepository.findByTrainAndDateAndType(trainId, travelDate, carriageTypeId);</span>
+    }
+    
+    @Override
+    public void save(TicketInventory ticketInventory) {
+<span class="fc" id="L53">        ticketInventoryRepository.save(ticketInventory);</span>
+<span class="fc" id="L54">    }</span>
+    
+    @Override
+    public List&lt;TicketInventory&gt; findAll() {
+<span class="fc" id="L58">        return ticketInventoryRepository.findAll();</span>
+    }
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

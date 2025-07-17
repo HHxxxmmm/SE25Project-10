@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PassengerDAOImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">TechPrototype</a> &gt; <a href="index.source.html" class="el_package">com.example.techprototype.DAO.Impl</a> &gt; <span class="el_source">PassengerDAOImpl.java</span></div><h1>PassengerDAOImpl.java</h1><pre class="source lang-java linenums">package com.example.techprototype.DAO.Impl;
+
+import com.example.techprototype.DAO.PassengerDAO;
+import com.example.techprototype.Entity.Passenger;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.TypedQuery;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.util.Optional;
+
+@Repository
+<span class="fc" id="L16">public class PassengerDAOImpl implements PassengerDAO {</span>
+
+<span class="fc" id="L18">    private static final Logger logger = LoggerFactory.getLogger(PassengerDAOImpl.class);</span>
+    
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    @Override
+    public Optional&lt;Passenger&gt; findByIdCardNumber(String idCardNumber) {
+<span class="fc" id="L25">        logger.info(&quot;查询身份证号为: {} 的乘客&quot;, idCardNumber);</span>
+        try {
+<span class="fc" id="L27">            TypedQuery&lt;Passenger&gt; query = entityManager.createQuery(</span>
+                    &quot;SELECT p FROM Passenger p WHERE p.idCardNumber = :idCardNumber&quot;, Passenger.class);
+<span class="fc" id="L29">            query.setParameter(&quot;idCardNumber&quot;, idCardNumber);</span>
+<span class="fc" id="L30">            return Optional.ofNullable(query.getSingleResult());</span>
+<span class="fc" id="L31">        } catch (NoResultException e) {</span>
+<span class="fc" id="L32">            logger.warn(&quot;未找到身份证号为 {} 的乘客&quot;, idCardNumber);</span>
+<span class="fc" id="L33">            return Optional.empty();</span>
+<span class="fc" id="L34">        } catch (Exception e) {</span>
+<span class="fc" id="L35">            logger.error(&quot;查询身份证号为 {} 的乘客时发生错误: {}&quot;, idCardNumber, e.getMessage());</span>
+<span class="fc" id="L36">            throw e;</span>
+        }
+    }
+
+    @Override
+    @Transactional
+    public Passenger save(Passenger passenger) {
+<span class="fc" id="L43">        logger.info(&quot;保存乘客信息: {}&quot;, passenger.getRealName());</span>
+        try {
+<span class="fc" id="L45">            entityManager.persist(passenger);</span>
+<span class="fc" id="L46">            entityManager.flush();</span>
+<span class="fc" id="L47">            logger.info(&quot;乘客保存成功，ID: {}&quot;, passenger.getPassengerId());</span>
+<span class="fc" id="L48">            return passenger;</span>
+<span class="fc" id="L49">        } catch (Exception e) {</span>
+<span class="fc" id="L50">            logger.error(&quot;保存乘客信息时发生错误: {}&quot;, e.getMessage());</span>
+<span class="fc" id="L51">            throw e;</span>
+        }
+    }
+
+    @Override
+    public Optional&lt;Passenger&gt; findById(Long passengerId) {
+<span class="fc" id="L57">        logger.info(&quot;查询ID为: {} 的乘客&quot;, passengerId);</span>
+        try {
+<span class="fc" id="L59">            return Optional.ofNullable(entityManager.find(Passenger.class, passengerId));</span>
+<span class="fc" id="L60">        } catch (Exception e) {</span>
+<span class="fc" id="L61">            logger.error(&quot;查询ID为 {} 的乘客时发生错误: {}&quot;, passengerId, e.getMessage());</span>
+<span class="fc" id="L62">            throw e;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

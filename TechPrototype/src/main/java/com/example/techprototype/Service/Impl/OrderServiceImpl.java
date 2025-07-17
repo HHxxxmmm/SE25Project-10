@@ -403,12 +403,12 @@ public class OrderServiceImpl implements OrderService {
             // 获取车站信息
             String departureStationName = getStationName(representativeTicket.getDepartureStopId());
             String arrivalStationName = getStationName(representativeTicket.getArrivalStopId());
-            String departureCity = getStationCity(representativeTicket.getDepartureStopId());
-            String arrivalCity = getStationCity(representativeTicket.getArrivalStopId());
             
             // 获取时间信息
             LocalTime departureTime = getDepartureTime(representativeTicket.getTrainId(), representativeTicket.getDepartureStopId());
             LocalTime arrivalTime = getArrivalTime(representativeTicket.getTrainId(), representativeTicket.getArrivalStopId());
+            
+
             
             MyOrderResponse.MyOrderInfo orderInfo = new MyOrderResponse.MyOrderInfo();
             orderInfo.setOrderId(order.getOrderId());
@@ -427,9 +427,9 @@ public class OrderServiceImpl implements OrderService {
             orderInfo.setDepartureTime(departureTime);
             orderInfo.setArrivalTime(arrivalTime);
             orderInfo.setDepartureStationName(departureStationName);
-            orderInfo.setDepartureCity(departureCity);
             orderInfo.setArrivalStationName(arrivalStationName);
-            orderInfo.setArrivalCity(arrivalCity);
+            
+
             
             // 车票数量
             orderInfo.setTicketCount(order.getTicketCount());
@@ -472,25 +472,6 @@ public class OrderServiceImpl implements OrderService {
             System.err.println("获取车站名称失败: " + e.getMessage());
         }
         return "未知车站";
-    }
-    
-    /**
-     * 获取车站所在城市
-     */
-    private String getStationCity(Long stopId) {
-        try {
-            Optional<TrainStop> trainStopOpt = trainStopRepository.findByStopId(stopId);
-            if (trainStopOpt.isPresent()) {
-                Long stationId = trainStopOpt.get().getStationId().longValue();
-                Optional<Station> stationOpt = stationRepository.findById(stationId.intValue());
-                if (stationOpt.isPresent()) {
-                    return stationOpt.get().getCity();
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("获取车站城市失败: " + e.getMessage());
-        }
-        return "未知城市";
     }
     
     /**
@@ -587,8 +568,10 @@ public class OrderServiceImpl implements OrderService {
                 OrderDetailResponse.TicketDetail ticketDetail = new OrderDetailResponse.TicketDetail();
                 ticketDetail.setTicketId(ticket.getTicketId());
                 ticketDetail.setTicketNumber(ticket.getTicketNumber());
+                ticketDetail.setPassengerId(ticket.getPassengerId());
                 ticketDetail.setPassengerName(passenger.getRealName());
                 ticketDetail.setIdCardNumber(passenger.getIdCardNumber());
+                ticketDetail.setPhoneNumber(passenger.getPhoneNumber()); // 设置手机号
                 ticketDetail.setPassengerType(passenger.getPassengerType());
                 ticketDetail.setTicketType(ticket.getTicketType());
                 ticketDetail.setCarriageType(carriageType);
@@ -602,6 +585,7 @@ public class OrderServiceImpl implements OrderService {
             
             // 构建订单详情响应
             OrderDetailResponse response = new OrderDetailResponse();
+            response.setOrderId(order.getOrderId());
             response.setOrderNumber(order.getOrderNumber());
             response.setOrderStatus(order.getOrderStatus());
             response.setOrderTime(order.getOrderTime());
@@ -630,13 +614,12 @@ public class OrderServiceImpl implements OrderService {
      */
     private String getCarriageTypeName(Integer carriageTypeId) {
         switch (carriageTypeId) {
-            case 1: return "硬座";
-            case 2: return "软座";
-            case 3: return "硬卧";
-            case 4: return "软卧";
-            case 5: return "商务座";
-            case 6: return "一等座";
-            case 7: return "二等座";
+            case 1: return "商务座";
+            case 2: return "一等座";
+            case 3: return "二等座";
+            case 4: return "硬座";
+            case 5: return "硬卧";
+            case 6: return "无座";
             default: return "未知席别";
         }
     }

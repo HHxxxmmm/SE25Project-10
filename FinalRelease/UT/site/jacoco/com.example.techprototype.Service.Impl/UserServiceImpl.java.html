@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">TechPrototype</a> &gt; <a href="index.source.html" class="el_package">com.example.techprototype.Service.Impl</a> &gt; <span class="el_source">UserServiceImpl.java</span></div><h1>UserServiceImpl.java</h1><pre class="source lang-java linenums">package com.example.techprototype.Service.Impl;
+
+import com.example.techprototype.DAO.PassengerDAO;
+import com.example.techprototype.DAO.UserDAO;
+import com.example.techprototype.DAO.UserPassengerRelationDAO;
+import com.example.techprototype.DTO.LoginDTO;
+import com.example.techprototype.DTO.RegisterDTO;
+import com.example.techprototype.DTO.UserDTO;
+import com.example.techprototype.Entity.Passenger;
+import com.example.techprototype.Entity.User;
+import com.example.techprototype.Entity.UserPassengerRelation;
+import com.example.techprototype.Service.UserService;
+import com.example.techprototype.Util.JwtUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.regex.Pattern;
+
+@Service
+<span class="fc" id="L27">public class UserServiceImpl implements UserService {</span>
+
+<span class="fc" id="L29">    private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);</span>
+    
+    @Autowired
+    private UserDAO userDAO;
+    
+    @Autowired
+    private PassengerDAO passengerDAO;
+    
+    @Autowired
+    private UserPassengerRelationDAO userPassengerRelationDAO;
+    
+    @Autowired
+    private JwtUtil jwtUtil;
+    
+    @Override
+    public UserDTO login(LoginDTO loginDTO) throws Exception {
+<span class="fc" id="L45">        logger.info(&quot;用户登录: {}&quot;, loginDTO.getPhoneNumber());</span>
+        
+        // 验证手机号
+<span class="fc" id="L48">        Optional&lt;User&gt; userOptional = userDAO.findByPhoneNumber(loginDTO.getPhoneNumber());</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        if (!userOptional.isPresent()) {</span>
+<span class="fc" id="L50">            logger.warn(&quot;登录失败: 手机号 {} 未注册&quot;, loginDTO.getPhoneNumber());</span>
+<span class="fc" id="L51">            throw new Exception(&quot;用户不存在&quot;);</span>
+        }
+        
+<span class="fc" id="L54">        User user = userOptional.get();</span>
+        
+        // 验证密码 - 支持MD5和BCrypt两种格式
+<span class="fc" id="L57">        String currentPasswordHash = user.getPasswordHash();</span>
+<span class="fc" id="L58">        boolean passwordValid = false;</span>
+        
+        // 检查是否是MD5格式的密码（32位十六进制字符串）
+<span class="pc bpc" id="L61" title="1 of 4 branches missed.">        if (currentPasswordHash.length() == 32 &amp;&amp; currentPasswordHash.matches(&quot;[a-fA-F0-9]{32}&quot;)) {</span>
+            // MD5格式，计算当前密码的MD5值进行比较
+<span class="fc" id="L63">            String md5Password = generateMD5Password(loginDTO.getPassword());</span>
+<span class="fc" id="L64">            passwordValid = currentPasswordHash.equalsIgnoreCase(md5Password);</span>
+<span class="fc" id="L65">        } else {</span>
+            // BCrypt格式，使用BCrypt编码器验证
+<span class="fc" id="L67">            org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder passwordEncoder = </span>
+                new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
+<span class="fc" id="L69">            passwordValid = passwordEncoder.matches(loginDTO.getPassword(), currentPasswordHash);</span>
+        }
+        
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        if (!passwordValid) {</span>
+<span class="fc" id="L73">            logger.warn(&quot;登录失败: 密码错误, 用户手机号: {}&quot;, loginDTO.getPhoneNumber());</span>
+<span class="fc" id="L74">            throw new Exception(&quot;密码错误&quot;);</span>
+        }
+        
+        // 更新最后登录时间
+<span class="fc" id="L78">        user.setLastLoginTime(LocalDateTime.now());</span>
+<span class="fc" id="L79">        userDAO.update(user);</span>
+        
+        // 生成JWT令牌
+<span class="fc" id="L82">        String token = jwtUtil.generateToken(user.getUserId());</span>
+        
+        // 构建返回对象
+<span class="fc" id="L85">        UserDTO userDTO = new UserDTO();</span>
+<span class="fc" id="L86">        userDTO.setUserId(user.getUserId());</span>
+<span class="fc" id="L87">        userDTO.setRealName(user.getRealName());</span>
+<span class="fc" id="L88">        userDTO.setPhoneNumber(user.getPhoneNumber());</span>
+<span class="fc" id="L89">        userDTO.setEmail(user.getEmail());</span>
+<span class="fc" id="L90">        userDTO.setToken(token);</span>
+<span class="fc" id="L91">        userDTO.setPassengerId(user.getPassengerId());</span>
+        
+<span class="fc" id="L93">        logger.info(&quot;用户 {} 登录成功&quot;, user.getRealName());</span>
+<span class="fc" id="L94">        return userDTO;</span>
+    }
+    
+    @Override
+    @Transactional
+    public UserDTO register(RegisterDTO registerDTO) throws Exception {
+<span class="fc" id="L100">        logger.info(&quot;用户注册开始: {}&quot;, registerDTO.getPhoneNumber());</span>
+        
+        // 验证手机号是否已注册
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        if (userDAO.findByPhoneNumber(registerDTO.getPhoneNumber()).isPresent()) {</span>
+<span class="fc" id="L104">            logger.warn(&quot;注册失败: 手机号 {} 已被注册&quot;, registerDTO.getPhoneNumber());</span>
+<span class="fc" id="L105">            throw new Exception(&quot;手机号已被注册&quot;);</span>
+        }
+        
+        // 验证邮箱是否已注册(如果提供了邮箱)
+<span class="pc bpc" id="L109" title="2 of 4 branches missed.">        if (registerDTO.getEmail() != null &amp;&amp; !registerDTO.getEmail().trim().isEmpty() &amp;&amp; </span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">                userDAO.findByEmail(registerDTO.getEmail()).isPresent()) {</span>
+<span class="fc" id="L111">            logger.warn(&quot;注册失败: 邮箱 {} 已被注册&quot;, registerDTO.getEmail());</span>
+<span class="fc" id="L112">            throw new Exception(&quot;邮箱已被注册&quot;);</span>
+        }
+        
+        // 验证身份证号码合法性
+<span class="fc bfc" id="L116" title="All 2 branches covered.">        if (!validateIdCard(registerDTO.getIdCardNumber())) {</span>
+<span class="fc" id="L117">            logger.warn(&quot;注册失败: 身份证号 {} 不合法&quot;, registerDTO.getIdCardNumber());</span>
+<span class="fc" id="L118">            throw new Exception(&quot;身份证号码不合法&quot;);</span>
+        }
+        
+        // 创建或查找乘客
+        Passenger passenger;
+<span class="fc" id="L123">        Optional&lt;Passenger&gt; existingPassenger = passengerDAO.findByIdCardNumber(registerDTO.getIdCardNumber());</span>
+        
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        if (existingPassenger.isPresent()) {</span>
+<span class="nc" id="L126">            passenger = existingPassenger.get();</span>
+<span class="nc" id="L127">            logger.info(&quot;找到已存在的乘客信息，ID: {}&quot;, passenger.getPassengerId());</span>
+        } else {
+<span class="fc" id="L129">            passenger = new Passenger();</span>
+<span class="fc" id="L130">            passenger.setRealName(registerDTO.getRealName());</span>
+<span class="fc" id="L131">            passenger.setIdCardNumber(registerDTO.getIdCardNumber());</span>
+<span class="fc" id="L132">            passenger.setPassengerType((byte) 1); // 默认成人</span>
+<span class="fc" id="L133">            passenger.setPhoneNumber(registerDTO.getPhoneNumber());</span>
+<span class="fc" id="L134">            passenger.setStudentTypeLeft(0); // 默认非学生</span>
+            
+<span class="fc" id="L136">            passenger = passengerDAO.save(passenger);</span>
+<span class="fc" id="L137">            logger.info(&quot;创建新乘客信息，ID: {}&quot;, passenger.getPassengerId());</span>
+        }
+        
+        // 创建用户
+<span class="fc" id="L141">        User user = new User();</span>
+<span class="fc" id="L142">        user.setRealName(registerDTO.getRealName());</span>
+<span class="fc" id="L143">        user.setPasswordHash(generateMD5Password(registerDTO.getPassword()));</span>
+<span class="fc" id="L144">        user.setPhoneNumber(registerDTO.getPhoneNumber());</span>
+<span class="fc" id="L145">        user.setEmail(registerDTO.getEmail());</span>
+<span class="fc" id="L146">        user.setRegistrationTime(LocalDateTime.now());</span>
+<span class="fc" id="L147">        user.setAccountStatus((byte) 1); // 账号状态正常</span>
+<span class="fc" id="L148">        user.setRelatedPassenger(1); // 至少关联自己作为乘客</span>
+<span class="fc" id="L149">        user.setPassengerId(passenger.getPassengerId()); // 关联到自己的乘客信息</span>
+        
+<span class="fc" id="L151">        user = userDAO.save(user);</span>
+<span class="fc" id="L152">        logger.info(&quot;创建用户成功, ID: {}&quot;, user.getUserId());</span>
+        
+        // 创建用户与乘客的关联关系
+<span class="fc" id="L155">        UserPassengerRelation relation = new UserPassengerRelation();</span>
+<span class="fc" id="L156">        relation.setUserId(user.getUserId());</span>
+<span class="fc" id="L157">        relation.setPassengerId(passenger.getPassengerId());</span>
+<span class="fc" id="L158">        relation.setRelationType((byte) 1); // 1-本人</span>
+<span class="fc" id="L159">        relation.setAddedTime(LocalDateTime.now());</span>
+        
+<span class="fc" id="L161">        userPassengerRelationDAO.save(relation);</span>
+<span class="fc" id="L162">        logger.info(&quot;创建用户和乘客关系成功&quot;);</span>
+        
+        // 生成JWT令牌
+<span class="fc" id="L165">        String token = jwtUtil.generateToken(user.getUserId());</span>
+        
+        // 构建返回对象
+<span class="fc" id="L168">        UserDTO userDTO = new UserDTO();</span>
+<span class="fc" id="L169">        userDTO.setUserId(user.getUserId());</span>
+<span class="fc" id="L170">        userDTO.setRealName(user.getRealName());</span>
+<span class="fc" id="L171">        userDTO.setPhoneNumber(user.getPhoneNumber());</span>
+<span class="fc" id="L172">        userDTO.setEmail(user.getEmail());</span>
+<span class="fc" id="L173">        userDTO.setToken(token);</span>
+<span class="fc" id="L174">        userDTO.setPassengerId(passenger.getPassengerId());</span>
+        
+<span class="fc" id="L176">        logger.info(&quot;用户注册完成: {}&quot;, user.getRealName());</span>
+<span class="fc" id="L177">        return userDTO;</span>
+    }
+    
+    @Override
+    public User getUserById(Long userId) {
+<span class="fc" id="L182">        logger.info(&quot;根据ID查询用户: {}&quot;, userId);</span>
+<span class="fc" id="L183">        Optional&lt;User&gt; userOptional = userDAO.findById(userId);</span>
+<span class="fc" id="L184">        return userOptional.orElse(null);</span>
+    }
+    
+    @Override
+    public User getUserByPhoneNumber(String phoneNumber) {
+<span class="fc" id="L189">        logger.info(&quot;根据手机号查询用户: {}&quot;, phoneNumber);</span>
+<span class="fc" id="L190">        Optional&lt;User&gt; userOptional = userDAO.findByPhoneNumber(phoneNumber);</span>
+<span class="fc" id="L191">        return userOptional.orElse(null);</span>
+    }
+    
+    @Override
+    public boolean validateIdCard(String idCardNumber) {
+<span class="fc" id="L196">        logger.info(&quot;验证身份证号: {}&quot;, idCardNumber);</span>
+        
+        // 身份证号码为18位，15位也是合法的
+<span class="fc bfc" id="L199" title="All 6 branches covered.">        if (idCardNumber == null || (idCardNumber.length() != 18 &amp;&amp; idCardNumber.length() != 15)) {</span>
+<span class="fc" id="L200">            return false;</span>
+        }
+        
+        // 简单的正则表达式验证
+<span class="fc" id="L204">        String regex = &quot;^[1-9]\\d{5}(19|20)\\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\\d|3[01])\\d{3}[0-9Xx]$&quot;;</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">        if (idCardNumber.length() == 18) {</span>
+<span class="fc" id="L206">            return Pattern.matches(regex, idCardNumber);</span>
+        } else {
+            // 15位身份证转18位验证
+<span class="fc" id="L209">            regex = &quot;^[1-9]\\d{5}\\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\\d|3[01])\\d{3}$&quot;;</span>
+<span class="fc" id="L210">            return Pattern.matches(regex, idCardNumber);</span>
+        }
+    }
+    
+    @Override
+    public String generateMD5Password(String password) {
+<span class="fc" id="L216">        logger.debug(&quot;生成MD5密码&quot;);</span>
+        
+        try {
+<span class="fc" id="L219">            MessageDigest md = MessageDigest.getInstance(&quot;MD5&quot;);</span>
+<span class="fc" id="L220">            byte[] messageDigest = md.digest(password.getBytes());</span>
+            
+<span class="fc" id="L222">            StringBuilder hexString = new StringBuilder();</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">            for (byte b : messageDigest) {</span>
+<span class="fc" id="L224">                String hex = Integer.toHexString(0xff &amp; b);</span>
+<span class="pc bpc" id="L225" title="1 of 2 branches missed.">                if (hex.length() == 1) {</span>
+<span class="nc" id="L226">                    hexString.append('0');</span>
+                }
+<span class="fc" id="L228">                hexString.append(hex);</span>
+            }
+            
+<span class="fc" id="L231">            return hexString.toString();</span>
+<span class="nc" id="L232">        } catch (NoSuchAlgorithmException e) {</span>
+<span class="nc" id="L233">            logger.error(&quot;MD5加密失败: {}&quot;, e.getMessage());</span>
+<span class="nc" id="L234">            throw new RuntimeException(&quot;MD5加密失败&quot;, e);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

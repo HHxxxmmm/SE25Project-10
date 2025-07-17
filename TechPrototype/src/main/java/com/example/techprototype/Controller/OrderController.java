@@ -7,6 +7,7 @@ import com.example.techprototype.DTO.MyOrderResponse;
 import com.example.techprototype.DTO.OrderDetailResponse;
 import com.example.techprototype.DTO.RefundPreparationRequest;
 import com.example.techprototype.DTO.RefundPreparationResponse;
+import com.example.techprototype.DTO.BasicResponse;
 import com.example.techprototype.Entity.Order;
 import com.example.techprototype.Repository.OrderRepository;
 import com.example.techprototype.Service.OrderService;
@@ -16,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -109,6 +111,37 @@ public class OrderController {
             response.put("status", "ERROR");
             response.put("message", "查询失败: " + e.getMessage());
             return ResponseEntity.ok(response);
+        }
+    }
+    
+    /**
+     * 检查订单是否已超时
+     */
+    @GetMapping("/check-timeout")
+    public BasicResponse checkOrderTimeout(@RequestParam Long orderId, @RequestParam Long userId) {
+        try {
+            Optional<Order> orderOpt = orderRepository.findByOrderIdAndUserId(orderId, userId);
+            if (orderOpt.isEmpty()) {
+                return BasicResponse.failure("订单不存在");
+            }
+            
+            Order order = orderOpt.get();
+            if (order.getOrderStatus() != 0) { // 不是待支付状态
+                return BasicResponse.failure("订单状态不正确");
+            }
+            
+            // 检查是否超时（15分钟）
+            LocalDateTime timeoutThreshold = LocalDateTime.now().minusMinutes(15);
+            boolean isTimeout = order.getOrderTime().isBefore(timeoutThreshold);
+            
+            if (isTimeout) {
+                return BasicResponse.failure("订单已超时");
+            } else {
+                return BasicResponse.success("订单未超时");
+            }
+            
+        } catch (Exception e) {
+            return BasicResponse.failure("检查订单超时失败: " + e.getMessage());
         }
     }
 } 

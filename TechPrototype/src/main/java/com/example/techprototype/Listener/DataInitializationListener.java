@@ -32,10 +32,20 @@ public class DataInitializationListener {
         
         // 启动第一次库存同步（Redis到数据库）
         System.out.println("开始第一次库存同步...");
-        inventorySyncService.syncInventoryToDatabase();
+        try {
+            inventorySyncService.syncInventoryToDatabase();
+        } catch (Exception e) {
+            System.err.println("库存同步失败: " + e.getMessage());
+            // 继续执行，不抛出异常
+        }
         
         // 启用定时任务
-        scheduledTaskService.enableTasks();
+        try {
+            scheduledTaskService.enableTasks();
+        } catch (Exception e) {
+            System.err.println("启用定时任务失败: " + e.getMessage());
+            // 继续执行，不抛出异常
+        }
         
         System.out.println("所有定时任务已启动");
     }

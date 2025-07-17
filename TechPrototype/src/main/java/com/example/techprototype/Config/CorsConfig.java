@@ -20,6 +20,8 @@ public class CorsConfig {
         // 允许的源（更全面的配置）
         config.addAllowedOrigin("http://localhost:3000"); // 标准前端开发端口
         config.addAllowedOrigin("http://127.0.0.1:3000"); // 使用IP时的前端地址
+        config.addAllowedOrigin("http://localhost:3001"); // 备用端口
+        config.addAllowedOrigin("http://127.0.0.1:3001"); // 备用端口
         
         // 允许的头信息
         config.addAllowedHeader("*");

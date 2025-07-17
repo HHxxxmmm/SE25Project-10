@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProfileServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">TechPrototype</a> &gt; <a href="index.source.html" class="el_package">com.example.techprototype.Service.Impl</a> &gt; <span class="el_source">ProfileServiceImpl.java</span></div><h1>ProfileServiceImpl.java</h1><pre class="source lang-java linenums">package com.example.techprototype.Service.Impl;
+
+import com.example.techprototype.DTO.*;
+import com.example.techprototype.Entity.Passenger;
+import com.example.techprototype.Entity.User;
+import com.example.techprototype.Entity.UserPassengerRelation;
+import com.example.techprototype.Enums.PassengerType;
+import com.example.techprototype.Repository.PassengerRepository;
+import com.example.techprototype.Repository.UserRepository;
+import com.example.techprototype.Repository.UserPassengerRelationRepository;
+import com.example.techprototype.Service.ProfileService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.DigestUtils;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class ProfileServiceImpl implements ProfileService {
+
+    private final UserRepository userRepository;
+    private final PassengerRepository passengerRepository;
+    private final UserPassengerRelationRepository userPassengerRelationRepository;
+    private final BCryptPasswordEncoder passwordEncoder;
+
+    @Autowired
+<span class="fc" id="L32">    public ProfileServiceImpl(UserRepository userRepository, PassengerRepository passengerRepository, UserPassengerRelationRepository userPassengerRelationRepository) {</span>
+<span class="fc" id="L33">        this.userRepository = userRepository;</span>
+<span class="fc" id="L34">        this.passengerRepository = passengerRepository;</span>
+<span class="fc" id="L35">        this.userPassengerRelationRepository = userPassengerRelationRepository;</span>
+<span class="fc" id="L36">        this.passwordEncoder = new BCryptPasswordEncoder();</span>
+<span class="fc" id="L37">    }</span>
+
+    @Override
+    public ProfileResponse getUserProfile(Long userId) {
+        try {
+<span class="fc" id="L42">            Optional&lt;User&gt; userOpt = userRepository.findById(userId);</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">            if (userOpt.isEmpty()) {</span>
+<span class="fc" id="L44">                return ProfileResponse.failure(&quot;用户不存在&quot;);</span>
+            }
+
+<span class="fc" id="L47">            User user = userOpt.get();</span>
+<span class="fc" id="L48">            ProfileResponse.UserProfileData profileData = new ProfileResponse.UserProfileData();</span>
+<span class="fc" id="L49">            profileData.setUserId(user.getUserId());</span>
+<span class="fc" id="L50">            profileData.setRealName(user.getRealName());</span>
+<span class="fc" id="L51">            profileData.setEmail(user.getEmail());</span>
+<span class="fc" id="L52">            profileData.setPhoneNumber(user.getPhoneNumber());</span>
+<span class="fc" id="L53">            profileData.setRegistrationTime(user.getRegistrationTime());</span>
+<span class="fc" id="L54">            profileData.setLastLoginTime(user.getLastLoginTime());</span>
+<span class="fc" id="L55">            profileData.setAccountStatus(user.getAccountStatus());</span>
+<span class="fc" id="L56">            profileData.setRelatedPassenger(user.getRelatedPassenger());</span>
+
+            // 查找用户的所有关联乘客
+<span class="fc" id="L59">            List&lt;UserPassengerRelation&gt; relations = userPassengerRelationRepository.findByUserId(userId);</span>
+<span class="fc" id="L60">            List&lt;ProfileResponse.PassengerData&gt; passengerDataList = new ArrayList&lt;&gt;();</span>
+            
+<span class="fc bfc" id="L62" title="All 2 branches covered.">            for (UserPassengerRelation relation : relations) {</span>
+<span class="fc" id="L63">                Optional&lt;Passenger&gt; passengerOpt = passengerRepository.findById(relation.getPassengerId());</span>
+                
+<span class="fc bfc" id="L65" title="All 2 branches covered.">                if (passengerOpt.isPresent()) {</span>
+<span class="fc" id="L66">                    Passenger passenger = passengerOpt.get();</span>
+<span class="fc" id="L67">                    ProfileResponse.PassengerData passengerData = new ProfileResponse.PassengerData();</span>
+<span class="fc" id="L68">                    passengerData.setPassengerId(passenger.getPassengerId());</span>
+<span class="fc" id="L69">                    passengerData.setIdCardNumber(passenger.getIdCardNumber());</span>
+<span class="fc" id="L70">                    passengerData.setRealName(passenger.getRealName());</span>
+<span class="fc" id="L71">                    passengerData.setPassengerType(passenger.getPassengerType());</span>
+
+                    // 获取乘客类型文本
+                    try {
+<span class="fc" id="L75">                        PassengerType type = PassengerType.fromCode(passenger.getPassengerType());</span>
+<span class="fc" id="L76">                        passengerData.setPassengerTypeText(type.getDescription());</span>
+<span class="fc" id="L77">                    } catch (IllegalArgumentException e) {</span>
+<span class="fc" id="L78">                        passengerData.setPassengerTypeText(&quot;未知&quot;);</span>
+<span class="fc" id="L79">                    }</span>
+
+<span class="fc" id="L81">                    passengerData.setPhoneNumber(passenger.getPhoneNumber());</span>
+                    
+                    // 只有学生类型才显示学生票剩余次数
+<span class="fc bfc" id="L84" title="All 2 branches covered.">                    if (passenger.getPassengerType() == 3) { // 学生类型</span>
+<span class="fc" id="L85">                    passengerData.setStudentTypeLeft(passenger.getStudentTypeLeft());</span>
+                    } else {
+<span class="fc" id="L87">                        passengerData.setStudentTypeLeft(null);</span>
+                    }
+
+<span class="fc" id="L90">                    passengerDataList.add(passengerData);</span>
+                }
+<span class="fc" id="L92">            }</span>
+            
+<span class="fc" id="L94">            profileData.setLinkedPassengers(passengerDataList);</span>
+
+<span class="fc" id="L96">            return ProfileResponse.success(profileData);</span>
+
+<span class="fc" id="L98">        } catch (Exception e) {</span>
+<span class="fc" id="L99">            System.err.println(&quot;获取用户个人资料失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L100">            return ProfileResponse.failure(&quot;获取用户个人资料失败: &quot; + e.getMessage());</span>
+        }
+    }
+
+    @Override
+    @Transactional
+    public ProfileResponse updateUserProfile(Long userId, ProfileRequest request) {
+        try {
+<span class="fc" id="L108">            Optional&lt;User&gt; userOpt = userRepository.findById(userId);</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">            if (userOpt.isEmpty()) {</span>
+<span class="fc" id="L110">                return ProfileResponse.failure(&quot;用户不存在&quot;);</span>
+            }
+
+<span class="fc" id="L113">            User user = userOpt.get();</span>
+
+            // 如果要更新的邮箱与当前邮箱不同，检查新邮箱是否已被使用
+<span class="fc bfc" id="L116" title="All 4 branches covered.">            if (request.getEmail() != null &amp;&amp; !request.getEmail().isEmpty() &amp;&amp;</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">                    !request.getEmail().equals(user.getEmail())) {</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">                if (userRepository.existsByEmail(request.getEmail())) {</span>
+<span class="fc" id="L119">                    return ProfileResponse.failure(&quot;邮箱已被其他用户使用&quot;);</span>
+                }
+<span class="fc" id="L121">                user.setEmail(request.getEmail());</span>
+            }
+
+            // 如果要更新的手机号与当前手机号不同，检查新手机号是否已被使用
+<span class="fc bfc" id="L125" title="All 4 branches covered.">            if (request.getPhoneNumber() != null &amp;&amp; !request.getPhoneNumber().isEmpty() &amp;&amp;</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">                    !request.getPhoneNumber().equals(user.getPhoneNumber())) {</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">                if (userRepository.existsByPhoneNumber(request.getPhoneNumber())) {</span>
+<span class="fc" id="L128">                    return ProfileResponse.failure(&quot;手机号已被其他用户使用&quot;);</span>
+                }
+<span class="fc" id="L130">                user.setPhoneNumber(request.getPhoneNumber());</span>
+            }
+
+            // 更新用户真实姓名
+<span class="fc bfc" id="L134" title="All 4 branches covered.">            if (request.getRealName() != null &amp;&amp; !request.getRealName().isEmpty()) {</span>
+<span class="fc" id="L135">                user.setRealName(request.getRealName());</span>
+            }
+
+            // 保存更新后的用户信息
+<span class="fc" id="L139">            userRepository.save(user);</span>
+
+            // 返回更新后的用户信息
+<span class="fc" id="L142">            return getUserProfile(userId);</span>
+
+<span class="fc" id="L144">        } catch (Exception e) {</span>
+<span class="fc" id="L145">            System.err.println(&quot;更新用户个人资料失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L146">            return ProfileResponse.failure(&quot;更新用户个人资料失败: &quot; + e.getMessage());</span>
+        }
+    }
+
+    @Override
+    @Transactional
+    public ChangePasswordResponse changePassword(ChangePasswordRequest request) {
+        try {
+<span class="fc" id="L154">            Optional&lt;User&gt; userOpt = userRepository.findById(request.getUserId());</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">            if (userOpt.isEmpty()) {</span>
+<span class="fc" id="L156">                return ChangePasswordResponse.failure(&quot;用户不存在&quot;);</span>
+            }
+
+<span class="fc" id="L159">            User user = userOpt.get();</span>
+
+            // 验证当前密码 - 支持MD5和BCrypt两种格式
+<span class="fc" id="L162">            String currentPasswordHash = user.getPasswordHash();</span>
+<span class="fc" id="L163">            boolean passwordValid = false;</span>
+            
+            // 检查是否是MD5格式的密码（32位十六进制字符串）
+<span class="pc bpc" id="L166" title="1 of 4 branches missed.">            if (currentPasswordHash.length() == 32 &amp;&amp; currentPasswordHash.matches(&quot;[a-fA-F0-9]{32}&quot;)) {</span>
+                // MD5格式，计算当前密码的MD5值进行比较
+<span class="fc" id="L168">                String md5CurrentPassword = DigestUtils.md5DigestAsHex(request.getCurrentPassword().getBytes());</span>
+<span class="fc" id="L169">                passwordValid = currentPasswordHash.equalsIgnoreCase(md5CurrentPassword);</span>
+<span class="fc" id="L170">            } else {</span>
+                // BCrypt格式，使用BCrypt编码器验证
+<span class="fc" id="L172">                passwordValid = passwordEncoder.matches(request.getCurrentPassword(), currentPasswordHash);</span>
+            }
+            
+<span class="fc bfc" id="L175" title="All 2 branches covered.">            if (!passwordValid) {</span>
+<span class="fc" id="L176">                return ChangePasswordResponse.failure(&quot;当前密码不正确&quot;);</span>
+            }
+
+            // 验证新密码合法性
+<span class="fc bfc" id="L180" title="All 4 branches covered.">            if (request.getNewPassword() == null || request.getNewPassword().length() &lt; 6) {</span>
+<span class="fc" id="L181">                return ChangePasswordResponse.failure(&quot;新密码不能为空且长度不能少于6位&quot;);</span>
+            }
+
+            // 更新密码
+<span class="fc" id="L185">            user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));</span>
+<span class="fc" id="L186">            userRepository.save(user);</span>
+
+<span class="fc" id="L188">            return ChangePasswordResponse.success();</span>
+
+<span class="fc" id="L190">        } catch (Exception e) {</span>
+<span class="fc" id="L191">            System.err.println(&quot;修改密码失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L192">            return ChangePasswordResponse.failure(&quot;修改密码失败: &quot; + e.getMessage());</span>
+        }
+    }
+
+    @Override
+    @Transactional
+    public BasicResponse updateLastLoginTime(LastLoginUpdateRequest request) {
+        try {
+<span class="fc" id="L200">            Optional&lt;User&gt; userOpt = userRepository.findById(request.getUserId());</span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">            if (userOpt.isEmpty()) {</span>
+<span class="fc" id="L202">                return BasicResponse.failure(&quot;用户不存在&quot;);</span>
+            }
+
+<span class="fc" id="L205">            User user = userOpt.get();</span>
+
+            // 更新最后登录时间
+<span class="fc" id="L208">            LocalDateTime loginTime = request.getLoginTime();</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">            if (loginTime == null) {</span>
+<span class="fc" id="L210">                loginTime = LocalDateTime.now();</span>
+            }
+
+<span class="fc" id="L213">            user.setLastLoginTime(loginTime);</span>
+<span class="fc" id="L214">            userRepository.save(user);</span>
+
+<span class="fc" id="L216">            return BasicResponse.success(&quot;最后登录时间更新成功&quot;);</span>
+
+<span class="fc" id="L218">        } catch (Exception e) {</span>
+<span class="fc" id="L219">            System.err.println(&quot;更新最后登录时间失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L220">            return BasicResponse.failure(&quot;更新最后登录时间失败: &quot; + e.getMessage());</span>
+        }
+    }
+
+    @Override
+    @Transactional
+    public BasicResponse updateAccountStatus(AccountStatusUpdateRequest request) {
+        try {
+<span class="fc" id="L228">            Optional&lt;User&gt; userOpt = userRepository.findById(request.getUserId());</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">            if (userOpt.isEmpty()) {</span>
+<span class="fc" id="L230">                return BasicResponse.failure(&quot;用户不存在&quot;);</span>
+            }
+
+<span class="fc" id="L233">            User user = userOpt.get();</span>
+
+            // 验证账户状态值
+<span class="fc" id="L236">            byte status = request.getAccountStatus();</span>
+<span class="fc bfc" id="L237" title="All 4 branches covered.">            if (status != 0 &amp;&amp; status != 1) {</span>
+<span class="fc" id="L238">                return BasicResponse.failure(&quot;账户状态值无效，必须是0(冻结)或1(正常)&quot;);</span>
+            }
+
+            // 更新账户状态
+<span class="fc" id="L242">            user.setAccountStatus(status);</span>
+<span class="fc" id="L243">            userRepository.save(user);</span>
+
+<span class="fc bfc" id="L245" title="All 2 branches covered.">            String statusText = status == 1 ? &quot;正常&quot; : &quot;冻结&quot;;</span>
+<span class="fc" id="L246">            return BasicResponse.success(&quot;账户状态已更新为：&quot; + statusText);</span>
+
+<span class="fc" id="L248">        } catch (Exception e) {</span>
+<span class="fc" id="L249">            System.err.println(&quot;更新账户状态失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L250">            return BasicResponse.failure(&quot;更新账户状态失败: &quot; + e.getMessage());</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
