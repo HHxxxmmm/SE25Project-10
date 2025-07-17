@@ -68,6 +68,16 @@ export default function LoginPage() {
         : Promise.reject('请输入正确的手机号');
   };
 
+  // 密码格式校验
+  const validatePassword = (_, value) => {
+    if (!value) return Promise.reject('请输入密码');
+    // 密码格式：6-20位，可含字母、数字、符号
+    const pwdReg = /^[\w!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]{6,20}$/;
+    return pwdReg.test(value)
+      ? Promise.resolve()
+      : Promise.reject('密码格式错误');
+  };
+
   return (
       <>
         <div className="login-page"
@@ -84,15 +94,15 @@ export default function LoginPage() {
                 name="phoneNumber" 
                 rules={[{ validator: validatePhoneNumber }]}
                 validateStatus={phoneError ? "error" : ""}
-                help={phoneError}
+                help={phoneError || undefined} // 只显示后端错误，前端校验由 antd自动渲染
               >
                 <Input placeholder="手机号" size="large" onChange={() => setPhoneError('')} />
               </Form.Item>
               <Form.Item 
                 name="password" 
-                rules={[{ required: true, message: '请输入密码' }]}
+                rules={[{ validator: validatePassword }]}
                 validateStatus={passwordError ? "error" : ""}
-                help={passwordError}
+                help={passwordError || undefined}
               >
                 <Input.Password placeholder="密码" size="large" onChange={() => setPasswordError('')} />
               </Form.Item>
