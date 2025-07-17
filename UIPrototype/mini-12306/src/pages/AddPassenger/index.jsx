@@ -2,13 +2,16 @@
 import React, { useState } from 'react';
 import { message } from 'antd';
 import { passengerAPI } from '../../services/api';
+import { useAuth } from '../../hooks/useAuth';
 import './style.css';
 
 const idTypes = [
     "居民身份证"
 ];
 
-const AddPassenger = ({ onClose }) => {
+
+const AddPassenger = ({ onClose, onSuccess }) => {
+    const { user } = useAuth();
     const [name, setName] = useState('');
     const [idType, setIdType] = useState(idTypes[0]);
     const [idNumber, setIdNumber] = useState('');
@@ -26,10 +29,22 @@ const AddPassenger = ({ onClose }) => {
         setSubmitting(true);
         
         try {
-            const userId = 1; // 使用测试用户ID
+            const currentUserId = user?.userId; // 使用当前登录用户的ID
+            
+            if (!currentUserId) {
+                message.error('请先登录');
+                return;
+            }
             
             // 调用后端API
-            const response = await passengerAPI.addPassenger(userId, name, idNumber, phone);
+            const passengerData = {
+                userId: currentUserId,
+                realName: name,
+                idCardNumber: idNumber,
+                phoneNumber: phone
+            };
+            
+            const response = await passengerAPI.addPassenger(passengerData);
             
             if (response.success) {
                 message.success('乘车人添加成功！');
@@ -38,7 +53,12 @@ const AddPassenger = ({ onClose }) => {
                 setIdType(idTypes[0]);
                 setIdNumber('');
                 setPhone('');
-                if (onClose) onClose();
+                // 调用成功回调，让父组件处理刷新
+                if (onSuccess) {
+                    onSuccess();
+                } else if (onClose) {
+                    onClose();
+                }
             } else {
                 // 根据不同的错误情况显示不同的提示
                 let errorMessage = response.message || '添加失败，请稍后重试';
@@ -64,95 +84,88 @@ const AddPassenger = ({ onClose }) => {
     };
 
     return (
-        <form className="modal-form" onSubmit={handleSubmit} noValidate>
-            {/* 关闭按钮 */}
-            <button
-                type="button"
-                className="modal-close-button"
-                aria-label="关闭弹窗"
-                onClick={onClose}
-                style={{
-                    position: 'absolute',
-                    top: 12,
-                    right: 12,
-                    fontSize: 24,
-                    background: 'none',
-                    border: 'none',
-                    color: '#999',
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                }}
-            >
-                ×
-            </button>
+        <div className="add-passenger-page">
+            <div className="modal-wrapper">
+                <form className="modal-form" onSubmit={handleSubmit} noValidate>
+                    {/* 关闭按钮 */}
+                    <button
+                        type="button"
+                        className="modal-close-btn"
+                        aria-label="关闭弹窗"
+                        onClick={onClose}
+                    >
+                        ×
+                    </button>
 
-            <h2 id="modal-title" className="modal-title">添加乘车人</h2>
+                    <h2 id="modal-title" className="modal-title">添加乘车人</h2>
 
-            <label htmlFor="name-input">
-                姓名：
-                <input
-                    id="name-input"
-                    type="text"
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                    required
-                    placeholder="请输入姓名"
-                    autoComplete="name"
-                />
-            </label>
+                    <label htmlFor="name-input">
+                        姓名：
+                        <input
+                            id="name-input"
+                            type="text"
+                            value={name}
+                            onChange={e => setName(e.target.value)}
+                            required
+                            placeholder="请输入姓名"
+                            autoComplete="name"
+                        />
+                    </label>
 
-            <label htmlFor="idtype-select">
-                证件类型：
-                <select
-                    id="idtype-select"
-                    value={idType}
-                    onChange={e => setIdType(e.target.value)}
-                    required
-                >
-                    {idTypes.map(type => (
-                        <option key={type} value={type}>{type}</option>
-                    ))}
-                </select>
-            </label>
+                    <label htmlFor="idtype-select">
+                        证件类型：
+                        <select
+                            id="idtype-select"
+                            value={idType}
+                            onChange={e => setIdType(e.target.value)}
+                            required
+                        >
+                            {idTypes.map(type => (
+                                <option key={type} value={type}>{type}</option>
+                            ))}
+                        </select>
+                    </label>
 
-            <label htmlFor="idnumber-input">
-                证件号码：
-                <input
-                    id="idnumber-input"
-                    type="text"
-                    value={idNumber}
-                    onChange={e => setIdNumber(e.target.value)}
-                    required
-                    placeholder="请输入证件号码"
-                    autoComplete="off"
-                />
-            </label>
+                    <label htmlFor="idnumber-input">
+                        证件号码：
+                        <input
+                            id="idnumber-input"
+                            type="text"
+                            value={idNumber}
+                            onChange={e => setIdNumber(e.target.value)}
+                            required
+                            placeholder="请输入证件号码"
+                            autoComplete="off"
+                        />
+                    </label>
 
-            <label htmlFor="phone-input">
-                手机号码：
-                <input
-                    id="phone-input"
-                    type="tel"
-                    value={phone}
-                    onChange={e => setPhone(e.target.value)}
-                    required
-                    placeholder="请输入手机号码"
-                    autoComplete="tel"
-                    pattern="^1[3-9]\\d{9}$"
-                    title="请输入有效的手机号码"
-                />
-            </label>
+                    <label htmlFor="phone-input">
+                        手机号码：
+                        <input
+                            id="phone-input"
+                            type="tel"
+                            value={phone}
+                            onChange={e => setPhone(e.target.value)}
+                            required
+                            placeholder="请输入手机号码"
+                            autoComplete="tel"
+                            pattern="^1[3-9]\\d{9}$"
+                            title="请输入有效的手机号码"
+                        />
+                    </label>
 
-            <div className="modal-buttons">
-                <button 
-                    type="submit" 
-                    className="submit-button"
-                    disabled={submitting}
-                >
-                    {submitting ? '添加中...' : '添加乘车人'}
-                </button>
+                    <div className="modal-buttons">
+                        <button 
+                            type="submit" 
+                            className="submit-button"
+                            disabled={submitting}
+                        >
+                            {submitting ? '添加中...' : '添加乘车人'}
+                        </button>
+                    </div>
+                </form>
             </div>
-        </form>
+        </div>
     );
 };
 

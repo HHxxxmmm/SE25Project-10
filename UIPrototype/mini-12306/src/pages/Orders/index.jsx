@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { Card, Tag, Pagination, Input, DatePicker, Button, Select, Space, Divider, message } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { SearchOutlined, EnvironmentOutlined, UserOutlined, FileTextOutlined } from '@ant-design/icons';
-import { orderAPI } from '../../services/api';
+import { orderAPI, waitlistAPI } from '../../services/api';
+import { useAuth } from '../../hooks/useAuth';
 import "./style.css";
 
 const { Search } = Input;
@@ -13,6 +14,14 @@ const ORDER_STATUS = {
     0: { text: '待支付', color: 'orange' },
     1: { text: '已支付', color: 'green' },
     2: { text: '已支付', color: 'green' }, // 已支付状态
+    3: { text: '已取消', color: 'red' },
+};
+
+// 候补订单状态映射
+const WAITLIST_STATUS = {
+    0: { text: '待支付', color: 'orange' },
+    1: { text: '待兑现', color: 'blue' },
+    2: { text: '已兑现', color: 'green' },
     3: { text: '已取消', color: 'red' },
 };
 
@@ -41,11 +50,29 @@ function formatDate(datetime) {
 
 function formatTime(datetime) {
     if (!datetime) return '';
+    
     // 处理LocalTime或LocalDateTime格式
     if (typeof datetime === 'string') {
-        const timePart = datetime.split('T')[1] || datetime.split(' ')[1] || '';
-        return timePart.slice(0, 5) || '';
+        // 如果是纯时间格式 (HH:mm:ss)
+        if (datetime.match(/^\d{2}:\d{2}:\d{2}$/)) {
+            return datetime.slice(0, 5);
+        }
+        // 如果是日期时间格式 (YYYY-MM-DDTHH:mm:ss)
+        if (datetime.includes('T')) {
+            const timePart = datetime.split('T')[1];
+            return timePart ? timePart.slice(0, 5) : '';
+        }
+        // 如果是空格分隔的日期时间格式 (YYYY-MM-DD HH:mm:ss)
+        if (datetime.includes(' ')) {
+            const timePart = datetime.split(' ')[1];
+            return timePart ? timePart.slice(0, 5) : '';
+        }
+        // 如果是纯时间格式 (HH:mm)
+        if (datetime.match(/^\d{2}:\d{2}$/)) {
+            return datetime;
+        }
     }
+    
     return '';
 }
 
@@ -60,10 +87,9 @@ function formatDateTime(datetime) {
     return '';
 }
 
-
-
 export default function OrdersPage() {
     const navigate = useNavigate();
+    const { user } = useAuth(); // 获取当前登录用户
     const [orders, setOrders] = useState([]);
     const [filteredOrders, setFilteredOrders] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
@@ -79,23 +105,85 @@ export default function OrdersPage() {
         endDate: null
     });
 
+    // 使用useRef来跟踪API调用状态，防止重复调用
+    const apiCallInProgress = useRef(false);
+
     // 获取订单数据
     const fetchOrders = useCallback(async () => {
+        // 防止重复API调用
+        if (apiCallInProgress.current) {
+            console.log('API调用正在进行中，跳过重复调用');
+            return;
+        }
+        
+        // 检查用户是否已登录
+        if (!user) {
+            console.log('用户未登录，跳转到登录页');
+            navigate('/login');
+            return;
+        }
+
+        // 检查用户ID是否存在 - 后端返回的是userId字段
+        const userId = user.userId;
+        if (!userId) {
+            console.log('用户ID不存在:', user);
+            message.error('用户信息不完整，请重新登录');
+            navigate('/login');
+            return;
+        }
+
         try {
             setLoading(true);
-            const response = await orderAPI.getMyOrders(1); // 使用测试用户ID=1
+            apiCallInProgress.current = true;
+            console.log('获取订单，用户ID:', userId);
             
-            console.log('订单API响应:', response);
+            // 获取普通订单
+            const orderResponse = await orderAPI.getMyOrders(userId);
+            console.log('普通订单API响应:', orderResponse);
             
-            if (response.status === 'SUCCESS') {
-                console.log('订单数据:', response.orders);
-                setOrders(response.orders || []);
-                setFilteredOrders(response.orders || []);
-            } else {
-                message.error('获取订单列表失败: ' + response.message);
-                setOrders([]);
-                setFilteredOrders([]);
+            // 获取候补订单
+            const waitlistResult = await waitlistAPI.getMyWaitlistOrders(userId);
+            console.log('候补订单API响应:', waitlistResult);
+            
+            let allOrders = [];
+            
+            if (orderResponse.status === 'SUCCESS') {
+                // 转换普通订单格式，添加类型标识
+                const normalOrders = (orderResponse.orders || []).map(order => ({
+                    ...order,
+                    orderType: 'normal',
+                    isWaitlist: false
+                }));
+                allOrders = allOrders.concat(normalOrders);
             }
+            
+            if (waitlistResult.status === 'SUCCESS') {
+                // 转换候补订单格式，添加类型标识
+                const waitlistOrders = (waitlistResult.waitlistOrders || []).map(order => ({
+                    ...order,
+                    orderType: 'waitlist',
+                    isWaitlist: true,
+                    orderId: order.waitlistId, // 使用waitlistId作为orderId
+                    orderNumber: order.orderNumber,
+                    orderTime: order.orderTime,
+                    totalAmount: order.totalAmount,
+                    orderStatus: order.orderStatus,
+                    trainId: order.trainId,
+                    trainNumber: order.trainNumber,
+                    departureDate: order.travelDate || order.departureDate, // 使用travelDate作为备选
+                    departureTime: order.departureTime,
+                    arrivalTime: order.arrivalTime,
+                    departureStationName: order.departureStationName,
+                    arrivalStationName: order.arrivalStationName,
+                    ticketCount: order.ticketCount
+                }));
+                allOrders = allOrders.concat(waitlistOrders);
+            }
+            
+            console.log('合并后的订单数据:', allOrders);
+            setOrders(allOrders);
+            setFilteredOrders(allOrders);
+            
         } catch (error) {
             console.error('获取订单列表失败:', error);
             message.error('获取订单列表失败，请稍后重试');
@@ -103,11 +191,21 @@ export default function OrdersPage() {
             setFilteredOrders([]);
         } finally {
             setLoading(false);
+            apiCallInProgress.current = false;
         }
-    }, []);
+    }, [user]);
 
     useEffect(() => {
+        // 只有在用户存在且已认证时才获取订单
+        if (user && user.userId) {
         fetchOrders();
+        }
+        
+        // 组件卸载时的清理函数
+        return () => {
+            // 清理API调用状态
+            apiCallInProgress.current = false;
+        };
     }, [fetchOrders]);
 
     // 过滤订单
@@ -157,7 +255,13 @@ export default function OrdersPage() {
     };
 
     const handleOrderClick = (order) => {
-        navigate(`/order-detail?orderId=${order.orderId}`);
+        if (order.isWaitlist) {
+            // 候补订单跳转到候补订单详情页
+            navigate(`/order-detail?waitlistId=${order.orderId}`);
+        } else {
+            // 普通订单跳转到普通订单详情页
+            navigate(`/order-detail?orderId=${order.orderId}`);
+        }
     };
 
     const handlePayOrder = (order, e) => {
@@ -167,8 +271,24 @@ export default function OrdersPage() {
 
     const handleCancelOrder = async (order, e) => {
         e.stopPropagation();
+        
+        // 检查用户是否已登录
+        if (!user) {
+            message.error('请先登录');
+            navigate('/login');
+            return;
+        }
+
+        // 检查用户ID是否存在 - 后端返回的是userId字段
+        const userId = user.userId;
+        if (!userId) {
+            message.error('用户信息不完整，请重新登录');
+            navigate('/login');
+            return;
+        }
+
         try {
-            const response = await orderAPI.cancelOrder(order.orderId, 1);
+            const response = await orderAPI.cancelOrder(order.orderId, userId);
             if (response.status === 'SUCCESS') {
                 message.success('订单取消成功');
                 fetchOrders(); // 重新获取订单列表
@@ -178,6 +298,33 @@ export default function OrdersPage() {
         } catch (error) {
             console.error('取消订单失败:', error);
             message.error('取消订单失败，请稍后重试');
+        }
+    };
+
+    const handlePayWaitlistOrder = async (order, e) => {
+        e.stopPropagation();
+        try {
+            // 跳转到支付页面
+            window.location.href = `/payment?waitlistId=${order.orderId}&isWaitlist=true`;
+        } catch (error) {
+            console.error('跳转支付页面失败:', error);
+            message.error('跳转支付页面失败');
+        }
+    };
+
+    const handleCancelWaitlistOrder = async (order, e) => {
+        e.stopPropagation();
+        try {
+            const result = await waitlistAPI.cancelWaitlistOrder(order.orderId, user.userId);
+            if (result.status === 'SUCCESS') {
+                message.success('候补订单取消成功');
+                fetchOrders(); // 重新获取订单列表
+            } else {
+                message.error(result.message || '取消候补订单失败');
+            }
+        } catch (error) {
+            console.error('取消候补订单失败:', error);
+            message.error('取消候补订单失败');
         }
     };
 
@@ -233,8 +380,8 @@ export default function OrdersPage() {
                                 >
                                     <Option value="all">全部状态</Option>
                                     <Option value="0">待支付</Option>
-                                    <Option value="1">已支付</Option>
-                                    <Option value="2">已支付</Option>
+                                    <Option value="1">已支付/待兑现</Option>
+                                    <Option value="2">已完成/已兑现</Option>
                                     <Option value="3">已取消</Option>
                                 </Select>
                             </div>
@@ -280,14 +427,14 @@ export default function OrdersPage() {
                                 tabIndex={0}
                                 onKeyPress={(e) => { if (e.key === 'Enter') handleOrderClick(order); }}
                             >
-                                {/* 订单头部 - 发车时间 */}
+                                {/* 订单头部 - 订单信息 */}
                                 <div className="order-header">
-                                    <div className="departure-time">
-                                        <span className="departure-label">发车时间</span>
-                                        <span className="departure-datetime">{formatDateTime(order.departureDate + ' ' + order.departureTime)}</span>
+                                    <div className="order-info">
+                                        <span className="order-number">订单号：{order.orderNumber}</span>
+                                        <span className="order-time">下单时间：{formatDateTime(order.orderTime)}</span>
                                     </div>
-                                    <Tag color={ORDER_STATUS[order.orderStatus]?.color}>
-                                        {ORDER_STATUS[order.orderStatus]?.text}
+                                    <Tag color={order.isWaitlist ? WAITLIST_STATUS[order.orderStatus]?.color : ORDER_STATUS[order.orderStatus]?.color}>
+                                        {order.isWaitlist ? WAITLIST_STATUS[order.orderStatus]?.text : ORDER_STATUS[order.orderStatus]?.text}
                                     </Tag>
                                 </div>
 
@@ -295,9 +442,9 @@ export default function OrdersPage() {
                                 <div className="order-content">
                                     {/* 左侧：车次和路线信息 */}
                                     <div className="order-left">
-                                        <div className="order-info">
-                                            <span className="order-number">订单号：{order.orderNumber}</span>
-                                            <span className="order-time">下单时间：{formatDateTime(order.orderTime)}</span>
+                                        <div className="departure-date">
+                                            <span className="departure-label">发车日期</span>
+                                            <span className="departure-datetime">{formatDate(order.departureDate)}</span>
                                         </div>
                                         
                                         <div className="train-info">
@@ -311,7 +458,7 @@ export default function OrdersPage() {
                                             <div className="route-info">
                                                 <div className="departure">
                                                     <div className="station-name">{order.departureStationName}</div>
-                                                    <div className="time">{formatTime(order.departureTime)}</div>
+                                                    <div className="departure-time">{formatTime(order.departureTime)}</div>
                                                 </div>
                                                 <div className="journey-line">
                                                     <div className="line"></div>
@@ -319,7 +466,7 @@ export default function OrdersPage() {
                                                 </div>
                                                 <div className="arrival">
                                                     <div className="station-name">{order.arrivalStationName}</div>
-                                                    <div className="time">{formatTime(order.arrivalTime)}</div>
+                                                    <div className="arrival-time">{formatTime(order.arrivalTime)}</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -346,37 +493,78 @@ export default function OrdersPage() {
 
                                 {/* 订单操作 */}
                                 <div className="order-actions">
-                                    {order.orderStatus === 0 && (
+                                    {order.isWaitlist ? (
+                                        // 候补订单操作
                                         <>
-                                            <Button 
-                                                type="primary" 
-                                                size="small"
-                                                onClick={(e) => handlePayOrder(order, e)}
-                                            >
-                                                立即支付
-                                            </Button>
-                                            <Button 
-                                                size="small"
-                                                onClick={(e) => handleCancelOrder(order, e)}
-                                            >
-                                                取消订单
-                                            </Button>
+                                            {order.orderStatus === 0 && (
+                                                <>
+                                                    <Button 
+                                                        type="primary" 
+                                                        size="small"
+                                                        onClick={(e) => handlePayWaitlistOrder(order, e)}
+                                                    >
+                                                        立即支付
+                                                    </Button>
+                                                    <Button 
+                                                        size="small"
+                                                        onClick={(e) => handleCancelWaitlistOrder(order, e)}
+                                                    >
+                                                        取消订单
+                                                    </Button>
+                                                </>
+                                            )}
+                                            {order.orderStatus === 1 && (
+                                                <Button size="small">
+                                                    等待兑现
+                                                </Button>
+                                            )}
+                                            {order.orderStatus === 2 && (
+                                                <Button size="small">
+                                                    查看详情
+                                                </Button>
+                                            )}
+                                            {order.orderStatus === 3 && (
+                                                <Button size="small">
+                                                    重新预订
+                                                </Button>
+                                            )}
                                         </>
-                                    )}
-                                    {order.orderStatus === 1 && (
-                                        <Button size="small">
-                                            查看详情
-                                        </Button>
-                                    )}
-                                    {order.orderStatus === 2 && (
-                                        <Button size="small">
-                                            查看详情
-                                        </Button>
-                                    )}
-                                    {order.orderStatus === 3 && (
-                                        <Button size="small">
-                                            重新预订
-                                        </Button>
+                                    ) : (
+                                        // 普通订单操作
+                                        <>
+                                            {order.orderStatus === 0 && (
+                                                <>
+                                                    <Button 
+                                                        type="primary" 
+                                                        size="small"
+                                                        onClick={(e) => handlePayOrder(order, e)}
+                                                    >
+                                                        立即支付
+                                                    </Button>
+                                                    <Button 
+                                                        size="small"
+                                                        onClick={(e) => handleCancelOrder(order, e)}
+                                                    >
+                                                        取消订单
+                                                    </Button>
+                                                </>
+                                            )}
+                                            {order.orderStatus === 1 && (
+                                                <Button size="small">
+                                                    查看详情
+                                                </Button>
+                                            )}
+                                            {order.orderStatus === 2 && (
+                                                <Button size="small">
+                                                    查看详情
+                                                </Button>
+                                            )}
+                                            {order.orderStatus === 3 && (
+                                                <Button size="small">
+                                                    重新预订
+                                                </Button>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </div>
@@ -409,7 +597,7 @@ export default function OrdersPage() {
                 <div className="tips">
                     <p>温馨提示：</p>
                     <ul>
-                        <li>待支付订单请在30分钟内完成支付，超时订单将自动取消</li>
+                        <li>待支付订单请在15分钟内完成支付，超时订单将自动取消</li>
                         <li>已支付订单可在发车前2小时申请退票</li>
                         <li>如需改签，请在发车前2小时办理</li>
                     </ul>

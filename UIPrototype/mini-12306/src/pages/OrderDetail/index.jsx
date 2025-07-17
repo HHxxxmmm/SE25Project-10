@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Typography, Divider, Button, Row, message, Spin } from 'antd';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { orderAPI } from '../../services/api';
+import { orderAPI, waitlistAPI } from '../../services/api';
+import { useAuth } from '../../hooks/useAuth';
 import './style.css';
 
 const { Text } = Typography;
@@ -11,6 +12,14 @@ const ORDER_STATUS = {
     0: { text: '待支付', colorClass: 'status-pending' },
     1: { text: '已支付', colorClass: 'status-paid' },
     2: { text: '已完成', colorClass: 'status-completed' },
+    3: { text: '已取消', colorClass: 'status-cancelled' },
+};
+
+// 候补订单状态映射
+const WAITLIST_STATUS = {
+    0: { text: '待支付', colorClass: 'status-pending' },
+    1: { text: '待兑现', colorClass: 'status-waiting' },
+    2: { text: '已兑现', colorClass: 'status-completed' },
     3: { text: '已取消', colorClass: 'status-cancelled' },
 };
 
@@ -63,30 +72,57 @@ function formatTime(time) {
 const OrderDetailPage = () => {
     const [orderDetail, setOrderDetail] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [isWaitlist, setIsWaitlist] = useState(false);
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const { user } = useAuth();
 
     useEffect(() => {
         const fetchOrderDetail = async () => {
             try {
                 const orderId = searchParams.get('orderId');
-                const userId = 1; // 使用固定的测试用户ID
+                const waitlistId = searchParams.get('waitlistId');
+                const currentUserId = user?.userId;
                 
-                if (!orderId) {
-                    message.error('订单ID不能为空');
+                if (!orderId && !waitlistId) {
+                    message.error('订单ID或候补订单ID不能为空');
                     navigate('/orders');
                     return;
                 }
 
-                console.log('获取订单详情:', { orderId, userId });
-                const response = await orderAPI.getOrderDetail(orderId, userId);
-                console.log('订单详情响应:', response);
+                if (!currentUserId) {
+                    message.error('请先登录');
+                    navigate('/login');
+                    return;
+                }
+
+                console.log('获取订单详情:', { orderId, waitlistId, currentUserId });
+                
+                let response;
+                if (waitlistId) {
+                    // 获取候补订单详情
+                    setIsWaitlist(true);
+                    response = await waitlistAPI.getWaitlistOrderDetail(currentUserId, waitlistId);
+                    console.log('候补订单详情响应:', response);
+                    
+                    if (response && response.status === 'SUCCESS' && response.waitlistOrder) {
+                        setOrderDetail(response.waitlistOrder);
+                    } else {
+                        message.error('获取候补订单详情失败');
+                        navigate('/orders');
+                    }
+                } else {
+                    // 获取普通订单详情
+                    setIsWaitlist(false);
+                    response = await orderAPI.getOrderDetail(orderId, currentUserId);
+                    console.log('普通订单详情响应:', response);
                 
                 if (response && response.orderNumber) {
                     setOrderDetail(response);
                 } else {
                     message.error('获取订单详情失败');
                     navigate('/orders');
+                    }
                 }
             } catch (error) {
                 console.error('获取订单详情失败:', error);
@@ -98,7 +134,7 @@ const OrderDetailPage = () => {
         };
 
         fetchOrderDetail();
-    }, [searchParams, navigate]);
+    }, [searchParams, navigate, user]);
 
     if (loading) {
         return (
@@ -120,32 +156,53 @@ const OrderDetailPage = () => {
 
     const onReturnTicket = () => {
         // 获取所有车票的ID
-        const ticketIds = orderDetail.tickets.map(ticket => ticket.ticketId);
-        const userId = 1; // 使用固定的测试用户ID
+        const ticketIds = isWaitlist ? 
+            orderDetail.items.map(item => item.itemId) : 
+            orderDetail.tickets.map(ticket => ticket.ticketId);
+        const currentUserId = user?.userId;
         
-        // 从URL获取orderId参数
+        // 从URL获取orderId或waitlistId参数
         const orderId = searchParams.get('orderId');
+        const waitlistId = searchParams.get('waitlistId');
         
         // 将参数传递到退票页面
-        navigate(`/return-ticket?orderId=${orderId}&ticketIds=${ticketIds.join(',')}&userId=${userId}`);
+        if (isWaitlist) {
+            navigate(`/return-ticket?waitlistId=${waitlistId}&ticketIds=${ticketIds.join(',')}&userId=${currentUserId}`);
+        } else {
+        navigate(`/return-ticket?orderId=${orderId}&ticketIds=${ticketIds.join(',')}&userId=${currentUserId}`);
+        }
     };
 
     const onChangeTicket = () => {
-        navigate('/change-ticket');
+        // 从URL获取orderId或waitlistId参数
+        const orderId = searchParams.get('orderId');
+        const waitlistId = searchParams.get('waitlistId');
+        
+        if (isWaitlist) {
+            navigate(`/change-ticket?waitlistId=${waitlistId}`);
+        } else {
+        navigate(`/change-ticket?orderId=${orderId}`);
+        }
     };
 
     const onCancelOrder = async () => {
         try {
-            const userId = 1;
-            // 从URL获取orderId参数
+            const currentUserId = user?.userId;
             const orderId = searchParams.get('orderId');
-            const response = await orderAPI.cancelOrder(orderId, userId);
+            const waitlistId = searchParams.get('waitlistId');
+            
+            let response;
+            if (isWaitlist) {
+                response = await waitlistAPI.cancelWaitlistOrder(waitlistId, currentUserId);
+            } else {
+                response = await orderAPI.cancelOrder(orderId, currentUserId);
+            }
             
             if (response.status === 'SUCCESS') {
-                message.success('订单取消成功');
+                message.success(isWaitlist ? '候补订单取消成功' : '订单取消成功');
                 navigate('/orders');
             } else {
-                message.error(response.message || '取消订单失败');
+                message.error(response.message || (isWaitlist ? '取消候补订单失败' : '取消订单失败'));
             }
         } catch (error) {
             console.error('取消订单失败:', error);
@@ -154,9 +211,43 @@ const OrderDetailPage = () => {
     };
 
     const onPayOrder = () => {
-        // 从URL获取orderId参数
         const orderId = searchParams.get('orderId');
+        const waitlistId = searchParams.get('waitlistId');
+        
+        if (isWaitlist) {
+            navigate(`/payment?waitlistId=${waitlistId}&isWaitlist=true`);
+        } else {
         navigate(`/payment?orderId=${orderId}`);
+        }
+    };
+
+    const onRefundWaitlistOrder = () => {
+        const waitlistId = searchParams.get('waitlistId');
+        const currentUserId = user?.userId;
+        
+        // 获取所有可退款的候补订单项ID（待兑现或已兑现状态）
+        const refundableItemIds = orderDetail.items
+            .filter(item => item.itemStatus === 1 || item.itemStatus === 2)
+            .map(item => item.itemId);
+        
+        if (refundableItemIds.length === 0) {
+            message.warning('没有可退款的候补订单项');
+            return;
+        }
+        
+        // 跳转到退款页面
+        navigate(`/return-ticket?waitlistId=${waitlistId}&ticketIds=${refundableItemIds.join(',')}&userId=${currentUserId}`);
+    };
+
+    // 获取状态映射
+    const getStatusMapping = () => {
+        return isWaitlist ? WAITLIST_STATUS : ORDER_STATUS;
+    };
+
+    // 获取状态文本和样式
+    const getStatusInfo = (status) => {
+        const statusMapping = getStatusMapping();
+        return statusMapping[status] || { text: '未知状态', colorClass: '' };
     };
 
     return (
@@ -164,18 +255,18 @@ const OrderDetailPage = () => {
             <Card className="order-detail-card" bordered={false} bodyStyle={{ padding: 0 }}>
                 <div className="card-title">
                     <Link to="/orders" className="back-link">返回</Link>
-                    订单详情
+                    {isWaitlist ? '候补订单详情' : '订单详情'}
                 </div>
 
                 <Row justify="space-between" align="middle" className="info-row">
                     <Text type="secondary" className="order-info-text">
-                        订单号: {orderDetail.orderNumber}
+                        {isWaitlist ? '候补订单号' : '订单号'}: {orderDetail.orderNumber}
                     </Text>
                     <Text type="secondary" className="order-info-text">
                         下单时间: {formatDateTime(orderDetail.orderTime)}
                     </Text>
-                    <div className={`order-status ${ORDER_STATUS[orderDetail.orderStatus]?.colorClass || ''}`}>
-                        {ORDER_STATUS[orderDetail.orderStatus]?.text || '未知状态'}
+                    <div className={`order-status ${getStatusInfo(orderDetail.orderStatus).colorClass}`}>
+                        {getStatusInfo(orderDetail.orderStatus).text}
                     </div>
                 </Row>
 
@@ -218,22 +309,22 @@ const OrderDetailPage = () => {
                         </tr>
                         </thead>
                         <tbody>
-                        {orderDetail.tickets.map((ticket, index) => (
+                        {(isWaitlist ? orderDetail.items : orderDetail.tickets) && (isWaitlist ? orderDetail.items : orderDetail.tickets).map((ticket, index) => (
                             <tr
-                                key={ticket.ticketId}
-                                style={{ cursor: 'pointer' }}
-                                onClick={() => onTicketClick(ticket.ticketId)}
-                                title="点击查看车票详情"
+                                key={ticket.ticketId || ticket.itemId}
+                                style={{ cursor: isWaitlist ? 'default' : 'pointer' }}
+                                onClick={() => !isWaitlist && onTicketClick(ticket.ticketId || ticket.itemId)}
+                                title={isWaitlist ? "候补订单项，暂无可查看的车票详情" : "点击查看车票详情"}
                             >
                                 <td>{index + 1}</td>
                                 <td>{ticket.passengerName}</td>
                                 <td>{ticket.idCardNumber}</td>
-                                <td>{PASSENGER_TYPE[ticket.passengerType] || '未知'}</td>
-                                <td>{ticket.carriageType}</td>
-                                <td>{TICKET_TYPE[ticket.ticketType] || '未知'}</td>
-                                <td>{TICKET_STATUS[ticket.ticketStatus] || '未知'}</td>
+                                <td>{isWaitlist ? (ticket.passengerTypeText || PASSENGER_TYPE[ticket.passengerType] || '未知') : (PASSENGER_TYPE[ticket.passengerType] || '未知')}</td>
+                                <td>{isWaitlist ? ticket.carriageTypeName : ticket.carriageType}</td>
+                                <td>{isWaitlist ? (ticket.ticketTypeText || TICKET_TYPE[ticket.ticketType] || '未知') : (TICKET_TYPE[ticket.ticketType] || '未知')}</td>
+                                <td>{isWaitlist ? (ticket.itemStatusText || '未知') : (TICKET_STATUS[ticket.ticketStatus] || '未知')}</td>
                                 <td>
-                                    <Text className="price-text">¥{ticket.price}</Text>
+                                    <Text className="price-text">¥{ticket.price || '待定'}</Text>
                                 </td>
                             </tr>
                         ))}
@@ -245,21 +336,21 @@ const OrderDetailPage = () => {
 
                 <Row justify="space-between" align="middle" className="footer-row">
                     <div>订单总价: ¥{orderDetail.totalAmount}</div>
-                    <div>车票数量: {orderDetail.ticketCount}张</div>
+                    <div>车票数量: {isWaitlist ? (orderDetail.ticketCount || 0) : orderDetail.ticketCount}张</div>
                 </Row>
 
                 <div className="button-row">
                     {orderDetail.orderStatus === 0 && (
                         <>
                             <Button type="primary" className="btn-blue" onClick={onPayOrder}>
-                                去支付
+                                {isWaitlist ? '支付候补订单' : '去支付'}
                             </Button>
                             <Button className="btn-white" onClick={onCancelOrder}>
-                                取消订单
+                                {isWaitlist ? '取消候补订单' : '取消订单'}
                             </Button>
                         </>
                     )}
-                    {orderDetail.orderStatus === 1 && (
+                    {orderDetail.orderStatus === 1 && !isWaitlist && (
                         <>
                             <Button type="primary" className="btn-blue" onClick={onReturnTicket}>
                                 退票
@@ -269,7 +360,14 @@ const OrderDetailPage = () => {
                             </Button>
                         </>
                     )}
-                    {orderDetail.orderStatus === 2 && (
+                    {orderDetail.orderStatus === 1 && isWaitlist && (
+                        <>
+                            <Button type="primary" className="btn-blue" onClick={onRefundWaitlistOrder}>
+                                退款
+                            </Button>
+                        </>
+                    )}
+                    {orderDetail.orderStatus === 2 && !isWaitlist && (
                         <>
                             <Button type="primary" className="btn-blue" onClick={onReturnTicket}>
                                 退票

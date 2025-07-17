@@ -44,8 +44,8 @@ SET available_seats = total_seats;
 
 注意数据导入命令为
 
-LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.4/Uploads/carriage_types.csv'
-INTO TABLE carriage_types
+LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.4/Uploads/passengers.csv'
+INTO TABLE passengers
 CHARACTER SET utf8mb4
 FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
 LINES TERMINATED BY '\n'

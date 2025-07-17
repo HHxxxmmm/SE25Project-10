@@ -423,6 +423,7 @@ public class TicketServiceImpl implements TicketService {
                 System.err.println("改签过程中发生异常: " + e.getMessage());
                 return BookingResponse.failure("数据库异常: " + e.getMessage());
             }
+
         } finally {
             redisService.unlock(lockKey);
         }
