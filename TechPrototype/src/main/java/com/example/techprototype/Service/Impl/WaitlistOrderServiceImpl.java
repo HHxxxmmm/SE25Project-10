@@ -388,9 +388,8 @@ public class WaitlistOrderServiceImpl implements WaitlistOrderService {
                 if (!item.getWaitlistId().equals(waitlistId)) {
                     return BookingResponse.failure("候补订单项不属于此候补订单");
                 }
-                // 只有待兑现或已兑现的候补订单项才能退款
-                if (item.getItemStatus() != WaitlistItemStatus.PENDING_FULFILLMENT.getCode() && 
-                    item.getItemStatus() != WaitlistItemStatus.FULFILLED.getCode()) {
+                // 只有待兑现的候补订单项才能退款
+                if (item.getItemStatus() != WaitlistItemStatus.PENDING_FULFILLMENT.getCode()) {
                     return BookingResponse.failure("候补订单项状态不允许退款");
                 }
             }
@@ -398,73 +397,9 @@ public class WaitlistOrderServiceImpl implements WaitlistOrderService {
             BigDecimal refundAmount = BigDecimal.ZERO;
             int refundedCount = 0;
             
-            if (order.getOrderStatus() == WaitlistOrderStatus.FULFILLED.getCode()) {
-                // 已兑现的候补订单项退款逻辑
-                List<WaitlistItem> fulfilledItems = selectedItems.stream()
-                    .filter(item -> item.getItemStatus() == (byte) WaitlistItemStatus.FULFILLED.getCode())
-                    .collect(Collectors.toList());
-                
-                if (!fulfilledItems.isEmpty()) {
-                    // 查找对应的正式订单（通过候补订单号关联）
-                    Optional<Order> formalOrderOpt = orderRepository.findByOrderNumber(order.getOrderNumber());
-                    if (formalOrderOpt.isPresent()) {
-                        Order formalOrder = formalOrderOpt.get();
-                        
-                        // 获取正式订单下的车票，只处理对应的候补订单项
-                        List<Ticket> tickets = ticketRepository.findByOrderId(formalOrder.getOrderId());
-                        
-                        // 执行退票操作
-                        for (WaitlistItem item : fulfilledItems) {
-                            // 找到对应的车票
-                            Optional<Ticket> ticketOpt = tickets.stream()
-                                .filter(ticket -> ticket.getPassengerId().equals(item.getPassengerId()) &&
-                                                 ticket.getTrainId().equals(item.getTrainId()) &&
-                                                 ticket.getDepartureStopId().equals(item.getDepartureStopId()) &&
-                                                 ticket.getArrivalStopId().equals(item.getArrivalStopId()) &&
-                                                 ticket.getTravelDate().equals(item.getTravelDate()))
-                                .findFirst();
-                            
-                            if (ticketOpt.isPresent()) {
-                                Ticket ticket = ticketOpt.get();
-                                // 更新车票状态为已退票
-                                ticket.setTicketStatus((byte) 3); // 已退票
-                                ticketRepository.save(ticket);
-                                
-                                // 回滚库存
-                                redisService.incrStock(ticket.getTrainId(), ticket.getDepartureStopId(),
-                                        ticket.getArrivalStopId(), ticket.getTravelDate(), 
-                                        ticket.getCarriageTypeId(), 1);
-                                
-                                // 释放座位
-                                if (ticket.getSeatNumber() != null && ticket.getCarriageNumber() != null) {
-                                    // 这里需要调用座位服务释放座位
-                                    // seatService.releaseSeat(ticket);
-                                }
-                                
-                                refundAmount = refundAmount.add(ticket.getPrice());
-                            }
-                        }
-                        
-                        // 更新正式订单总金额和票数
-                        if (!fulfilledItems.isEmpty()) {
-                            formalOrder.setTotalAmount(formalOrder.getTotalAmount().subtract(refundAmount));
-                            formalOrder.setTicketCount(formalOrder.getTicketCount() - fulfilledItems.size());
-                            
-                            // 如果所有车票都退了，将订单状态改为已取消
-                            if (formalOrder.getTicketCount() <= 0) {
-                                formalOrder.setOrderStatus((byte) 3); // 已取消
-                                formalOrder.setTicketCount(0);
-                            }
-                            
-                            orderRepository.save(formalOrder);
-                        }
-                    }
-                }
-            }
-            
             // 更新候补订单项状态为已取消
             for (WaitlistItem item : selectedItems) {
-                item.setItemStatus((byte) 3); // 已取消
+                item.setItemStatus((byte) WaitlistItemStatus.CANCELLED.getCode()); // 已取消
                 refundAmount = refundAmount.add(item.getPrice());
                 refundedCount++;
             }
@@ -769,6 +704,4 @@ public class WaitlistOrderServiceImpl implements WaitlistOrderService {
         }
     }
 } 
- 
-
 

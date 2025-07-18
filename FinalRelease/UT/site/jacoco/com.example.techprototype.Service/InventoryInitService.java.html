@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InventoryInitService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">TechPrototype</a> &gt; <a href="index.source.html" class="el_package">com.example.techprototype.Service</a> &gt; <span class="el_source">InventoryInitService.java</span></div><h1>InventoryInitService.java</h1><pre class="source lang-java linenums">package com.example.techprototype.Service;
+
+import com.example.techprototype.DAO.TicketInventoryDAO;
+import com.example.techprototype.Entity.TicketInventory;
+import com.example.techprototype.Service.RedisService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+
+@Service
+<span class="fc" id="L15">public class InventoryInitService implements CommandLineRunner {</span>
+    
+    @Autowired
+    private TicketInventoryDAO ticketInventoryDAO;
+    
+    @Autowired
+    private RedisService redisService;
+    
+    @Override
+    public void run(String... args) throws Exception {
+<span class="fc" id="L25">        System.out.println(&quot;开始初始化Redis库存...&quot;);</span>
+        
+        // 直接用数据库数据覆盖Redis
+<span class="fc" id="L28">        loadAllInventoryFromDatabase();</span>
+        
+<span class="fc" id="L30">        System.out.println(&quot;Redis库存初始化完成&quot;);</span>
+<span class="fc" id="L31">    }</span>
+    
+    /**
+     * 从数据库加载所有库存数据到Redis
+     */
+    private void loadAllInventoryFromDatabase() {
+        try {
+            // 获取数据库中的所有库存数据
+<span class="fc" id="L39">            List&lt;TicketInventory&gt; allInventories = ticketInventoryDAO.findAll();</span>
+            
+<span class="fc bfc" id="L41" title="All 2 branches covered.">            if (allInventories.isEmpty()) {</span>
+<span class="fc" id="L42">                System.out.println(&quot;数据库中没有库存数据，创建默认测试数据...&quot;);</span>
+<span class="fc" id="L43">                createDefaultTestData();</span>
+                // 重新获取所有数据
+<span class="fc" id="L45">                allInventories = ticketInventoryDAO.findAll();</span>
+            }
+            
+<span class="fc" id="L48">            int loadedCount = 0;</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">            for (TicketInventory inventory : allInventories) {</span>
+<span class="fc" id="L50">                redisService.setStock(</span>
+<span class="fc" id="L51">                    inventory.getTrainId(),</span>
+<span class="fc" id="L52">                    inventory.getDepartureStopId(),</span>
+<span class="fc" id="L53">                    inventory.getArrivalStopId(),</span>
+<span class="fc" id="L54">                    inventory.getTravelDate(),</span>
+<span class="fc" id="L55">                    inventory.getCarriageTypeId(),</span>
+<span class="fc" id="L56">                    inventory.getAvailableSeats()</span>
+                );
+<span class="fc" id="L58">                loadedCount++;</span>
+<span class="fc" id="L59">            }</span>
+            
+<span class="fc" id="L61">            System.out.println(&quot;成功加载 &quot; + loadedCount + &quot; 条库存数据到Redis&quot;);</span>
+            
+<span class="fc" id="L63">        } catch (Exception e) {</span>
+<span class="fc" id="L64">            System.err.println(&quot;加载库存数据失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L65">            e.printStackTrace();</span>
+<span class="fc" id="L66">        }</span>
+<span class="fc" id="L67">    }</span>
+    
+    private void createDefaultTestData() {
+<span class="fc" id="L70">        LocalDate startDate = LocalDate.now().plusDays(1); // 从明天开始</span>
+<span class="fc" id="L71">        LocalDate endDate = LocalDate.now().plusDays(31); // 扩展到31天后</span>
+        
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {</span>
+            // 为G101车次创建默认库存数据
+            // 车次ID=1, 出发站ID=1(北京西), 到达站ID=2(上海虹桥), 商务座=1, 一等座=2, 二等座=3
+<span class="fc" id="L76">            createInventoryRecord(1, 1L, 2L, date, 1, 100, BigDecimal.valueOf(500.0)); // 商务座100张</span>
+<span class="fc" id="L77">            createInventoryRecord(1, 1L, 2L, date, 2, 200, BigDecimal.valueOf(300.0)); // 一等座200张</span>
+<span class="fc" id="L78">            createInventoryRecord(1, 1L, 2L, date, 3, 500, BigDecimal.valueOf(200.0)); // 二等座500张</span>
+            
+            // 其他区间组合
+<span class="fc" id="L81">            createInventoryRecord(1, 1L, 3L, date, 1, 80, BigDecimal.valueOf(400.0));  // 北京西→南京南 商务座</span>
+<span class="fc" id="L82">            createInventoryRecord(1, 1L, 3L, date, 2, 150, BigDecimal.valueOf(250.0)); // 北京西→南京南 一等座</span>
+<span class="fc" id="L83">            createInventoryRecord(1, 1L, 3L, date, 3, 400, BigDecimal.valueOf(150.0)); // 北京西→南京南 二等座</span>
+            
+<span class="fc" id="L85">            createInventoryRecord(1, 3L, 2L, date, 1, 60, BigDecimal.valueOf(300.0));  // 南京南→上海虹桥 商务座</span>
+<span class="fc" id="L86">            createInventoryRecord(1, 3L, 2L, date, 2, 120, BigDecimal.valueOf(200.0)); // 南京南→上海虹桥 一等座</span>
+<span class="fc" id="L87">            createInventoryRecord(1, 3L, 2L, date, 3, 300, BigDecimal.valueOf(120.0)); // 南京南→上海虹桥 二等座</span>
+        }
+<span class="fc" id="L89">    }</span>
+    
+    private void createInventoryRecord(Integer trainId, Long departureStopId, Long arrivalStopId, 
+                                     LocalDate travelDate, Integer carriageTypeId, int totalSeats, BigDecimal price) {
+<span class="fc" id="L93">        TicketInventory inventory = new TicketInventory();</span>
+<span class="fc" id="L94">        inventory.setTrainId(trainId);</span>
+<span class="fc" id="L95">        inventory.setDepartureStopId(departureStopId);</span>
+<span class="fc" id="L96">        inventory.setArrivalStopId(arrivalStopId);</span>
+<span class="fc" id="L97">        inventory.setTravelDate(travelDate);</span>
+<span class="fc" id="L98">        inventory.setCarriageTypeId(carriageTypeId);</span>
+<span class="fc" id="L99">        inventory.setTotalSeats(totalSeats);</span>
+<span class="fc" id="L100">        inventory.setAvailableSeats(totalSeats); // 初始可用座位等于总座位</span>
+<span class="fc" id="L101">        inventory.setPrice(price);</span>
+<span class="fc" id="L102">        inventory.setCacheVersion(0L);</span>
+<span class="fc" id="L103">        inventory.setDbVersion(0);</span>
+        
+<span class="fc" id="L105">        ticketInventoryDAO.save(inventory);</span>
+<span class="fc" id="L106">    }</span>
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

@@ -133,8 +133,8 @@ public class TrainServiceImpl implements TrainService {
                 }
             }
             
-            // 如果没有找到真实数据，使用默认数据
-            if (seatTypes.isEmpty()) {
+            // 如果没有找到真实数据，或者只找到了默认数据（只有一个类型为3的座位），使用完整的默认数据
+            if (seatTypes.isEmpty() || (seatTypes.size() == 1 && seatTypes.get(0) == 3 && seatNumbers.get(0) == 0)) {
                 seatTypes = Arrays.asList(1, 3, 4);
                 seatNumbers = Arrays.asList(100, 200, 50);
                 seatPrices = Arrays.asList(200, 150, 80);

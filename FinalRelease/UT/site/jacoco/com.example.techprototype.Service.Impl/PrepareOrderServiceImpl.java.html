@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PrepareOrderServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">TechPrototype</a> &gt; <a href="index.source.html" class="el_package">com.example.techprototype.Service.Impl</a> &gt; <span class="el_source">PrepareOrderServiceImpl.java</span></div><h1>PrepareOrderServiceImpl.java</h1><pre class="source lang-java linenums">package com.example.techprototype.Service.Impl;
+
+import com.example.techprototype.DTO.PrepareOrderRequest;
+import com.example.techprototype.DTO.PrepareOrderResponse;
+import com.example.techprototype.Entity.*;
+import com.example.techprototype.Repository.*;
+import com.example.techprototype.Service.PrepareOrderService;
+import com.example.techprototype.Service.RedisService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+<span class="fc" id="L17">public class PrepareOrderServiceImpl implements PrepareOrderService {</span>
+    
+    @Autowired
+    private TicketInventoryRepository ticketInventoryRepository;
+    
+    @Autowired
+    private TrainRepository trainRepository;
+    
+    @Autowired
+    private StationRepository stationRepository;
+    
+    @Autowired
+    private CarriageTypeRepository carriageTypeRepository;
+    
+    @Autowired
+    private UserPassengerRelationRepository userPassengerRelationRepository;
+    
+    @Autowired
+    private PassengerRepository passengerRepository;
+    
+    @Autowired
+    private TrainStopRepository trainStopRepository;
+    
+    @Autowired
+    private RedisService redisService;
+    
+    @Override
+    public PrepareOrderResponse prepareOrder(PrepareOrderRequest request) {
+        // 1. 获取库存信息
+<span class="fc" id="L46">        List&lt;TicketInventory&gt; inventories = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        for (Long inventoryId : request.getInventoryIds()) {</span>
+<span class="fc" id="L48">            Optional&lt;TicketInventory&gt; inventory = ticketInventoryRepository.findById(inventoryId);</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">            if (inventory.isPresent()) {</span>
+<span class="fc" id="L50">                inventories.add(inventory.get());</span>
+            }
+<span class="fc" id="L52">        }</span>
+        
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        if (inventories.isEmpty()) {</span>
+<span class="fc" id="L55">            throw new RuntimeException(&quot;未找到有效的库存信息&quot;);</span>
+        }
+        
+        // 2. 获取车次信息（所有库存应该属于同一车次）
+<span class="fc" id="L59">        TicketInventory firstInventory = inventories.get(0);</span>
+<span class="fc" id="L60">        Train train = trainRepository.findById(firstInventory.getTrainId())</span>
+<span class="fc" id="L61">                .orElseThrow(() -&gt; new RuntimeException(&quot;未找到车次信息&quot;));</span>
+        
+        // 3. 获取出发站和到达站信息（从train_stops表获取）
+<span class="fc" id="L64">        TrainStop departureStop = trainStopRepository.findById(firstInventory.getDepartureStopId())</span>
+<span class="fc" id="L65">                .orElseThrow(() -&gt; new RuntimeException(&quot;未找到出发站信息&quot;));</span>
+<span class="fc" id="L66">        TrainStop arrivalStop = trainStopRepository.findById(firstInventory.getArrivalStopId())</span>
+<span class="fc" id="L67">                .orElseThrow(() -&gt; new RuntimeException(&quot;未找到到达站信息&quot;));</span>
+        
+        // 4. 获取站点详细信息
+<span class="fc" id="L70">        Station departureStation = stationRepository.findById(departureStop.getStationId())</span>
+<span class="fc" id="L71">                .orElseThrow(() -&gt; new RuntimeException(&quot;未找到出发站详细信息&quot;));</span>
+<span class="fc" id="L72">        Station arrivalStation = stationRepository.findById(arrivalStop.getStationId())</span>
+<span class="fc" id="L73">                .orElseThrow(() -&gt; new RuntimeException(&quot;未找到到达站详细信息&quot;));</span>
+        
+        // 5. 构建车次信息
+<span class="fc" id="L76">        PrepareOrderResponse.TrainInfo trainInfo = new PrepareOrderResponse.TrainInfo();</span>
+<span class="fc" id="L77">        trainInfo.setTrainId(train.getTrainId());</span>
+<span class="fc" id="L78">        trainInfo.setTrainNumber(train.getTrainNumber());</span>
+<span class="fc" id="L79">        trainInfo.setDepartureStation(departureStation.getStationName());</span>
+<span class="fc" id="L80">        trainInfo.setArrivalStation(arrivalStation.getStationName());</span>
+<span class="fc" id="L81">        trainInfo.setDepartureStopId(departureStop.getStopId());</span>
+<span class="fc" id="L82">        trainInfo.setArrivalStopId(arrivalStop.getStopId());</span>
+<span class="fc" id="L83">        trainInfo.setDepartureTime(departureStop.getDepartureTime());</span>
+<span class="fc" id="L84">        trainInfo.setArrivalTime(arrivalStop.getArrivalTime());</span>
+<span class="fc" id="L85">        trainInfo.setTravelDate(firstInventory.getTravelDate());</span>
+        
+        // 6. 构建席别信息
+<span class="fc" id="L88">        List&lt;PrepareOrderResponse.CarriageInfo&gt; carriages = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        for (TicketInventory inventory : inventories) {</span>
+<span class="fc" id="L90">            CarriageType carriageType = carriageTypeRepository.findById(inventory.getCarriageTypeId())</span>
+<span class="fc" id="L91">                    .orElseThrow(() -&gt; new RuntimeException(&quot;未找到席别信息&quot;));</span>
+            
+<span class="fc" id="L93">            PrepareOrderResponse.CarriageInfo carriageInfo = new PrepareOrderResponse.CarriageInfo();</span>
+<span class="fc" id="L94">            carriageInfo.setInventoryId(inventory.getInventoryId());</span>
+<span class="fc" id="L95">            carriageInfo.setCarriageTypeId(inventory.getCarriageTypeId());</span>
+<span class="fc" id="L96">            carriageInfo.setCarriageTypeName(carriageType.getTypeName());</span>
+<span class="fc" id="L97">            carriageInfo.setPrice(inventory.getPrice());</span>
+            
+            // 从Redis获取库存信息
+<span class="fc" id="L100">            Optional&lt;Integer&gt; redisStock = redisService.getStock(</span>
+<span class="fc" id="L101">                    inventory.getTrainId(),</span>
+<span class="fc" id="L102">                    inventory.getDepartureStopId(),</span>
+<span class="fc" id="L103">                    inventory.getArrivalStopId(),</span>
+<span class="fc" id="L104">                    inventory.getTravelDate(),</span>
+<span class="fc" id="L105">                    inventory.getCarriageTypeId()</span>
+            );
+            
+<span class="fc bfc" id="L108" title="All 2 branches covered.">            if (redisStock.isPresent()) {</span>
+<span class="fc" id="L109">                int stock = redisStock.get();</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">                carriageInfo.setHasStock(stock &gt; 0);</span>
+<span class="fc" id="L111">                carriageInfo.setAvailableStock(stock);</span>
+<span class="fc" id="L112">            } else {</span>
+                // 如果Redis中没有数据，使用数据库中的可用座位数
+<span class="fc bfc" id="L114" title="All 2 branches covered.">                carriageInfo.setHasStock(inventory.getAvailableSeats() &gt; 0);</span>
+<span class="fc" id="L115">                carriageInfo.setAvailableStock(inventory.getAvailableSeats());</span>
+            }
+            
+<span class="fc" id="L118">            carriages.add(carriageInfo);</span>
+<span class="fc" id="L119">        }</span>
+        
+        // 7. 获取用户关联的乘客信息
+<span class="fc" id="L122">        List&lt;UserPassengerRelation&gt; relations = userPassengerRelationRepository.findByUserId(request.getUserId());</span>
+<span class="fc" id="L123">        List&lt;PrepareOrderResponse.PassengerInfo&gt; passengers = new ArrayList&lt;&gt;();</span>
+        
+<span class="fc bfc" id="L125" title="All 2 branches covered.">        for (UserPassengerRelation relation : relations) {</span>
+<span class="fc" id="L126">            Passenger passenger = passengerRepository.findById(relation.getPassengerId())</span>
+<span class="fc" id="L127">                    .orElseThrow(() -&gt; new RuntimeException(&quot;未找到乘客信息&quot;));</span>
+            
+<span class="fc" id="L129">            PrepareOrderResponse.PassengerInfo passengerInfo = new PrepareOrderResponse.PassengerInfo();</span>
+<span class="fc" id="L130">            passengerInfo.setPassengerId(passenger.getPassengerId());</span>
+<span class="fc" id="L131">            passengerInfo.setRealName(passenger.getRealName());</span>
+<span class="fc" id="L132">            passengerInfo.setIdCardNumber(passenger.getIdCardNumber());</span>
+<span class="fc" id="L133">            passengerInfo.setPhoneNumber(passenger.getPhoneNumber());</span>
+<span class="fc" id="L134">            passengerInfo.setPassengerType(passenger.getPassengerType());</span>
+<span class="fc" id="L135">            passengerInfo.setPassengerTypeName(getPassengerTypeName(passenger.getPassengerType()));</span>
+<span class="fc" id="L136">            passengerInfo.setRelationType(relation.getRelationType());</span>
+<span class="fc" id="L137">            passengerInfo.setRelationTypeName(getRelationTypeName(relation.getRelationType()));</span>
+            
+<span class="fc" id="L139">            passengers.add(passengerInfo);</span>
+<span class="fc" id="L140">        }</span>
+        
+        // 8. 构建响应
+<span class="fc" id="L143">        PrepareOrderResponse response = new PrepareOrderResponse();</span>
+<span class="fc" id="L144">        response.setTrainInfo(trainInfo);</span>
+<span class="fc" id="L145">        response.setCarriages(carriages);</span>
+<span class="fc" id="L146">        response.setPassengers(passengers);</span>
+        
+<span class="fc" id="L148">        return response;</span>
+    }
+    
+    /**
+     * 获取乘客类型名称
+     */
+    private String getPassengerTypeName(Byte passengerType) {
+<span class="fc bfc" id="L155" title="All 6 branches covered.">        switch (passengerType) {</span>
+<span class="fc" id="L156">            case 1: return &quot;成人&quot;;</span>
+<span class="fc" id="L157">            case 2: return &quot;儿童&quot;;</span>
+<span class="fc" id="L158">            case 3: return &quot;学生&quot;;</span>
+<span class="fc" id="L159">            case 4: return &quot;残疾&quot;;</span>
+<span class="fc" id="L160">            case 5: return &quot;军人&quot;;</span>
+<span class="fc" id="L161">            default: return &quot;未知&quot;;</span>
+        }
+    }
+    
+    /**
+     * 获取关系类型名称
+     */
+    private String getRelationTypeName(Byte relationType) {
+<span class="fc bfc" id="L169" title="All 4 branches covered.">        switch (relationType) {</span>
+<span class="fc" id="L170">            case 1: return &quot;本人&quot;;</span>
+<span class="fc" id="L171">            case 2: return &quot;亲属&quot;;</span>
+<span class="fc" id="L172">            case 3: return &quot;其他&quot;;</span>
+<span class="fc" id="L173">            default: return &quot;未知&quot;;</span>
+        }
+    }
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

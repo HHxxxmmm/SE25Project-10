@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { message, Spin, Select, Input } from 'antd';
+import { message, Spin, Select, Input, Button } from 'antd';
 import { useSelector, useDispatch } from 'react-redux';
 import { clearChangeTicket } from '../../store/actions/changeTicketActions';
 import AddPassenger from '../AddPassenger';
@@ -738,13 +738,34 @@ const SubmitOrder = () => {
                     border: '1px solid #ffd591', 
                     borderRadius: '4px', 
                     padding: '12px', 
-                    marginBottom: '16px' 
+                    marginBottom: '16px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
                 }}>
-                    <p style={{ margin: 0, color: '#d46b08' }}>
-                        <strong>改签模式：</strong>
-                        您正在为订单 {changeTicketState.originalOrderNumber} 进行改签，
-                        只能选择改签乘客，且不能添加或移除乘客
-                    </p>
+                    <div>
+                        <p style={{ margin: 0, color: '#d46b08' }}>
+                            <strong>改签模式：</strong>
+                            您正在为订单 {changeTicketState.originalOrderNumber} 进行改签，
+                            只能选择改签乘客，且不能添加或移除乘客
+                        </p>
+                    </div>
+                    <Button 
+                        type="default" 
+                        size="small"
+                        onClick={() => {
+                            dispatch(clearChangeTicket());
+                            message.success('已退出改签模式');
+                            navigate('/orders'); // 退出后返回订单列表
+                        }}
+                        style={{ 
+                            borderColor: '#ffd591', 
+                            color: '#d46b08',
+                            marginLeft: '12px'
+                        }}
+                    >
+                        退出改签模式
+                    </Button>
                 </div>
             )}
 
@@ -978,15 +999,15 @@ const SubmitOrder = () => {
 
             {/* 添加乘车人模态框 */}
             {showAddPassengerModal && (
-                <AddPassenger
+                        <AddPassenger 
                     visible={showAddPassengerModal}
-                    onClose={() => setShowAddPassengerModal(false)}
-                    onSuccess={() => {
-                        setShowAddPassengerModal(false);
-                        // 重新获取准备订单数据以更新乘客列表
-                        fetchPrepareOrderData();
-                    }}
-                />
+                            onClose={() => setShowAddPassengerModal(false)}
+                            onSuccess={() => {
+                                setShowAddPassengerModal(false);
+                                // 重新获取准备订单数据以更新乘客列表
+                                fetchPrepareOrderData();
+                            }}
+                        />
             )}
 
             <CustomMessage

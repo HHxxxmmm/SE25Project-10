@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PaymentServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">TechPrototype</a> &gt; <a href="index.source.html" class="el_package">com.example.techprototype.Service.Impl</a> &gt; <span class="el_source">PaymentServiceImpl.java</span></div><h1>PaymentServiceImpl.java</h1><pre class="source lang-java linenums">package com.example.techprototype.Service.Impl;
+
+import com.example.techprototype.DTO.BookingResponse;
+import com.example.techprototype.Entity.Order;
+import com.example.techprototype.Entity.Ticket;
+import com.example.techprototype.Enums.OrderStatus;
+import com.example.techprototype.Enums.TicketStatus;
+import com.example.techprototype.Repository.OrderRepository;
+import com.example.techprototype.Repository.TicketRepository;
+import com.example.techprototype.Service.PaymentService;
+import com.example.techprototype.Service.RedisService;
+import com.example.techprototype.Service.SeatService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+<span class="fc" id="L23">public class PaymentServiceImpl implements PaymentService {</span>
+    
+    @Autowired
+    private OrderRepository orderRepository;
+    
+    @Autowired
+    private TicketRepository ticketRepository;
+    
+    @Autowired
+    private RedisService redisService;
+    
+    @Autowired
+    private SeatService seatService;
+    
+    @Override
+    @Transactional
+    public BookingResponse payOrder(Long orderId, Long userId) {
+        // 优先从Redis查询订单
+<span class="fc" id="L41">        Optional&lt;Order&gt; orderOpt = redisService.getCachedOrder(orderId.toString());</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">        if (!orderOpt.isPresent()) {</span>
+            // Redis中没有，从数据库查询
+<span class="fc" id="L44">            orderOpt = orderRepository.findByOrderIdAndUserId(orderId, userId);</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">            if (!orderOpt.isPresent()) {</span>
+<span class="fc" id="L46">                return BookingResponse.failure(&quot;订单不存在&quot;);</span>
+            }
+            // 缓存到Redis
+<span class="fc" id="L49">            redisService.cacheOrder(orderOpt.get());</span>
+        }
+        
+<span class="fc" id="L52">        Order order = orderOpt.get();</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        if (order.getOrderStatus() != OrderStatus.PENDING_PAYMENT.getCode()) {</span>
+<span class="fc" id="L54">            return BookingResponse.failure(&quot;订单状态不正确&quot;);</span>
+        }
+        
+        // 更新订单状态
+<span class="fc" id="L58">        order.setOrderStatus((byte) OrderStatus.PAID.getCode());</span>
+<span class="fc" id="L59">        order.setPaymentTime(LocalDateTime.now());</span>
+<span class="fc" id="L60">        order.setPaymentMethod(&quot;在线支付&quot;);</span>
+        // 确保ticket_count字段不被覆盖
+<span class="fc bfc" id="L62" title="All 4 branches covered.">        if (order.getTicketCount() == null || order.getTicketCount() == 0) {</span>
+            // 如果ticket_count为空或0，重新计算
+<span class="fc" id="L64">            List&lt;Ticket&gt; orderTickets = ticketRepository.findByOrderId(order.getOrderId());</span>
+<span class="fc" id="L65">            order.setTicketCount(orderTickets.size());</span>
+        }
+<span class="fc" id="L67">        orderRepository.save(order);</span>
+        
+        // 优先从Redis查询车票
+<span class="fc" id="L70">        List&lt;Ticket&gt; tickets = redisService.getCachedTickets(order.getOrderId());</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        if (tickets.isEmpty()) {</span>
+            // Redis中没有，从数据库查询
+<span class="fc" id="L73">            tickets = ticketRepository.findByOrderId(order.getOrderId());</span>
+            // 缓存到Redis
+<span class="fc bfc" id="L75" title="All 2 branches covered.">            for (Ticket ticket : tickets) {</span>
+<span class="fc" id="L76">                redisService.cacheTicket(ticket);</span>
+<span class="fc" id="L77">            }</span>
+        }
+        
+        // 更新车票状态
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        for (Ticket ticket : tickets) {</span>
+<span class="fc" id="L82">            ticket.setTicketStatus((byte) TicketStatus.UNUSED.getCode());</span>
+<span class="fc" id="L83">            ticketRepository.save(ticket);</span>
+<span class="fc" id="L84">        }</span>
+        
+        // 检查是否是改签订单，如果是则处理原票
+<span class="fc" id="L87">        handleChangeTicketPayment(order, tickets);</span>
+        
+<span class="fc" id="L89">        System.out.println(&quot;支付成功: &quot; + order.getOrderNumber() + &quot;, 订单ID: &quot; + order.getOrderId());</span>
+        
+<span class="fc" id="L91">        return BookingResponse.successWithMessage(&quot;支付成功&quot;, order.getOrderNumber(), order.getOrderId(), order.getTotalAmount(), LocalDateTime.now());</span>
+    }
+    
+    /**
+     * 处理改签支付后的原票更新
+     */
+    private void handleChangeTicketPayment(Order newOrder, List&lt;Ticket&gt; newTickets) {
+        try {
+            // 检查是否是改签订单（通过Redis中的改签配对关系来判断）
+<span class="fc bfc" id="L100" title="All 2 branches covered.">            for (Ticket newTicket : newTickets) {</span>
+                // 查询改签配对关系
+<span class="fc" id="L102">                String mappingKey = &quot;change_mapping:&quot; + newTicket.getTicketId();</span>
+<span class="fc" id="L103">                Optional&lt;String&gt; mappingValueOpt = redisService.getChangeMapping(mappingKey);</span>
+                
+<span class="fc bfc" id="L105" title="All 2 branches covered.">                if (mappingValueOpt.isPresent()) {</span>
+<span class="fc" id="L106">                    String mappingValue = mappingValueOpt.get();</span>
+<span class="fc" id="L107">                    String[] parts = mappingValue.split(&quot;:&quot;);</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">                    if (parts.length == 2) {</span>
+<span class="fc" id="L109">                        Long originalTicketId = Long.parseLong(parts[0]);</span>
+<span class="fc" id="L110">                        Long passengerId = Long.parseLong(parts[1]);</span>
+                        
+<span class="fc" id="L112">                        System.out.println(&quot;发现改签配对关系: 新票&quot; + newTicket.getTicketId() + &quot; -&gt; 原票&quot; + originalTicketId + &quot;:乘客&quot; + passengerId);</span>
+                        
+                        // 查找原票
+<span class="fc" id="L115">                        Optional&lt;Ticket&gt; originalTicketOpt = ticketRepository.findById(originalTicketId);</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">                        if (originalTicketOpt.isPresent()) {</span>
+<span class="fc" id="L117">                            Ticket originalTicket = originalTicketOpt.get();</span>
+                            
+                            // 验证乘客ID匹配
+<span class="fc bfc" id="L120" title="All 2 branches covered.">                            if (originalTicket.getPassengerId().equals(passengerId)) {</span>
+<span class="fc" id="L121">                                System.out.println(&quot;处理改签原票: &quot; + originalTicket.getTicketId() + </span>
+<span class="fc" id="L122">                                                 &quot;, 乘客ID: &quot; + originalTicket.getPassengerId());</span>
+                                
+                                // 1. 更新原票状态为已改签
+<span class="fc" id="L125">                                originalTicket.setTicketStatus((byte) TicketStatus.CHANGED.getCode());</span>
+<span class="fc" id="L126">                                ticketRepository.save(originalTicket);</span>
+                                
+                                // 2. 回滚原票的库存
+<span class="fc" id="L129">                                redisService.incrStock(originalTicket.getTrainId(), originalTicket.getDepartureStopId(),</span>
+<span class="fc" id="L130">                                        originalTicket.getArrivalStopId(), originalTicket.getTravelDate(), </span>
+<span class="fc" id="L131">                                        originalTicket.getCarriageTypeId(), 1);</span>
+                                
+                                // 3. 释放原票的座位
+<span class="fc bfc" id="L134" title="All 4 branches covered.">                                if (originalTicket.getSeatNumber() != null &amp;&amp; originalTicket.getCarriageNumber() != null) {</span>
+<span class="fc" id="L135">                                    seatService.releaseSeat(originalTicket);</span>
+                                }
+                                
+                                // 4. 更新原订单总价和票数
+<span class="fc" id="L139">                                Optional&lt;Order&gt; originalOrderOpt = orderRepository.findById(originalTicket.getOrderId());</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">                                if (originalOrderOpt.isPresent()) {</span>
+<span class="fc" id="L141">                                    Order originalOrder = originalOrderOpt.get();</span>
+<span class="fc" id="L142">                                    originalOrder.setTotalAmount(originalOrder.getTotalAmount().subtract(originalTicket.getPrice()));</span>
+                                    
+                                    // 更新原订单的票数（减少1张）
+<span class="fc bfc" id="L145" title="All 4 branches covered.">                                    if (originalOrder.getTicketCount() != null &amp;&amp; originalOrder.getTicketCount() &gt; 0) {</span>
+<span class="fc" id="L146">                                        originalOrder.setTicketCount(originalOrder.getTicketCount() - 1);</span>
+                                    }
+                                    
+<span class="fc" id="L149">                                    orderRepository.save(originalOrder);</span>
+                                    
+<span class="fc" id="L151">                                    System.out.println(&quot;原订单总价已更新: &quot; + originalOrder.getOrderNumber() + </span>
+<span class="fc" id="L152">                                                     &quot;, 减去金额: &quot; + originalTicket.getPrice() + </span>
+<span class="fc" id="L153">                                                     &quot;, 剩余票数: &quot; + originalOrder.getTicketCount());</span>
+                                    
+                                    // 5. 检查原订单是否还有有效车票
+<span class="fc" id="L156">                                    List&lt;Ticket&gt; validTickets = ticketRepository.findValidTicketsByOrderId(originalOrder.getOrderId());</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">                                    if (validTickets.isEmpty()) {</span>
+                                        // 原订单中没有有效车票，将订单状态改为已取消
+<span class="fc" id="L159">                                        originalOrder.setOrderStatus((byte) OrderStatus.CANCELLED.getCode());</span>
+<span class="fc" id="L160">                                        originalOrder.setTicketCount(0); // 设置票数为0</span>
+<span class="fc" id="L161">                                        orderRepository.save(originalOrder);</span>
+<span class="fc" id="L162">                                        System.out.println(&quot;原订单已取消: &quot; + originalOrder.getOrderNumber());</span>
+                                    }
+                                }
+                                
+                                // 6. 删除改签配对关系
+<span class="fc" id="L167">                                redisService.deleteChangeMapping(mappingKey);</span>
+<span class="fc" id="L168">                                System.out.println(&quot;已删除改签配对关系: &quot; + mappingKey);</span>
+<span class="fc" id="L169">                            } else {</span>
+<span class="fc" id="L170">                                System.err.println(&quot;乘客ID不匹配: 期望&quot; + passengerId + &quot;, 实际&quot; + originalTicket.getPassengerId());</span>
+                            }
+<span class="fc" id="L172">                        } else {</span>
+<span class="fc" id="L173">                            System.err.println(&quot;未找到原票: &quot; + originalTicketId);</span>
+                        }
+<span class="fc" id="L175">                    } else {</span>
+<span class="fc" id="L176">                        System.err.println(&quot;改签配对关系格式错误: &quot; + mappingValue);</span>
+                    }
+                }
+<span class="fc" id="L179">            }</span>
+<span class="fc" id="L180">        } catch (Exception e) {</span>
+<span class="fc" id="L181">            System.err.println(&quot;处理改签支付失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L182">            e.printStackTrace();</span>
+<span class="fc" id="L183">        }</span>
+<span class="fc" id="L184">    }</span>
+    
+
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

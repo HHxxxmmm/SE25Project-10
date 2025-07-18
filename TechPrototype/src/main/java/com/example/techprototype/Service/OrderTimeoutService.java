@@ -71,24 +71,24 @@ public class OrderTimeoutService {
     
     private void handleTimeoutOrder(Order order) {
         try {
-            // 1. 更新订单状态为已取消
-            order.setOrderStatus((byte) OrderStatus.CANCELLED.getCode());
-            orderRepository.save(order);
-            
-            // 2. 获取订单下的车票
-            List<Ticket> tickets = ticketRepository.findByOrderId(order.getOrderId());
-            
+        // 1. 更新订单状态为已取消
+        order.setOrderStatus((byte) OrderStatus.CANCELLED.getCode());
+        orderRepository.save(order);
+        
+        // 2. 获取订单下的车票
+        List<Ticket> tickets = ticketRepository.findByOrderId(order.getOrderId());
+        
             // 3. 更新车票状态为已取消并释放资源
-            for (Ticket ticket : tickets) {
+        for (Ticket ticket : tickets) {
                 // 更新车票状态为已取消
-                ticket.setTicketStatus((byte) 3); // 已退票状态
-                ticketRepository.save(ticket);
-                
-                // 释放座位（使用新的位图管理方式）
+            ticket.setTicketStatus((byte) 3); // 已退票状态
+            ticketRepository.save(ticket);
+            
+            // 释放座位（使用新的位图管理方式）
                 if (ticket.getSeatNumber() != null && ticket.getCarriageNumber() != null) {
-                    seatService.releaseSeat(ticket);
-                }
-                
+            seatService.releaseSeat(ticket);
+        }
+        
                 // 回滚库存
                 redisService.incrStock(ticket.getTrainId(), ticket.getDepartureStopId(),
                         ticket.getArrivalStopId(), ticket.getTravelDate(), 
@@ -138,5 +138,6 @@ public class OrderTimeoutService {
             System.err.println("兑现候补订单项失败: " + e.getMessage());
             return false;
         }
+
     }
 } 

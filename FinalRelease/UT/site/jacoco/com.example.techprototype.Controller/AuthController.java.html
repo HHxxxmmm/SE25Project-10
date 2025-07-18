@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuthController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">TechPrototype</a> &gt; <a href="index.source.html" class="el_package">com.example.techprototype.Controller</a> &gt; <span class="el_source">AuthController.java</span></div><h1>AuthController.java</h1><pre class="source lang-java linenums">package com.example.techprototype.Controller;
+
+import com.example.techprototype.DTO.LoginDTO;
+import com.example.techprototype.DTO.RegisterDTO;
+import com.example.techprototype.DTO.UserDTO;
+import com.example.techprototype.Service.UserService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@RestController
+@RequestMapping(&quot;/api/auth&quot;)
+@CrossOrigin(origins = &quot;http://localhost:3000&quot;, allowCredentials = &quot;true&quot;)
+<span class="fc" id="L24">public class AuthController {</span>
+
+<span class="fc" id="L26">    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);</span>
+    
+    @Autowired
+    private UserService userService;
+    
+    /**
+     * 用户登录接口
+     *
+     * @param loginDTO 登录信息
+     * @param response HTTP响应对象
+     * @param session  HTTP会话对象
+     * @return 登录结果
+     */
+    @PostMapping(&quot;/login&quot;)
+    public ResponseEntity&lt;Object&gt; login(@RequestBody LoginDTO loginDTO, 
+                                      HttpServletResponse response,
+                                      HttpSession session) {
+<span class="fc" id="L43">        logger.info(&quot;接收到登录请求: {}&quot;, loginDTO.getPhoneNumber());</span>
+<span class="fc" id="L44">        Map&lt;String, Object&gt; responseData = new HashMap&lt;&gt;();</span>
+        
+        try {
+            // 登录认证
+<span class="fc" id="L48">            UserDTO userDTO = userService.login(loginDTO);</span>
+            
+            // 存入session
+<span class="fc" id="L51">            session.setAttribute(&quot;userId&quot;, userDTO.getUserId());</span>
+<span class="fc" id="L52">            session.setAttribute(&quot;realName&quot;, userDTO.getRealName());</span>
+<span class="fc" id="L53">            session.setAttribute(&quot;phoneNumber&quot;, userDTO.getPhoneNumber());</span>
+<span class="fc" id="L54">            session.setAttribute(&quot;token&quot;, userDTO.getToken());</span>
+            
+            // 添加cookie
+<span class="fc" id="L57">            Cookie userCookie = new Cookie(&quot;mini12306_auth&quot;, &quot;true&quot;);</span>
+<span class="fc" id="L58">            userCookie.setPath(&quot;/&quot;);</span>
+<span class="fc" id="L59">            userCookie.setMaxAge(24 * 60 * 60); // 24小时</span>
+<span class="fc" id="L60">            userCookie.setHttpOnly(true);</span>
+<span class="fc" id="L61">            response.addCookie(userCookie);</span>
+            
+            // 构建响应
+<span class="fc" id="L64">            responseData.put(&quot;success&quot;, true);</span>
+<span class="fc" id="L65">            responseData.put(&quot;message&quot;, &quot;登录成功&quot;);</span>
+<span class="fc" id="L66">            responseData.put(&quot;user&quot;, userDTO);</span>
+            
+<span class="fc" id="L68">            logger.info(&quot;用户 {} 登录成功&quot;, userDTO.getRealName());</span>
+<span class="fc" id="L69">            return ResponseEntity.ok(responseData);</span>
+<span class="fc" id="L70">        } catch (Exception e) {</span>
+<span class="fc" id="L71">            logger.error(&quot;登录失败: {}&quot;, e.getMessage());</span>
+<span class="fc" id="L72">            responseData.put(&quot;success&quot;, false);</span>
+<span class="fc" id="L73">            responseData.put(&quot;message&quot;, e.getMessage());</span>
+<span class="fc" id="L74">            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseData);</span>
+        }
+    }
+    
+    /**
+     * 用户注册接口
+     *
+     * @param registerDTO 注册信息
+     * @param response    HTTP响应对象
+     * @param session     HTTP会话对象
+     * @return 注册结果
+     */
+    @PostMapping(&quot;/register&quot;)
+    public ResponseEntity&lt;Object&gt; register(@RequestBody RegisterDTO registerDTO,
+                                         HttpServletResponse response,
+                                         HttpSession session) {
+<span class="fc" id="L90">        logger.info(&quot;接收到注册请求: {}&quot;, registerDTO.getPhoneNumber());</span>
+<span class="fc" id="L91">        Map&lt;String, Object&gt; responseData = new HashMap&lt;&gt;();</span>
+        
+        try {
+            // 注册用户
+<span class="fc" id="L95">            UserDTO userDTO = userService.register(registerDTO);</span>
+            
+            // 存入session
+<span class="fc" id="L98">            session.setAttribute(&quot;userId&quot;, userDTO.getUserId());</span>
+<span class="fc" id="L99">            session.setAttribute(&quot;realName&quot;, userDTO.getRealName());</span>
+<span class="fc" id="L100">            session.setAttribute(&quot;phoneNumber&quot;, userDTO.getPhoneNumber());</span>
+<span class="fc" id="L101">            session.setAttribute(&quot;token&quot;, userDTO.getToken());</span>
+            
+            // 添加cookie
+<span class="fc" id="L104">            Cookie userCookie = new Cookie(&quot;mini12306_auth&quot;, &quot;true&quot;);</span>
+<span class="fc" id="L105">            userCookie.setPath(&quot;/&quot;);</span>
+<span class="fc" id="L106">            userCookie.setMaxAge(24 * 60 * 60); // 24小时</span>
+<span class="fc" id="L107">            userCookie.setHttpOnly(true);</span>
+<span class="fc" id="L108">            response.addCookie(userCookie);</span>
+            
+            // 构建响应
+<span class="fc" id="L111">            responseData.put(&quot;success&quot;, true);</span>
+<span class="fc" id="L112">            responseData.put(&quot;message&quot;, &quot;注册成功&quot;);</span>
+<span class="fc" id="L113">            responseData.put(&quot;user&quot;, userDTO);</span>
+            
+<span class="fc" id="L115">            logger.info(&quot;用户 {} 注册成功&quot;, userDTO.getRealName());</span>
+<span class="fc" id="L116">            return ResponseEntity.status(HttpStatus.CREATED).body(responseData);</span>
+<span class="fc" id="L117">        } catch (Exception e) {</span>
+<span class="fc" id="L118">            logger.error(&quot;注册失败: {}&quot;, e.getMessage());</span>
+<span class="fc" id="L119">            responseData.put(&quot;success&quot;, false);</span>
+<span class="fc" id="L120">            responseData.put(&quot;message&quot;, e.getMessage());</span>
+<span class="fc" id="L121">            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseData);</span>
+        }
+    }
+    
+    /**
+     * 用户登出接口
+     *
+     * @param request  HTTP请求对象
+     * @param response HTTP响应对象
+     * @param session  HTTP会话对象
+     * @return 登出结果
+     */
+    @PostMapping(&quot;/logout&quot;)
+    public ResponseEntity&lt;Object&gt; logout(HttpServletRequest request, 
+                                       HttpServletResponse response, 
+                                       HttpSession session) {
+<span class="fc" id="L137">        logger.info(&quot;接收到登出请求&quot;);</span>
+<span class="fc" id="L138">        Map&lt;String, Object&gt; responseData = new HashMap&lt;&gt;();</span>
+        
+        // 清除session
+<span class="fc" id="L141">        session.invalidate();</span>
+        
+        // 清除cookie
+<span class="fc" id="L144">        Cookie[] cookies = request.getCookies();</span>
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">        if (cookies != null) {</span>
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">            for (Cookie cookie : cookies) {</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">                if (&quot;mini12306_auth&quot;.equals(cookie.getName())) {</span>
+<span class="fc" id="L148">                    cookie.setValue(&quot;&quot;);</span>
+<span class="fc" id="L149">                    cookie.setPath(&quot;/&quot;);</span>
+<span class="fc" id="L150">                    cookie.setMaxAge(0);</span>
+<span class="fc" id="L151">                    response.addCookie(cookie);</span>
+<span class="fc" id="L152">                    break;</span>
+                }
+            }
+        }
+        
+        // 构建响应
+<span class="fc" id="L158">        responseData.put(&quot;success&quot;, true);</span>
+<span class="fc" id="L159">        responseData.put(&quot;message&quot;, &quot;登出成功&quot;);</span>
+        
+<span class="fc" id="L161">        logger.info(&quot;用户登出成功&quot;);</span>
+<span class="fc" id="L162">        return ResponseEntity.ok(responseData);</span>
+    }
+    
+    /**
+     * 获取当前登录用户信息
+     *
+     * @param session HTTP会话对象
+     * @return 用户信息
+     */
+    @GetMapping(&quot;/currentUser&quot;)
+    public ResponseEntity&lt;Object&gt; getCurrentUser(HttpSession session) {
+<span class="fc" id="L173">        logger.info(&quot;接收到获取当前用户信息请求&quot;);</span>
+<span class="fc" id="L174">        Map&lt;String, Object&gt; responseData = new HashMap&lt;&gt;();</span>
+        
+<span class="fc" id="L176">        Long userId = (Long) session.getAttribute(&quot;userId&quot;);</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">        if (userId != null) {</span>
+<span class="fc" id="L178">            UserDTO userDTO = new UserDTO();</span>
+<span class="fc" id="L179">            userDTO.setUserId(userId);</span>
+<span class="fc" id="L180">            userDTO.setRealName((String) session.getAttribute(&quot;realName&quot;));</span>
+<span class="fc" id="L181">            userDTO.setPhoneNumber((String) session.getAttribute(&quot;phoneNumber&quot;));</span>
+<span class="fc" id="L182">            userDTO.setToken((String) session.getAttribute(&quot;token&quot;));</span>
+            
+<span class="fc" id="L184">            responseData.put(&quot;success&quot;, true);</span>
+<span class="fc" id="L185">            responseData.put(&quot;user&quot;, userDTO);</span>
+            
+<span class="fc" id="L187">            logger.info(&quot;返回当前用户信息: {}&quot;, userDTO.getRealName());</span>
+<span class="fc" id="L188">            return ResponseEntity.ok(responseData);</span>
+        } else {
+<span class="fc" id="L190">            responseData.put(&quot;success&quot;, false);</span>
+<span class="fc" id="L191">            responseData.put(&quot;message&quot;, &quot;未登录&quot;);</span>
+            
+<span class="fc" id="L193">            logger.info(&quot;当前用户未登录&quot;);</span>
+<span class="fc" id="L194">            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseData);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

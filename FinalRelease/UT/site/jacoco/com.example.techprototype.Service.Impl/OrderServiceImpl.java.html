@@ -1,0 +1,786 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">TechPrototype</a> &gt; <a href="index.source.html" class="el_package">com.example.techprototype.Service.Impl</a> &gt; <span class="el_source">OrderServiceImpl.java</span></div><h1>OrderServiceImpl.java</h1><pre class="source lang-java linenums">package com.example.techprototype.Service.Impl;
+
+import com.example.techprototype.Component.OrderProcessor;
+import com.example.techprototype.DAO.TicketInventoryDAO;
+import com.example.techprototype.DTO.BookingRequest;
+import com.example.techprototype.DTO.BookingResponse;
+import com.example.techprototype.DTO.CancelOrderRequest;
+import com.example.techprototype.DTO.MyOrderResponse;
+import com.example.techprototype.DTO.OrderDetailResponse;
+import com.example.techprototype.DTO.OrderMessage;
+import com.example.techprototype.DTO.RefundPreparationRequest;
+import com.example.techprototype.DTO.RefundPreparationResponse;
+import com.example.techprototype.Entity.Order;
+import com.example.techprototype.Entity.Passenger;
+import com.example.techprototype.Entity.Ticket;
+import com.example.techprototype.Entity.TicketInventory;
+import com.example.techprototype.Entity.User;
+import com.example.techprototype.Entity.Seat;
+import com.example.techprototype.Entity.TrainCarriage;
+import com.example.techprototype.Entity.Train;
+import com.example.techprototype.Entity.TrainStop;
+import com.example.techprototype.Entity.Station;
+import com.example.techprototype.Enums.OrderStatus;
+import com.example.techprototype.Enums.TicketStatus;
+import com.example.techprototype.Repository.OrderRepository;
+import com.example.techprototype.Repository.PassengerRepository;
+import com.example.techprototype.Repository.TicketRepository;
+import com.example.techprototype.Repository.UserRepository;
+import com.example.techprototype.Repository.SeatRepository;
+import com.example.techprototype.Repository.TrainCarriageRepository;
+import com.example.techprototype.Repository.TrainRepository;
+import com.example.techprototype.Repository.TrainStopRepository;
+import com.example.techprototype.Repository.StationRepository;
+import com.example.techprototype.Service.OrderService;
+import com.example.techprototype.Service.RedisService;
+import com.example.techprototype.Service.TicketService;
+import com.example.techprototype.Service.SeatService;
+import com.example.techprototype.Util.TicketNumberGenerator;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+@Service
+<span class="fc" id="L54">public class OrderServiceImpl implements OrderService {</span>
+    
+    @Autowired
+    private OrderRepository orderRepository;
+    
+    @Autowired
+    private TicketRepository ticketRepository;
+    
+    @Autowired
+    private UserRepository userRepository;
+    
+    @Autowired
+    private PassengerRepository passengerRepository;
+    
+    @Autowired
+    private TicketService ticketService;
+    
+    @Autowired
+    private RedisService redisService;
+    
+    @Autowired
+    private TicketInventoryDAO ticketInventoryDAO;
+    
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+    
+    @Autowired
+    private TrainRepository trainRepository;
+    
+    @Autowired
+    private TrainStopRepository trainStopRepository;
+    
+    @Autowired
+    private StationRepository stationRepository;
+    
+    @Autowired
+    private SeatService seatService;
+    
+    /**
+     * 创建订单
+     */
+    public BookingResponse createOrder(BookingRequest request) {
+        try {
+            // 验证用户和乘客信息
+<span class="fc" id="L98">            Optional&lt;User&gt; userOpt = userRepository.findById(request.getUserId());</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">            if (userOpt.isEmpty()) {</span>
+<span class="fc" id="L100">                return BookingResponse.failure(&quot;用户不存在&quot;);</span>
+            }
+            
+            // 验证乘客信息
+<span class="fc" id="L104">            List&lt;Passenger&gt; passengers = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">            for (BookingRequest.PassengerInfo passengerInfo : request.getPassengers()) {</span>
+<span class="fc" id="L106">                Optional&lt;Passenger&gt; passengerOpt = passengerRepository.findById(passengerInfo.getPassengerId());</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">                if (passengerOpt.isEmpty()) {</span>
+<span class="fc" id="L108">                    return BookingResponse.failure(&quot;乘客信息不存在: &quot; + passengerInfo.getPassengerId());</span>
+                }
+<span class="fc" id="L110">                passengers.add(passengerOpt.get());</span>
+<span class="fc" id="L111">            }</span>
+            
+            // 计算总金额 - 从库存信息获取基础票价，然后根据票种计算
+<span class="fc" id="L114">            BigDecimal totalAmount = BigDecimal.ZERO;</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">            for (BookingRequest.PassengerInfo passengerInfo : request.getPassengers()) {</span>
+<span class="fc" id="L116">                BigDecimal ticketPrice = calculateTicketPrice(</span>
+<span class="fc" id="L117">                    request.getTrainId(),</span>
+<span class="fc" id="L118">                    request.getDepartureStopId(),</span>
+<span class="fc" id="L119">                    request.getArrivalStopId(),</span>
+<span class="fc" id="L120">                    request.getTravelDate(),</span>
+<span class="fc" id="L121">                    request.getCarriageTypeId(),</span>
+<span class="fc" id="L122">                    passengerInfo.getTicketType()</span>
+                );
+<span class="fc" id="L124">                totalAmount = totalAmount.add(ticketPrice);</span>
+<span class="fc" id="L125">            }</span>
+            
+            // 创建订单消息发送到RabbitMQ
+<span class="fc" id="L128">            List&lt;OrderMessage.PassengerInfo&gt; passengerInfos = request.getPassengers().stream()</span>
+<span class="fc" id="L129">                .map(p -&gt; new OrderMessage.PassengerInfo(p.getPassengerId(), p.getTicketType(), p.getCarriageTypeId()))</span>
+<span class="fc" id="L130">                .toList();</span>
+            
+<span class="fc" id="L132">            OrderMessage orderMessage = new OrderMessage(</span>
+<span class="fc" id="L133">                request.getUserId(),</span>
+<span class="fc" id="L134">                request.getTrainId(),</span>
+<span class="fc" id="L135">                request.getDepartureStopId(),</span>
+<span class="fc" id="L136">                request.getArrivalStopId(),</span>
+<span class="fc" id="L137">                request.getTravelDate(),</span>
+<span class="fc" id="L138">                request.getCarriageTypeId(),</span>
+                passengerInfos,
+                null
+            );
+            
+            // 发送订单消息到RabbitMQ
+<span class="fc" id="L144">            rabbitTemplate.convertAndSend(&quot;order.exchange&quot;, &quot;order.create&quot;, orderMessage);</span>
+            
+<span class="fc" id="L146">            return BookingResponse.successWithMessage(&quot;订单创建成功&quot;, orderMessage.getOrderNumber(), null, totalAmount, LocalDateTime.now());</span>
+            
+<span class="fc" id="L148">        } catch (Exception e) {</span>
+<span class="fc" id="L149">            System.err.println(&quot;创建订单失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L150">            return BookingResponse.failure(&quot;创建订单失败: &quot; + e.getMessage());</span>
+        }
+    }
+    
+    /**
+     * 从消息创建订单
+     */
+    @Transactional
+    public Order createOrderFromMessage(OrderMessage message) {
+        try {
+            // 创建订单
+<span class="fc" id="L161">            Order order = new Order();</span>
+<span class="fc" id="L162">            order.setOrderNumber(redisService.generateOrderNumber());</span>
+<span class="fc" id="L163">            order.setUserId(message.getUserId());</span>
+<span class="fc" id="L164">            order.setOrderTime(LocalDateTime.now());</span>
+            // 计算总金额
+<span class="fc" id="L166">            BigDecimal totalAmount = BigDecimal.ZERO;</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">            for (OrderMessage.PassengerInfo passengerInfo : message.getPassengers()) {</span>
+<span class="fc" id="L168">                BigDecimal ticketPrice = calculateTicketPrice(</span>
+<span class="fc" id="L169">                    message.getTrainId(),</span>
+<span class="fc" id="L170">                    message.getDepartureStopId(),</span>
+<span class="fc" id="L171">                    message.getArrivalStopId(),</span>
+<span class="fc" id="L172">                    message.getTravelDate(),</span>
+<span class="fc" id="L173">                    message.getCarriageTypeId(),</span>
+<span class="fc" id="L174">                    passengerInfo.getTicketType()</span>
+                );
+<span class="fc" id="L176">                totalAmount = totalAmount.add(ticketPrice);</span>
+<span class="fc" id="L177">            }</span>
+<span class="fc" id="L178">            order.setTotalAmount(totalAmount);</span>
+<span class="fc" id="L179">            order.setOrderStatus((byte) 0); // 待支付</span>
+<span class="fc" id="L180">            order.setTicketCount(message.getPassengers().size()); // 设置票数</span>
+            
+<span class="fc" id="L182">            order = orderRepository.save(order);</span>
+            
+            // 创建车票
+<span class="fc" id="L185">            List&lt;Ticket&gt; tickets = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">            for (OrderMessage.PassengerInfo passengerInfo : message.getPassengers()) {</span>
+<span class="fc" id="L187">                Ticket ticket = new Ticket();</span>
+<span class="fc" id="L188">                ticket.setTicketNumber(TicketNumberGenerator.generateTicketNumber());</span>
+<span class="fc" id="L189">                ticket.setOrderId(order.getOrderId());</span>
+<span class="fc" id="L190">                ticket.setPassengerId(passengerInfo.getPassengerId());</span>
+<span class="fc" id="L191">                ticket.setTrainId(message.getTrainId());</span>
+<span class="fc" id="L192">                ticket.setDepartureStopId(message.getDepartureStopId());</span>
+<span class="fc" id="L193">                ticket.setArrivalStopId(message.getArrivalStopId());</span>
+<span class="fc" id="L194">                ticket.setTravelDate(message.getTravelDate());</span>
+<span class="fc" id="L195">                ticket.setCarriageTypeId(message.getCarriageTypeId());</span>
+<span class="fc" id="L196">                ticket.setPrice(calculateTicketPrice(</span>
+<span class="fc" id="L197">                    message.getTrainId(),</span>
+<span class="fc" id="L198">                    message.getDepartureStopId(),</span>
+<span class="fc" id="L199">                    message.getArrivalStopId(),</span>
+<span class="fc" id="L200">                    message.getTravelDate(),</span>
+<span class="fc" id="L201">                    message.getCarriageTypeId(),</span>
+<span class="fc" id="L202">                    passengerInfo.getTicketType()</span>
+                ));
+<span class="fc" id="L204">                ticket.setTicketStatus((byte) 0); // 待支付</span>
+<span class="fc" id="L205">                ticket.setTicketType(passengerInfo.getTicketType());</span>
+                
+<span class="fc" id="L207">                ticket = ticketRepository.save(ticket);</span>
+<span class="fc" id="L208">                tickets.add(ticket);</span>
+<span class="fc" id="L209">            }</span>
+            
+            // 直接操作数据库，不需要Redis缓存
+            
+<span class="fc" id="L213">            System.out.println(&quot;订单创建成功: &quot; + order.getOrderNumber() + &quot;, 车票数量: &quot; + tickets.size());</span>
+            
+<span class="fc" id="L215">            return order;</span>
+            
+<span class="fc" id="L217">        } catch (Exception e) {</span>
+<span class="fc" id="L218">            System.err.println(&quot;创建订单失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L219">            throw e;</span>
+        }
+    }
+    
+    @Override
+    public BookingResponse cancelOrder(CancelOrderRequest request) {
+        try {
+            // 直接从数据库获取订单
+<span class="fc" id="L227">            Optional&lt;Order&gt; orderOpt = orderRepository.findById(request.getOrderId());</span>
+            
+<span class="fc bfc" id="L229" title="All 2 branches covered.">            if (orderOpt.isEmpty()) {</span>
+<span class="fc" id="L230">                return BookingResponse.failure(&quot;订单不存在&quot;);</span>
+            }
+            
+<span class="fc" id="L233">            Order order = orderOpt.get();</span>
+            
+            // 检查订单状态
+<span class="fc bfc" id="L236" title="All 4 branches covered.">            if (order.getOrderStatus() != 0 &amp;&amp; order.getOrderStatus() != 1) { // 0-待支付, 1-已支付</span>
+<span class="fc" id="L237">                return BookingResponse.failure(&quot;订单状态不允许取消&quot;);</span>
+            }
+            
+            // 直接从数据库获取车票
+<span class="fc" id="L241">            List&lt;Ticket&gt; tickets = ticketRepository.findByOrderId(order.getOrderId());</span>
+            
+            // 更新车票状态并释放座位、回滚库存
+<span class="fc bfc" id="L244" title="All 2 branches covered.">            for (Ticket ticket : tickets) {</span>
+                // 1. 释放座位（如果有分配座位）
+<span class="fc bfc" id="L246" title="All 4 branches covered.">                if (ticket.getSeatNumber() != null &amp;&amp; ticket.getCarriageNumber() != null) {</span>
+<span class="fc" id="L247">                    seatService.releaseSeat(ticket);</span>
+<span class="fc" id="L248">                    System.out.println(&quot;座位已释放: 车次&quot; + ticket.getTrainId() + </span>
+<span class="fc" id="L249">                                     &quot;, 车厢&quot; + ticket.getCarriageNumber() + </span>
+<span class="fc" id="L250">                                     &quot;, 座位&quot; + ticket.getSeatNumber());</span>
+                }
+                
+                // 2. 回滚库存
+<span class="fc" id="L254">                redisService.incrStock(ticket.getTrainId(), ticket.getDepartureStopId(),</span>
+<span class="fc" id="L255">                        ticket.getArrivalStopId(), ticket.getTravelDate(), </span>
+<span class="fc" id="L256">                        ticket.getCarriageTypeId(), 1);</span>
+<span class="fc" id="L257">                System.out.println(&quot;库存已回滚: 车次&quot; + ticket.getTrainId() + </span>
+<span class="fc" id="L258">                                 &quot;, 出发站&quot; + ticket.getDepartureStopId() + </span>
+<span class="fc" id="L259">                                 &quot;, 到达站&quot; + ticket.getArrivalStopId() + </span>
+<span class="fc" id="L260">                                 &quot;, 日期&quot; + ticket.getTravelDate() + </span>
+<span class="fc" id="L261">                                 &quot;, 车厢类型&quot; + ticket.getCarriageTypeId());</span>
+                
+                // 3. 更新车票状态
+<span class="fc" id="L264">                ticket.setTicketStatus((byte) 3); // 已退票</span>
+<span class="fc" id="L265">                ticketRepository.save(ticket);</span>
+<span class="fc" id="L266">            }</span>
+            
+            // 更新订单状态和总价
+<span class="fc" id="L269">            order.setOrderStatus((byte) 3); // 已取消</span>
+<span class="fc" id="L270">            order.setTotalAmount(BigDecimal.ZERO); // 取消订单总价归零</span>
+<span class="fc" id="L271">            orderRepository.save(order);</span>
+            
+<span class="fc" id="L273">            System.out.println(&quot;订单取消成功: &quot; + order.getOrderNumber() + &quot;, 释放了 &quot; + tickets.size() + &quot; 张车票的座位和库存&quot;);</span>
+            
+<span class="fc" id="L275">            return BookingResponse.successWithMessage(&quot;订单取消成功&quot;, order.getOrderNumber(), order.getOrderId(), BigDecimal.ZERO, order.getOrderTime());</span>
+            
+<span class="fc" id="L277">        } catch (Exception e) {</span>
+<span class="fc" id="L278">            System.err.println(&quot;取消订单失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L279">            return BookingResponse.failure(&quot;取消订单失败: &quot; + e.getMessage());</span>
+        }
+    }
+    
+    /**
+     * 根据订单号获取订单
+     */
+    public Optional&lt;Order&gt; getOrderByNumber(String orderNumber) {
+        // 直接从数据库获取
+<span class="fc" id="L288">        return orderRepository.findByOrderNumber(orderNumber);</span>
+    }
+    
+    /**
+     * 根据用户ID获取订单列表
+     */
+    public List&lt;Order&gt; getOrdersByUserId(Long userId) {
+<span class="fc" id="L295">        return orderRepository.findByUserIdOrderByOrderTimeDesc(userId);</span>
+    }
+    
+    /**
+     * 计算票价 - 从库存信息获取基础票价，然后根据票种计算优惠
+     */
+    private BigDecimal calculateTicketPrice(Integer trainId, Long departureStopId, Long arrivalStopId, 
+                                          LocalDate travelDate, Integer carriageTypeId, Byte ticketType) {
+        // 从库存信息获取基础票价
+<span class="fc" id="L304">        Optional&lt;TicketInventory&gt; inventory = ticketInventoryDAO.findByKey(trainId, departureStopId, arrivalStopId, travelDate, carriageTypeId);</span>
+<span class="fc bfc" id="L305" title="All 2 branches covered.">        if (inventory.isEmpty()) {</span>
+<span class="fc" id="L306">            return BigDecimal.valueOf(100.0); // 默认票价</span>
+        }
+        
+<span class="fc" id="L309">        BigDecimal basePrice = inventory.get().getPrice();</span>
+        
+        // 根据票种计算优惠
+<span class="fc bfc" id="L312" title="All 6 branches covered.">        switch (ticketType) {</span>
+            case 1: // 成人票 - 无优惠
+<span class="fc" id="L314">                return basePrice;</span>
+            case 2: // 儿童票 - 5折
+<span class="fc" id="L316">                return basePrice.multiply(BigDecimal.valueOf(0.5));</span>
+            case 3: // 学生票 - 8折
+<span class="fc" id="L318">                return basePrice.multiply(BigDecimal.valueOf(0.8));</span>
+            case 4: // 残疾票 - 5折
+<span class="fc" id="L320">                return basePrice.multiply(BigDecimal.valueOf(0.5));</span>
+            case 5: // 军人票 - 5折
+<span class="fc" id="L322">                return basePrice.multiply(BigDecimal.valueOf(0.5));</span>
+            default:
+<span class="fc" id="L324">                return basePrice;</span>
+        }
+    }
+    
+    @Override
+    public MyOrderResponse getMyOrders(Long userId) {
+        try {
+            // 1. 根据用户ID查询所有订单
+<span class="fc" id="L332">            List&lt;Order&gt; orders = orderRepository.findByUserIdOrderByOrderTimeDesc(userId);</span>
+            
+            // 2. 转换为响应格式
+<span class="fc" id="L335">            List&lt;MyOrderResponse.MyOrderInfo&gt; orderInfos = convertToMyOrderInfo(orders);</span>
+            
+<span class="fc" id="L337">            return MyOrderResponse.success(orderInfos);</span>
+            
+<span class="fc" id="L339">        } catch (Exception e) {</span>
+<span class="fc" id="L340">            System.err.println(&quot;获取我的订单失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L341">            return MyOrderResponse.failure(&quot;获取我的订单失败: &quot; + e.getMessage());</span>
+        }
+    }
+    
+    @Override
+    public MyOrderResponse getMyOrdersByConditions(Long userId, String orderNumber, LocalDate startDate, LocalDate endDate, Byte orderStatus, String trainNumber) {
+        try {
+<span class="fc" id="L348">            List&lt;Order&gt; orders = new ArrayList&lt;&gt;();</span>
+            
+            // 根据条件查询订单
+<span class="fc bfc" id="L351" title="All 4 branches covered.">            if (orderNumber != null &amp;&amp; !orderNumber.trim().isEmpty()) {</span>
+                // 按订单号查询
+<span class="fc" id="L353">                orders = orderRepository.findByUserIdAndOrderNumberContaining(userId, orderNumber.trim());</span>
+<span class="fc bfc" id="L354" title="All 2 branches covered.">            } else if (orderStatus != null) {</span>
+                // 按订单状态查询
+<span class="fc" id="L356">                orders = orderRepository.findByUserIdAndOrderStatus(userId, orderStatus);</span>
+<span class="fc bfc" id="L357" title="All 4 branches covered.">            } else if (startDate != null &amp;&amp; endDate != null) {</span>
+                // 按车票出发时间范围查询
+<span class="fc" id="L359">                orders = orderRepository.findByUserIdAndTicketTravelDateBetween(userId, startDate, endDate);</span>
+            } else {
+                // 查询所有订单
+<span class="fc" id="L362">                orders = orderRepository.findByUserIdOrderByOrderTimeDesc(userId);</span>
+            }
+            
+            // 转换为响应格式
+<span class="fc" id="L366">            List&lt;MyOrderResponse.MyOrderInfo&gt; orderInfos = convertToMyOrderInfo(orders);</span>
+            
+            // 如果指定了车次号，进行过滤
+<span class="fc bfc" id="L369" title="All 4 branches covered.">            if (trainNumber != null &amp;&amp; !trainNumber.trim().isEmpty()) {</span>
+<span class="fc" id="L370">                orderInfos = orderInfos.stream()</span>
+<span class="fc bfc" id="L371" title="All 2 branches covered.">                        .filter(orderInfo -&gt; orderInfo.getTrainNumber() != null &amp;&amp; </span>
+<span class="fc bfc" id="L372" title="All 2 branches covered.">                                orderInfo.getTrainNumber().contains(trainNumber.trim()))</span>
+<span class="fc" id="L373">                        .collect(Collectors.toList());</span>
+            }
+            
+<span class="fc" id="L376">            return MyOrderResponse.success(orderInfos);</span>
+            
+<span class="fc" id="L378">        } catch (Exception e) {</span>
+<span class="fc" id="L379">            System.err.println(&quot;获取我的订单失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L380">            return MyOrderResponse.failure(&quot;获取我的订单失败: &quot; + e.getMessage());</span>
+        }
+    }
+    
+    /**
+     * 将Order实体转换为MyOrderInfo
+     */
+    private List&lt;MyOrderResponse.MyOrderInfo&gt; convertToMyOrderInfo(List&lt;Order&gt; orders) {
+<span class="fc" id="L388">        List&lt;MyOrderResponse.MyOrderInfo&gt; orderInfos = new ArrayList&lt;&gt;();</span>
+        
+<span class="fc bfc" id="L390" title="All 2 branches covered.">        for (Order order : orders) {</span>
+            // 获取订单中的任意一张车票作为代表
+<span class="fc" id="L392">            List&lt;Ticket&gt; tickets = ticketRepository.findByOrderId(order.getOrderId());</span>
+<span class="fc bfc" id="L393" title="All 2 branches covered.">            if (tickets.isEmpty()) {</span>
+<span class="fc" id="L394">                continue; // 跳过没有车票的订单</span>
+            }
+            
+            // 使用第一张车票作为代表
+<span class="fc" id="L398">            Ticket representativeTicket = tickets.get(0);</span>
+            
+            // 获取车次信息
+<span class="fc" id="L401">            String trainNumber = getTrainNumber(representativeTicket.getTrainId());</span>
+            
+            // 获取车站信息
+<span class="fc" id="L404">            String departureStationName = getStationName(representativeTicket.getDepartureStopId());</span>
+<span class="fc" id="L405">            String arrivalStationName = getStationName(representativeTicket.getArrivalStopId());</span>
+            
+            // 获取时间信息
+<span class="fc" id="L408">            LocalTime departureTime = getDepartureTime(representativeTicket.getTrainId(), representativeTicket.getDepartureStopId());</span>
+<span class="fc" id="L409">            LocalTime arrivalTime = getArrivalTime(representativeTicket.getTrainId(), representativeTicket.getArrivalStopId());</span>
+            
+
+            
+<span class="fc" id="L413">            MyOrderResponse.MyOrderInfo orderInfo = new MyOrderResponse.MyOrderInfo();</span>
+<span class="fc" id="L414">            orderInfo.setOrderId(order.getOrderId());</span>
+<span class="fc" id="L415">            orderInfo.setOrderNumber(order.getOrderNumber());</span>
+<span class="fc" id="L416">            orderInfo.setOrderTime(order.getOrderTime());</span>
+<span class="fc" id="L417">            orderInfo.setTotalAmount(order.getTotalAmount());</span>
+<span class="fc" id="L418">            orderInfo.setOrderStatus(order.getOrderStatus());</span>
+<span class="fc" id="L419">            orderInfo.setOrderStatusText(getOrderStatusText(order.getOrderStatus()));</span>
+<span class="fc" id="L420">            orderInfo.setPaymentMethod(order.getPaymentMethod());</span>
+<span class="fc" id="L421">            orderInfo.setPaymentTime(order.getPaymentTime());</span>
+            
+            // 车次信息
+<span class="fc" id="L424">            orderInfo.setTrainId(representativeTicket.getTrainId());</span>
+<span class="fc" id="L425">            orderInfo.setTrainNumber(trainNumber);</span>
+<span class="fc" id="L426">            orderInfo.setDepartureDate(representativeTicket.getTravelDate());</span>
+<span class="fc" id="L427">            orderInfo.setDepartureTime(departureTime);</span>
+<span class="fc" id="L428">            orderInfo.setArrivalTime(arrivalTime);</span>
+<span class="fc" id="L429">            orderInfo.setDepartureStationName(departureStationName);</span>
+<span class="fc" id="L430">            orderInfo.setArrivalStationName(arrivalStationName);</span>
+            
+
+            
+            // 车票数量
+<span class="fc" id="L435">            orderInfo.setTicketCount(order.getTicketCount());</span>
+            
+<span class="fc" id="L437">            orderInfos.add(orderInfo);</span>
+<span class="fc" id="L438">        }</span>
+        
+<span class="fc" id="L440">        return orderInfos;</span>
+    }
+    
+    /**
+     * 获取车次号
+     */
+    private String getTrainNumber(Integer trainId) {
+        try {
+<span class="fc" id="L448">            Optional&lt;Train&gt; trainOpt = trainRepository.findById(trainId);</span>
+<span class="fc bfc" id="L449" title="All 2 branches covered.">            if (trainOpt.isPresent()) {</span>
+<span class="fc" id="L450">                return trainOpt.get().getTrainNumber();</span>
+            }
+<span class="fc" id="L452">        } catch (Exception e) {</span>
+<span class="fc" id="L453">            System.err.println(&quot;获取车次号失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L454">        }</span>
+<span class="fc" id="L455">        return &quot;未知车次&quot;;</span>
+    }
+    
+    /**
+     * 获取车站名称
+     */
+    private String getStationName(Long stopId) {
+        try {
+<span class="fc" id="L463">            Optional&lt;TrainStop&gt; trainStopOpt = trainStopRepository.findByStopId(stopId);</span>
+<span class="fc bfc" id="L464" title="All 2 branches covered.">            if (trainStopOpt.isPresent()) {</span>
+<span class="fc" id="L465">                Long stationId = trainStopOpt.get().getStationId().longValue();</span>
+<span class="fc" id="L466">                Optional&lt;Station&gt; stationOpt = stationRepository.findById(stationId.intValue());</span>
+<span class="fc bfc" id="L467" title="All 2 branches covered.">                if (stationOpt.isPresent()) {</span>
+<span class="fc" id="L468">                    return stationOpt.get().getStationName();</span>
+                }
+            }
+<span class="fc" id="L471">        } catch (Exception e) {</span>
+<span class="fc" id="L472">            System.err.println(&quot;获取车站名称失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L473">        }</span>
+<span class="fc" id="L474">        return &quot;未知车站&quot;;</span>
+    }
+    
+    /**
+     * 获取出发时间
+     */
+    private LocalTime getDepartureTime(Integer trainId, Long stopId) {
+        try {
+<span class="fc" id="L482">            Optional&lt;TrainStop&gt; trainStopOpt = trainStopRepository.findByStopId(stopId);</span>
+<span class="fc bfc" id="L483" title="All 2 branches covered.">            if (trainStopOpt.isPresent()) {</span>
+<span class="fc" id="L484">                return trainStopOpt.get().getDepartureTime();</span>
+            }
+<span class="fc" id="L486">        } catch (Exception e) {</span>
+<span class="fc" id="L487">            System.err.println(&quot;获取出发时间失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L488">        }</span>
+<span class="fc" id="L489">        return null;</span>
+    }
+    
+    /**
+     * 获取到达时间
+     */
+    private LocalTime getArrivalTime(Integer trainId, Long stopId) {
+        try {
+<span class="fc" id="L497">            Optional&lt;TrainStop&gt; trainStopOpt = trainStopRepository.findByStopId(stopId);</span>
+<span class="fc bfc" id="L498" title="All 2 branches covered.">            if (trainStopOpt.isPresent()) {</span>
+<span class="fc" id="L499">                return trainStopOpt.get().getArrivalTime();</span>
+            }
+<span class="fc" id="L501">        } catch (Exception e) {</span>
+<span class="fc" id="L502">            System.err.println(&quot;获取到达时间失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L503">        }</span>
+<span class="fc" id="L504">        return null;</span>
+    }
+    
+    /**
+     * 获取订单状态文本
+     */
+    private String getOrderStatusText(Byte orderStatus) {
+<span class="fc bfc" id="L511" title="All 5 branches covered.">        switch (orderStatus) {</span>
+<span class="fc" id="L512">            case 0: return &quot;待支付&quot;;</span>
+<span class="fc" id="L513">            case 1: return &quot;已支付&quot;;</span>
+<span class="fc" id="L514">            case 2: return &quot;已完成&quot;;</span>
+<span class="fc" id="L515">            case 3: return &quot;已取消&quot;;</span>
+<span class="fc" id="L516">            default: return &quot;未知状态&quot;;</span>
+        }
+    }
+    
+    @Override
+    public OrderDetailResponse getOrderDetail(Long userId, Long orderId) {
+        try {
+            // 验证订单是否属于该用户
+<span class="fc" id="L524">            Optional&lt;Order&gt; orderOpt = orderRepository.findByOrderIdAndUserId(orderId, userId);</span>
+<span class="fc bfc" id="L525" title="All 2 branches covered.">            if (orderOpt.isEmpty()) {</span>
+<span class="fc" id="L526">                throw new RuntimeException(&quot;订单不存在或不属于该用户&quot;);</span>
+            }
+            
+<span class="fc" id="L529">            Order order = orderOpt.get();</span>
+            
+            // 获取订单下的所有车票
+<span class="fc" id="L532">            List&lt;Ticket&gt; tickets = ticketRepository.findByOrderId(orderId);</span>
+<span class="fc bfc" id="L533" title="All 2 branches covered.">            if (tickets.isEmpty()) {</span>
+<span class="fc" id="L534">                throw new RuntimeException(&quot;订单中没有车票信息&quot;);</span>
+            }
+            
+            // 获取第一个车票的信息作为车次信息（所有车票共享相同信息）
+<span class="fc" id="L538">            Ticket firstTicket = tickets.get(0);</span>
+            
+            // 获取车次信息
+<span class="fc" id="L541">            Optional&lt;Train&gt; trainOpt = trainRepository.findById(firstTicket.getTrainId());</span>
+<span class="fc bfc" id="L542" title="All 2 branches covered.">            if (trainOpt.isEmpty()) {</span>
+<span class="fc" id="L543">                throw new RuntimeException(&quot;车次信息不存在&quot;);</span>
+            }
+<span class="fc" id="L545">            Train train = trainOpt.get();</span>
+            
+            // 获取出发站和到达站信息
+<span class="fc" id="L548">            String departureStation = getStationName(firstTicket.getDepartureStopId());</span>
+<span class="fc" id="L549">            String arrivalStation = getStationName(firstTicket.getArrivalStopId());</span>
+            
+            // 获取出发时间和到达时间
+<span class="fc" id="L552">            LocalTime departureTime = getDepartureTime(firstTicket.getTrainId(), firstTicket.getDepartureStopId());</span>
+<span class="fc" id="L553">            LocalTime arrivalTime = getArrivalTime(firstTicket.getTrainId(), firstTicket.getArrivalStopId());</span>
+            
+            // 构建车票详情列表
+<span class="fc" id="L556">            List&lt;OrderDetailResponse.TicketDetail&gt; ticketDetails = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L557" title="All 2 branches covered.">            for (Ticket ticket : tickets) {</span>
+                // 获取乘客信息
+<span class="fc" id="L559">                Optional&lt;Passenger&gt; passengerOpt = passengerRepository.findById(ticket.getPassengerId());</span>
+<span class="fc bfc" id="L560" title="All 2 branches covered.">                if (passengerOpt.isEmpty()) {</span>
+<span class="fc" id="L561">                    continue;</span>
+                }
+<span class="fc" id="L563">                Passenger passenger = passengerOpt.get();</span>
+                
+                // 获取席别信息
+<span class="fc" id="L566">                String carriageType = getCarriageTypeName(ticket.getCarriageTypeId());</span>
+                
+<span class="fc" id="L568">                OrderDetailResponse.TicketDetail ticketDetail = new OrderDetailResponse.TicketDetail();</span>
+<span class="fc" id="L569">                ticketDetail.setTicketId(ticket.getTicketId());</span>
+<span class="fc" id="L570">                ticketDetail.setTicketNumber(ticket.getTicketNumber());</span>
+<span class="fc" id="L571">                ticketDetail.setPassengerId(ticket.getPassengerId());</span>
+<span class="fc" id="L572">                ticketDetail.setPassengerName(passenger.getRealName());</span>
+<span class="fc" id="L573">                ticketDetail.setIdCardNumber(passenger.getIdCardNumber());</span>
+<span class="fc" id="L574">                ticketDetail.setPhoneNumber(passenger.getPhoneNumber()); // 设置手机号</span>
+<span class="fc" id="L575">                ticketDetail.setPassengerType(passenger.getPassengerType());</span>
+<span class="fc" id="L576">                ticketDetail.setTicketType(ticket.getTicketType());</span>
+<span class="fc" id="L577">                ticketDetail.setCarriageType(carriageType);</span>
+<span class="fc" id="L578">                ticketDetail.setCarriageNumber(ticket.getCarriageNumber());</span>
+<span class="fc" id="L579">                ticketDetail.setSeatNumber(ticket.getSeatNumber());</span>
+<span class="fc" id="L580">                ticketDetail.setPrice(ticket.getPrice());</span>
+<span class="fc" id="L581">                ticketDetail.setTicketStatus(ticket.getTicketStatus());</span>
+                
+<span class="fc" id="L583">                ticketDetails.add(ticketDetail);</span>
+<span class="fc" id="L584">            }</span>
+            
+            // 构建订单详情响应
+<span class="fc" id="L587">            OrderDetailResponse response = new OrderDetailResponse();</span>
+<span class="fc" id="L588">            response.setOrderId(order.getOrderId());</span>
+<span class="fc" id="L589">            response.setOrderNumber(order.getOrderNumber());</span>
+<span class="fc" id="L590">            response.setOrderStatus(order.getOrderStatus());</span>
+<span class="fc" id="L591">            response.setOrderTime(order.getOrderTime());</span>
+<span class="fc" id="L592">            response.setPaymentTime(order.getPaymentTime());</span>
+<span class="fc" id="L593">            response.setPaymentMethod(order.getPaymentMethod());</span>
+<span class="fc" id="L594">            response.setTotalAmount(order.getTotalAmount());</span>
+<span class="fc" id="L595">            response.setTicketCount(order.getTicketCount());</span>
+<span class="fc" id="L596">            response.setTrainNumber(train.getTrainNumber());</span>
+<span class="fc" id="L597">            response.setTravelDate(firstTicket.getTravelDate());</span>
+<span class="fc" id="L598">            response.setDepartureTime(departureTime);</span>
+<span class="fc" id="L599">            response.setArrivalTime(arrivalTime);</span>
+<span class="fc" id="L600">            response.setDepartureStation(departureStation);</span>
+<span class="fc" id="L601">            response.setArrivalStation(arrivalStation);</span>
+<span class="fc" id="L602">            response.setTickets(ticketDetails);</span>
+            
+<span class="fc" id="L604">            return response;</span>
+            
+<span class="fc" id="L606">        } catch (Exception e) {</span>
+<span class="fc" id="L607">            System.err.println(&quot;获取订单详情失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L608">            throw new RuntimeException(&quot;获取订单详情失败: &quot; + e.getMessage());</span>
+        }
+    }
+    
+    /**
+     * 获取席别名称
+     */
+    private String getCarriageTypeName(Integer carriageTypeId) {
+<span class="fc bfc" id="L616" title="All 7 branches covered.">        switch (carriageTypeId) {</span>
+<span class="fc" id="L617">            case 1: return &quot;商务座&quot;;</span>
+<span class="fc" id="L618">            case 2: return &quot;一等座&quot;;</span>
+<span class="fc" id="L619">            case 3: return &quot;二等座&quot;;</span>
+<span class="fc" id="L620">            case 4: return &quot;硬座&quot;;</span>
+<span class="fc" id="L621">            case 5: return &quot;硬卧&quot;;</span>
+<span class="fc" id="L622">            case 6: return &quot;无座&quot;;</span>
+<span class="fc" id="L623">            default: return &quot;未知席别&quot;;</span>
+        }
+    }
+    
+    @Override
+    public RefundPreparationResponse getRefundPreparation(RefundPreparationRequest request) {
+        try {
+            // 验证订单是否属于该用户
+<span class="fc" id="L631">            Optional&lt;Order&gt; orderOpt = orderRepository.findByOrderIdAndUserId(request.getOrderId(), request.getUserId());</span>
+<span class="fc bfc" id="L632" title="All 2 branches covered.">            if (orderOpt.isEmpty()) {</span>
+<span class="fc" id="L633">                throw new RuntimeException(&quot;订单不存在或不属于该用户&quot;);</span>
+            }
+            
+<span class="fc" id="L636">            Order order = orderOpt.get();</span>
+            
+            // 验证订单状态是否允许退票
+<span class="fc bfc" id="L639" title="All 4 branches covered.">            if (order.getOrderStatus() != 1 &amp;&amp; order.getOrderStatus() != 2) {</span>
+<span class="fc" id="L640">                throw new RuntimeException(&quot;订单状态不允许退票&quot;);</span>
+            }
+            
+            // 获取指定车票信息
+<span class="fc" id="L644">            List&lt;Ticket&gt; tickets = ticketRepository.findByOrderIdAndTicketIdIn(request.getOrderId(), request.getTicketIds());</span>
+<span class="fc bfc" id="L645" title="All 2 branches covered.">            if (tickets.isEmpty()) {</span>
+<span class="fc" id="L646">                throw new RuntimeException(&quot;未找到指定的车票&quot;);</span>
+            }
+            
+            // 获取第一个车票的信息作为车次信息
+<span class="fc" id="L650">            Ticket firstTicket = tickets.get(0);</span>
+            
+            // 获取车次信息
+<span class="fc" id="L653">            Optional&lt;Train&gt; trainOpt = trainRepository.findById(firstTicket.getTrainId());</span>
+<span class="fc bfc" id="L654" title="All 2 branches covered.">            if (trainOpt.isEmpty()) {</span>
+<span class="fc" id="L655">                throw new RuntimeException(&quot;车次信息不存在&quot;);</span>
+            }
+<span class="fc" id="L657">            Train train = trainOpt.get();</span>
+            
+            // 获取出发站和到达站信息
+<span class="fc" id="L660">            String departureStation = getStationName(firstTicket.getDepartureStopId());</span>
+<span class="fc" id="L661">            String arrivalStation = getStationName(firstTicket.getArrivalStopId());</span>
+            
+            // 获取出发时间和到达时间
+<span class="fc" id="L664">            LocalTime departureTime = getDepartureTime(firstTicket.getTrainId(), firstTicket.getDepartureStopId());</span>
+<span class="fc" id="L665">            LocalTime arrivalTime = getArrivalTime(firstTicket.getTrainId(), firstTicket.getArrivalStopId());</span>
+            
+            // 构建可退票的车票列表
+<span class="fc" id="L668">            List&lt;RefundPreparationResponse.RefundableTicket&gt; refundableTickets = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L669" title="All 2 branches covered.">            for (Ticket ticket : tickets) {</span>
+                // 获取乘客信息
+<span class="fc" id="L671">                Optional&lt;Passenger&gt; passengerOpt = passengerRepository.findById(ticket.getPassengerId());</span>
+<span class="fc bfc" id="L672" title="All 2 branches covered.">                if (passengerOpt.isEmpty()) {</span>
+<span class="fc" id="L673">                    continue;</span>
+                }
+<span class="fc" id="L675">                Passenger passenger = passengerOpt.get();</span>
+                
+                // 获取席别信息
+<span class="fc" id="L678">                String carriageType = getCarriageTypeName(ticket.getCarriageTypeId());</span>
+                
+                // 判断车票是否可以退票
+<span class="fc" id="L681">                boolean canRefund = canRefundTicket(ticket, order);</span>
+<span class="fc bfc" id="L682" title="All 2 branches covered.">                String refundReason = canRefund ? null : getRefundReason(ticket, order);</span>
+                
+                // 计算退票金额
+<span class="fc bfc" id="L685" title="All 2 branches covered.">                BigDecimal refundAmount = canRefund ? calculateRefundAmount(ticket, order) : BigDecimal.ZERO;</span>
+                
+<span class="fc" id="L687">                RefundPreparationResponse.RefundableTicket refundableTicket = new RefundPreparationResponse.RefundableTicket();</span>
+<span class="fc" id="L688">                refundableTicket.setTicketId(ticket.getTicketId());</span>
+<span class="fc" id="L689">                refundableTicket.setTicketNumber(ticket.getTicketNumber());</span>
+<span class="fc" id="L690">                refundableTicket.setPassengerName(passenger.getRealName());</span>
+<span class="fc" id="L691">                refundableTicket.setIdCardNumber(passenger.getIdCardNumber());</span>
+<span class="fc" id="L692">                refundableTicket.setPassengerType(passenger.getPassengerType());</span>
+<span class="fc" id="L693">                refundableTicket.setTicketType(ticket.getTicketType());</span>
+<span class="fc" id="L694">                refundableTicket.setCarriageType(carriageType);</span>
+<span class="fc" id="L695">                refundableTicket.setCarriageNumber(ticket.getCarriageNumber());</span>
+<span class="fc" id="L696">                refundableTicket.setSeatNumber(ticket.getSeatNumber());</span>
+<span class="fc" id="L697">                refundableTicket.setOriginalPrice(ticket.getPrice());</span>
+<span class="fc" id="L698">                refundableTicket.setRefundAmount(refundAmount);</span>
+<span class="fc" id="L699">                refundableTicket.setTicketStatus(ticket.getTicketStatus());</span>
+<span class="fc" id="L700">                refundableTicket.setCanRefund(canRefund);</span>
+<span class="fc" id="L701">                refundableTicket.setRefundReason(refundReason);</span>
+                
+<span class="fc" id="L703">                refundableTickets.add(refundableTicket);</span>
+<span class="fc" id="L704">            }</span>
+            
+            // 构建退票规则
+<span class="fc" id="L707">            RefundPreparationResponse.RefundRules refundRules = new RefundPreparationResponse.RefundRules();</span>
+<span class="fc" id="L708">            refundRules.setDescription(&quot;退票规则说明&quot;);</span>
+<span class="fc" id="L709">            refundRules.setRefundRate(new BigDecimal(&quot;0.8&quot;)); // 80%退票费率</span>
+<span class="fc" id="L710">            refundRules.setNotice(&quot;退票须知：退票将收取20%手续费，退款将在1-3个工作日内到账&quot;);</span>
+            
+            // 构建响应
+<span class="fc" id="L713">            RefundPreparationResponse response = new RefundPreparationResponse();</span>
+<span class="fc" id="L714">            response.setOrderNumber(order.getOrderNumber());</span>
+<span class="fc" id="L715">            response.setOrderStatus(order.getOrderStatus());</span>
+<span class="fc" id="L716">            response.setOrderTime(order.getOrderTime());</span>
+<span class="fc" id="L717">            response.setPaymentTime(order.getPaymentTime());</span>
+<span class="fc" id="L718">            response.setPaymentMethod(order.getPaymentMethod());</span>
+<span class="fc" id="L719">            response.setTotalAmount(order.getTotalAmount());</span>
+<span class="fc" id="L720">            response.setTicketCount(order.getTicketCount());</span>
+<span class="fc" id="L721">            response.setTrainNumber(train.getTrainNumber());</span>
+<span class="fc" id="L722">            response.setTravelDate(firstTicket.getTravelDate());</span>
+<span class="fc" id="L723">            response.setDepartureTime(departureTime);</span>
+<span class="fc" id="L724">            response.setArrivalTime(arrivalTime);</span>
+<span class="fc" id="L725">            response.setDepartureStation(departureStation);</span>
+<span class="fc" id="L726">            response.setArrivalStation(arrivalStation);</span>
+<span class="fc" id="L727">            response.setRefundRules(refundRules);</span>
+<span class="fc" id="L728">            response.setRefundableTickets(refundableTickets);</span>
+            
+<span class="fc" id="L730">            return response;</span>
+            
+<span class="fc" id="L732">        } catch (Exception e) {</span>
+<span class="fc" id="L733">            System.err.println(&quot;获取退票准备信息失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L734">            throw new RuntimeException(&quot;获取退票准备信息失败: &quot; + e.getMessage());</span>
+        }
+    }
+    
+    /**
+     * 判断车票是否可以退票
+     */
+    private boolean canRefundTicket(Ticket ticket, Order order) {
+        // 检查车票状态
+<span class="fc bfc" id="L743" title="All 4 branches covered.">        if (ticket.getTicketStatus() != 1 &amp;&amp; ticket.getTicketStatus() != 2) {</span>
+<span class="fc" id="L744">            return false;</span>
+        }
+        
+        // 检查是否在发车前24小时内
+<span class="fc" id="L748">        LocalDateTime departureDateTime = LocalDateTime.of(ticket.getTravelDate(), </span>
+<span class="fc" id="L749">            getDepartureTime(ticket.getTrainId(), ticket.getDepartureStopId()));</span>
+<span class="fc" id="L750">        LocalDateTime now = LocalDateTime.now();</span>
+        
+<span class="fc bfc" id="L752" title="All 2 branches covered.">        if (departureDateTime.minusHours(24).isBefore(now)) {</span>
+<span class="fc" id="L753">            return false;</span>
+        }
+        
+<span class="fc" id="L756">        return true;</span>
+    }
+    
+    /**
+     * 获取不可退票的原因
+     */
+    private String getRefundReason(Ticket ticket, Order order) {
+<span class="fc bfc" id="L763" title="All 4 branches covered.">        if (ticket.getTicketStatus() != 1 &amp;&amp; ticket.getTicketStatus() != 2) {</span>
+<span class="fc" id="L764">            return &quot;车票状态不允许退票&quot;;</span>
+        }
+        
+<span class="fc" id="L767">        LocalDateTime departureDateTime = LocalDateTime.of(ticket.getTravelDate(), </span>
+<span class="fc" id="L768">            getDepartureTime(ticket.getTrainId(), ticket.getDepartureStopId()));</span>
+<span class="fc" id="L769">        LocalDateTime now = LocalDateTime.now();</span>
+        
+<span class="fc bfc" id="L771" title="All 2 branches covered.">        if (departureDateTime.minusHours(24).isBefore(now)) {</span>
+<span class="fc" id="L772">            return &quot;发车前24小时内不可退票&quot;;</span>
+        }
+        
+<span class="fc" id="L775">        return &quot;未知原因&quot;;</span>
+    }
+    
+    /**
+     * 计算退票金额
+     */
+    private BigDecimal calculateRefundAmount(Ticket ticket, Order order) {
+        // 简单计算：原价 * 0.8（80%退票费率）
+<span class="fc" id="L783">        return ticket.getPrice().multiply(new BigDecimal(&quot;0.8&quot;));</span>
+    }
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

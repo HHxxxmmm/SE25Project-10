@@ -350,13 +350,33 @@ export default function TrainsPage() {
                         border: '1px solid #ffd591', 
                         borderRadius: '4px', 
                         padding: '12px', 
-                        marginBottom: '16px' 
+                        marginBottom: '16px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
                     }}>
-                        <p style={{ margin: 0, color: '#d46b08' }}>
-                            <strong>改签模式：</strong>
-                            您正在为订单 {changeTicketState.originalOrderNumber || '未知订单'} 进行改签，
-                            出发地和到达地已锁定为 {changeTicketState.departureStation} → {changeTicketState.arrivalStation}
-                        </p>
+                        <div>
+                            <p style={{ margin: 0, color: '#d46b08' }}>
+                                <strong>改签模式：</strong>
+                                您正在为订单 {changeTicketState.originalOrderNumber || '未知订单'} 进行改签，
+                                出发地和到达地已锁定为 {changeTicketState.departureStation} → {changeTicketState.arrivalStation}
+                            </p>
+                        </div>
+                        <Button 
+                            type="default" 
+                            size="small"
+                            onClick={() => {
+                                dispatch(clearChangeTicket());
+                                message.success('已退出改签模式');
+                            }}
+                            style={{ 
+                                borderColor: '#ffd591', 
+                                color: '#d46b08',
+                                marginLeft: '12px'
+                            }}
+                        >
+                            退出改签模式
+                        </Button>
                     </div>
                 )}
 

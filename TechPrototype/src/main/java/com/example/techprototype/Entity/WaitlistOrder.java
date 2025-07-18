@@ -40,4 +40,4 @@ public class WaitlistOrder {
     @Column(name = "item_count")
     private Integer itemCount;
 } 
- 
+

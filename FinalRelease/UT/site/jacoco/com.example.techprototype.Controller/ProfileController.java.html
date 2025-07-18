@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProfileController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">TechPrototype</a> &gt; <a href="index.source.html" class="el_package">com.example.techprototype.Controller</a> &gt; <span class="el_source">ProfileController.java</span></div><h1>ProfileController.java</h1><pre class="source lang-java linenums">package com.example.techprototype.Controller;
+
+import com.example.techprototype.DTO.*;
+import com.example.techprototype.Service.ProfileService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping(&quot;/api/profile&quot;)
+public class ProfileController {
+
+    private final ProfileService profileService;
+
+    @Autowired
+<span class="fc" id="L16">    public ProfileController(ProfileService profileService) {</span>
+<span class="fc" id="L17">        this.profileService = profileService;</span>
+<span class="fc" id="L18">    }</span>
+
+    /**
+     * 获取用户个人资料
+     * @param userId 用户ID
+     * @return 用户个人资料响应
+     */
+    @GetMapping(&quot;/{userId}&quot;)
+    public ResponseEntity&lt;ProfileResponse&gt; getUserProfile(@PathVariable Long userId) {
+<span class="fc" id="L27">        ProfileResponse response = profileService.getUserProfile(userId);</span>
+<span class="fc bfc" id="L28" title="All 2 branches covered.">        if (&quot;SUCCESS&quot;.equals(response.getStatus())) {</span>
+<span class="fc" id="L29">            return ResponseEntity.ok(response);</span>
+        } else {
+<span class="fc" id="L31">            return ResponseEntity.badRequest().body(response);</span>
+        }
+    }
+
+    /**
+     * 更新用户个人资料
+     * @param userId 用户ID
+     * @param request 更新请求
+     * @return 更新后的用户个人资料响应
+     */
+    @PutMapping(&quot;/{userId}&quot;)
+    public ResponseEntity&lt;ProfileResponse&gt; updateUserProfile(
+            @PathVariable Long userId,
+            @RequestBody ProfileRequest request) {
+<span class="fc" id="L45">        ProfileResponse response = profileService.updateUserProfile(userId, request);</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        if (&quot;SUCCESS&quot;.equals(response.getStatus())) {</span>
+<span class="fc" id="L47">            return ResponseEntity.ok(response);</span>
+        } else {
+<span class="fc" id="L49">            return ResponseEntity.badRequest().body(response);</span>
+        }
+    }
+
+    /**
+     * 修改用户密码
+     * @param request 密码修改请求
+     * @return 密码修改响应
+     */
+    @PostMapping(&quot;/change-password&quot;)
+    public ResponseEntity&lt;ChangePasswordResponse&gt; changePassword(@RequestBody ChangePasswordRequest request) {
+<span class="fc" id="L60">        ChangePasswordResponse response = profileService.changePassword(request);</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        if (&quot;SUCCESS&quot;.equals(response.getStatus())) {</span>
+<span class="fc" id="L62">            return ResponseEntity.ok(response);</span>
+        } else {
+<span class="fc" id="L64">            return ResponseEntity.badRequest().body(response);</span>
+        }
+    }
+
+    /**
+     * 更新用户最后登录时间
+     * @param request 包含用户ID和登录时间
+     * @return 基本响应
+     */
+    @PostMapping(&quot;/update-login-time&quot;)
+    public ResponseEntity&lt;BasicResponse&gt; updateLastLoginTime(@RequestBody LastLoginUpdateRequest request) {
+<span class="fc" id="L75">        BasicResponse response = profileService.updateLastLoginTime(request);</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        if (&quot;SUCCESS&quot;.equals(response.getStatus())) {</span>
+<span class="fc" id="L77">            return ResponseEntity.ok(response);</span>
+        } else {
+<span class="fc" id="L79">            return ResponseEntity.badRequest().body(response);</span>
+        }
+    }
+
+    /**
+     * 更新用户账户状态（管理员操作）
+     * @param request 包含用户ID和账户状态
+     * @return 基本响应
+     */
+    @PostMapping(&quot;/update-account-status&quot;)
+    public ResponseEntity&lt;BasicResponse&gt; updateAccountStatus(@RequestBody AccountStatusUpdateRequest request) {
+<span class="fc" id="L90">        BasicResponse response = profileService.updateAccountStatus(request);</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        if (&quot;SUCCESS&quot;.equals(response.getStatus())) {</span>
+<span class="fc" id="L92">            return ResponseEntity.ok(response);</span>
+        } else {
+<span class="fc" id="L94">            return ResponseEntity.badRequest().body(response);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
