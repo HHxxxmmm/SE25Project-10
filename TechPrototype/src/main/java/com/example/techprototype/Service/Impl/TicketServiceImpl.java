@@ -452,14 +452,27 @@ public class TicketServiceImpl implements TicketService {
     
     private boolean validateChangeTicketCities(Ticket originalTicket, Long newDepartureStopId, Long newArrivalStopId) {
         try {
-            // 这里需要根据实际的数据库结构来验证
-            // 简化处理：如果新站ID与原票站ID不同，则验证失败
-            if (!newDepartureStopId.equals(originalTicket.getDepartureStopId()) || 
-                !newArrivalStopId.equals(originalTicket.getArrivalStopId())) {
+            // 获取原票的出发站和到达站城市
+            String originalDepartureCity = getStationCity(originalTicket.getDepartureStopId());
+            String originalArrivalCity = getStationCity(originalTicket.getArrivalStopId());
+            
+            // 获取新票的出发站和到达站城市
+            String newDepartureCity = getStationCity(newDepartureStopId);
+            String newArrivalCity = getStationCity(newArrivalStopId);
+            
+            System.out.println("改签城市验证 - 原票: " + originalDepartureCity + " → " + originalArrivalCity);
+            System.out.println("改签城市验证 - 新票: " + newDepartureCity + " → " + newArrivalCity);
+            
+            // 验证出发站和到达站城市必须与原票一致
+            if (!originalDepartureCity.equals(newDepartureCity) || !originalArrivalCity.equals(newArrivalCity)) {
+                System.out.println("改签城市验证失败 - 城市不匹配");
                 return false;
             }
+            
+            System.out.println("改签城市验证成功");
             return true;
         } catch (Exception e) {
+            System.err.println("改签城市验证异常: " + e.getMessage());
             return false;
         }
     }

@@ -840,10 +840,53 @@ class TicketServiceImplTest {
         ticket.setDepartureStopId(1L);
         ticket.setArrivalStopId(2L);
         
-        // 测试新旧站ID相等，应该为true
-        assertTrue((Boolean) validateChangeTicketCitiesMethod.invoke(ticketService, ticket, 1L, 2L));
-        // 测试新旧站ID不等，应该为false
-        assertFalse((Boolean) validateChangeTicketCitiesMethod.invoke(ticketService, ticket, 3L, 4L));
+        // Mock站点城市信息 - 原票：北京 → 上海
+        when(trainStopRepository.findByStopId(1L)).thenReturn(Optional.of(new TrainStop() {{
+            setStationId(1);
+        }}));
+        when(trainStopRepository.findByStopId(2L)).thenReturn(Optional.of(new TrainStop() {{
+            setStationId(2);
+        }}));
+        when(stationRepository.findById(1)).thenReturn(Optional.of(new Station() {{
+            setCity("北京");
+        }}));
+        when(stationRepository.findById(2)).thenReturn(Optional.of(new Station() {{
+            setCity("上海");
+        }}));
+        
+        // Mock新站点城市信息 - 新票：北京 → 上海（相同城市）
+        when(trainStopRepository.findByStopId(3L)).thenReturn(Optional.of(new TrainStop() {{
+            setStationId(3);
+        }}));
+        when(trainStopRepository.findByStopId(4L)).thenReturn(Optional.of(new TrainStop() {{
+            setStationId(4);
+        }}));
+        when(stationRepository.findById(3)).thenReturn(Optional.of(new Station() {{
+            setCity("北京");
+        }}));
+        when(stationRepository.findById(4)).thenReturn(Optional.of(new Station() {{
+            setCity("上海");
+        }}));
+        
+        // 测试相同城市，应该为true
+        assertTrue((Boolean) validateChangeTicketCitiesMethod.invoke(ticketService, ticket, 3L, 4L));
+        
+        // Mock不同城市的新站点 - 新票：广州 → 深圳（不同城市）
+        when(trainStopRepository.findByStopId(5L)).thenReturn(Optional.of(new TrainStop() {{
+            setStationId(5);
+        }}));
+        when(trainStopRepository.findByStopId(6L)).thenReturn(Optional.of(new TrainStop() {{
+            setStationId(6);
+        }}));
+        when(stationRepository.findById(5)).thenReturn(Optional.of(new Station() {{
+            setCity("广州");
+        }}));
+        when(stationRepository.findById(6)).thenReturn(Optional.of(new Station() {{
+            setCity("深圳");
+        }}));
+        
+        // 测试不同城市，应该为false
+        assertFalse((Boolean) validateChangeTicketCitiesMethod.invoke(ticketService, ticket, 5L, 6L));
     }
     
     @Test
@@ -859,7 +902,29 @@ class TicketServiceImplTest {
         ticket.setDepartureStopId(1L);
         ticket.setArrivalStopId(2L);
         
-        // 测试出发站ID不同，到达站ID相同，应该为false
+        // Mock原票城市信息 - 北京 → 上海
+        when(trainStopRepository.findByStopId(1L)).thenReturn(Optional.of(new TrainStop() {{
+            setStationId(1);
+        }}));
+        when(trainStopRepository.findByStopId(2L)).thenReturn(Optional.of(new TrainStop() {{
+            setStationId(2);
+        }}));
+        when(stationRepository.findById(1)).thenReturn(Optional.of(new Station() {{
+            setCity("北京");
+        }}));
+        when(stationRepository.findById(2)).thenReturn(Optional.of(new Station() {{
+            setCity("上海");
+        }}));
+        
+        // Mock新站点城市信息 - 广州 → 上海（出发站城市不同）
+        when(trainStopRepository.findByStopId(3L)).thenReturn(Optional.of(new TrainStop() {{
+            setStationId(3);
+        }}));
+        when(stationRepository.findById(3)).thenReturn(Optional.of(new Station() {{
+            setCity("广州");
+        }}));
+        
+        // 测试出发站城市不同，应该为false
         assertFalse((Boolean) validateChangeTicketCitiesMethod.invoke(ticketService, ticket, 3L, 2L));
     }
     
@@ -876,7 +941,29 @@ class TicketServiceImplTest {
         ticket.setDepartureStopId(1L);
         ticket.setArrivalStopId(2L);
         
-        // 测试出发站ID相同，到达站ID不同，应该为false
+        // Mock原票城市信息 - 北京 → 上海
+        when(trainStopRepository.findByStopId(1L)).thenReturn(Optional.of(new TrainStop() {{
+            setStationId(1);
+        }}));
+        when(trainStopRepository.findByStopId(2L)).thenReturn(Optional.of(new TrainStop() {{
+            setStationId(2);
+        }}));
+        when(stationRepository.findById(1)).thenReturn(Optional.of(new Station() {{
+            setCity("北京");
+        }}));
+        when(stationRepository.findById(2)).thenReturn(Optional.of(new Station() {{
+            setCity("上海");
+        }}));
+        
+        // Mock新站点城市信息 - 北京 → 广州（到达站城市不同）
+        when(trainStopRepository.findByStopId(4L)).thenReturn(Optional.of(new TrainStop() {{
+            setStationId(4);
+        }}));
+        when(stationRepository.findById(4)).thenReturn(Optional.of(new Station() {{
+            setCity("广州");
+        }}));
+        
+        // 测试到达站城市不同，应该为false
         assertFalse((Boolean) validateChangeTicketCitiesMethod.invoke(ticketService, ticket, 1L, 4L));
     }
     
@@ -4097,10 +4184,38 @@ class TicketServiceImplTest {
         when(timeConflictService.checkTimeConflict(anyLong(), any(LocalDate.class), anyInt(), anyLong(), anyLong(), anyLong()))
             .thenReturn(Collections.emptyList());
         
+        // Mock原票站点城市信息 - 北京 → 上海
+        when(trainStopRepository.findByStopId(1L)).thenReturn(Optional.of(new TrainStop() {{
+            setStationId(1);
+        }}));
+        when(trainStopRepository.findByStopId(2L)).thenReturn(Optional.of(new TrainStop() {{
+            setStationId(2);
+        }}));
+        when(stationRepository.findById(1)).thenReturn(Optional.of(new Station() {{
+            setCity("北京");
+        }}));
+        when(stationRepository.findById(2)).thenReturn(Optional.of(new Station() {{
+            setCity("上海");
+        }}));
+        
+        // Mock新站点城市信息 - 广州 → 深圳（不同城市）
+        when(trainStopRepository.findByStopId(999L)).thenReturn(Optional.of(new TrainStop() {{
+            setStationId(999);
+        }}));
+        when(trainStopRepository.findByStopId(998L)).thenReturn(Optional.of(new TrainStop() {{
+            setStationId(998);
+        }}));
+        when(stationRepository.findById(999)).thenReturn(Optional.of(new Station() {{
+            setCity("广州");
+        }}));
+        when(stationRepository.findById(998)).thenReturn(Optional.of(new Station() {{
+            setCity("深圳");
+        }}));
+        
         // 执行测试
         BookingResponse response = ticketService.changeTickets(request);
         
-        // 验证结果 - 现在应该会失败，因为站ID不同
+        // 验证结果 - 应该会失败，因为城市不同
         assertThat(response.getStatus()).isEqualTo("FAILED");
         assertThat(response.getMessage()).isEqualTo("改签的出发站和到达站城市必须与原票一致");
         
