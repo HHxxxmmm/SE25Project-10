@@ -1,0 +1,178 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > SeatService</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Service</a>
+</div>
+
+<h1>Coverage Summary for Class: SeatService (com.example.techprototype.Service)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+</tr>
+  <tr>
+    <td class="name">SeatService$MockitoMock$ohC98FIM</td>
+  </tr>
+  <tr>
+    <td class="name">SeatService$MockitoMock$ohC98FIM$auxiliary$izWKQQSw</td>
+  </tr>
+  <tr>
+    <td class="name">SeatService$MockitoMock$ohC98FIM$auxiliary$UVxIDz5K</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Service;
+&nbsp;
+&nbsp;import com.example.techprototype.Entity.Seat;
+&nbsp;import com.example.techprototype.Entity.Ticket;
+&nbsp;
+&nbsp;import java.time.LocalDate;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Optional;
+&nbsp;
+&nbsp;public interface SeatService {
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 释放座位
+&nbsp;     */
+&nbsp;    void releaseSeat(Ticket ticket);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 分配座位
+&nbsp;     */
+&nbsp;    void assignSeat(Ticket ticket);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 查找可用座位（基于位图）
+&nbsp;     * @param trainId 车次ID
+&nbsp;     * @param typeId 车厢类型ID
+&nbsp;     * @param travelDate 出发日期
+&nbsp;     * @param departureStopId 出发站ID
+&nbsp;     * @param arrivalStopId 到达站ID
+&nbsp;     * @return 可用的座位
+&nbsp;     */
+&nbsp;    Optional&lt;Seat&gt; findAvailableSeat(Integer trainId, Integer typeId, LocalDate travelDate, 
+&nbsp;                                   Long departureStopId, Long arrivalStopId);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 锁定座位（设置区间占用）
+&nbsp;     * @param seat 座位对象
+&nbsp;     * @param travelDate 出发日期
+&nbsp;     * @param departureStopId 出发站ID
+&nbsp;     * @param arrivalStopId 到达站ID
+&nbsp;     */
+&nbsp;    void lockSeat(Seat seat, LocalDate travelDate, Long departureStopId, Long arrivalStopId);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 释放座位（清除区间占用）
+&nbsp;     * @param seat 座位对象
+&nbsp;     * @param travelDate 出发日期
+&nbsp;     * @param departureStopId 出发站ID
+&nbsp;     * @param arrivalStopId 到达站ID
+&nbsp;     */
+&nbsp;    void releaseSeat(Seat seat, LocalDate travelDate, Long departureStopId, Long arrivalStopId);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 检查座位是否可用
+&nbsp;     * @param seat 座位对象
+&nbsp;     * @param travelDate 出发日期
+&nbsp;     * @param departureStopId 出发站ID
+&nbsp;     * @param arrivalStopId 到达站ID
+&nbsp;     * @return true表示可用
+&nbsp;     */
+&nbsp;    boolean isSeatAvailable(Seat seat, LocalDate travelDate, Long departureStopId, Long arrivalStopId);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 根据sequence_number查找可用座位（基于位图）
+&nbsp;     * @param trainId 车次ID
+&nbsp;     * @param typeId 车厢类型ID
+&nbsp;     * @param travelDate 出发日期
+&nbsp;     * @param departureSequence 出发站序号
+&nbsp;     * @param arrivalSequence 到达站序号
+&nbsp;     * @return 可用的座位
+&nbsp;     */
+&nbsp;    Optional&lt;Seat&gt; findAvailableSeatBySequence(Integer trainId, Integer typeId, LocalDate travelDate, 
+&nbsp;                                             int departureSequence, int arrivalSequence);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 根据sequence_number锁定座位（设置区间占用）
+&nbsp;     * @param seat 座位对象
+&nbsp;     * @param travelDate 出发日期
+&nbsp;     * @param departureSequence 出发站序号
+&nbsp;     * @param arrivalSequence 到达站序号
+&nbsp;     */
+&nbsp;    void lockSeatBySequence(Seat seat, LocalDate travelDate, int departureSequence, int arrivalSequence);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 根据sequence_number释放座位（清除区间占用）
+&nbsp;     * @param seat 座位对象
+&nbsp;     * @param travelDate 出发日期
+&nbsp;     * @param departureSequence 出发站序号
+&nbsp;     * @param arrivalSequence 到达站序号
+&nbsp;     */
+&nbsp;    void releaseSeatBySequence(Seat seat, LocalDate travelDate, int departureSequence, int arrivalSequence);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 根据sequence_number检查座位是否可用
+&nbsp;     * @param seat 座位对象
+&nbsp;     * @param travelDate 出发日期
+&nbsp;     * @param departureSequence 出发站序号
+&nbsp;     * @param arrivalSequence 到达站序号
+&nbsp;     * @return true表示可用
+&nbsp;     */
+&nbsp;    boolean isSeatAvailableBySequence(Seat seat, LocalDate travelDate, int departureSequence, int arrivalSequence);
+&nbsp;} 
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

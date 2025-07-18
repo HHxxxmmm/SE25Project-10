@@ -1,0 +1,119 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > Order</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Entity</a>
+</div>
+
+<h1>Coverage Summary for Class: Order (com.example.techprototype.Entity)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+</tr>
+  <tr>
+    <td class="name">Order$HibernateInstantiator</td>
+  </tr>
+  <tr>
+    <td class="name">Order$HibernateProxy</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Entity;
+&nbsp;
+&nbsp;import jakarta.persistence.*;
+&nbsp;import lombok.Data;
+&nbsp;import lombok.NoArgsConstructor;
+&nbsp;import lombok.AllArgsConstructor;
+&nbsp;import java.math.BigDecimal;
+&nbsp;import java.time.LocalDateTime;
+&nbsp;
+&nbsp;@Entity
+&nbsp;@Table(name = &quot;orders&quot;)
+&nbsp;@Data
+&nbsp;@NoArgsConstructor
+&nbsp;@AllArgsConstructor
+&nbsp;public class Order {
+&nbsp;    
+&nbsp;    @Id
+&nbsp;    @GeneratedValue(strategy = GenerationType.IDENTITY)
+&nbsp;    @Column(name = &quot;order_id&quot;)
+&nbsp;    private Long orderId;
+&nbsp;    
+&nbsp;    @Column(name = &quot;order_number&quot;, nullable = false, length = 32, unique = true)
+&nbsp;    private String orderNumber;
+&nbsp;    
+&nbsp;    @Column(name = &quot;user_id&quot;, nullable = false)
+&nbsp;    private Long userId;
+&nbsp;    
+&nbsp;    @Column(name = &quot;order_time&quot;, nullable = false)
+&nbsp;    private LocalDateTime orderTime;
+&nbsp;    
+&nbsp;    @Column(name = &quot;total_amount&quot;, nullable = false, precision = 10, scale = 2)
+&nbsp;    private BigDecimal totalAmount;
+&nbsp;    
+&nbsp;    @Column(name = &quot;payment_time&quot;)
+&nbsp;    private LocalDateTime paymentTime;
+&nbsp;    
+&nbsp;    @Column(name = &quot;payment_method&quot;, length = 20)
+&nbsp;    private String paymentMethod;
+&nbsp;    
+&nbsp;    @Column(name = &quot;order_status&quot;, nullable = false)
+&nbsp;    private Byte orderStatus = 0; // 0-待支付, 1-已支付, 2-已完成, 3-已取消
+&nbsp;    
+&nbsp;    @Column(name = &quot;ticket_count&quot;, nullable = false)
+&nbsp;    private Integer ticketCount = 0; // 订单包含的票数
+&nbsp;} 
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

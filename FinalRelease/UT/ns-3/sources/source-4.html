@@ -1,0 +1,162 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > RedissonConfig</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Config</a>
+</div>
+
+<h1>Coverage Summary for Class: RedissonConfig (com.example.techprototype.Config)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">RedissonConfig</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (12/12)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">RedissonConfig$$SpringCGLIB$$0</td>
+  </tr>
+  <tr>
+    <td class="name">RedissonConfig$$SpringCGLIB$$FastClass$$0</td>
+  </tr>
+  <tr>
+    <td class="name">RedissonConfig$$SpringCGLIB$$FastClass$$1</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (12/12)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Config;
+&nbsp;
+&nbsp;import org.redisson.Redisson;
+&nbsp;import org.redisson.api.RedissonClient;
+&nbsp;import org.redisson.config.Config;
+&nbsp;import org.springframework.beans.factory.annotation.Value;
+&nbsp;import org.springframework.context.annotation.Bean;
+&nbsp;import org.springframework.context.annotation.Configuration;
+&nbsp;
+&nbsp;@Configuration
+<b class="fc">&nbsp;public class RedissonConfig {</b>
+&nbsp;
+&nbsp;    // 从 application.properties 注入配置值
+&nbsp;    @Value(&quot;${spring.data.redis.host}&quot;)
+&nbsp;    private String redisHost;
+&nbsp;
+&nbsp;    @Value(&quot;${spring.data.redis.port}&quot;)
+&nbsp;    private String redisPort;
+&nbsp;
+&nbsp;    @Value(&quot;${spring.data.redis.password}&quot;) // 使用配置中的密码
+&nbsp;    private String redisPassword;
+&nbsp;
+&nbsp;    @Value(&quot;${spring.data.redis.database:0}&quot;) // 默认使用DB 0
+&nbsp;    private int redisDatabase;
+&nbsp;
+&nbsp;    @Bean(destroyMethod = &quot;shutdown&quot;)
+&nbsp;    public RedissonClient redissonClient() {
+<b class="fc">&nbsp;        Config config = new Config();</b>
+&nbsp;
+<b class="fc">&nbsp;        config.useSingleServer()</b>
+<b class="fc">&nbsp;                .setAddress(&quot;redis://&quot; + redisHost + &quot;:&quot; + redisPort) // 使用注入的主机和端口</b>
+<b class="fc">&nbsp;                .setPassword(redisPassword) // 使用注入的密码</b>
+<b class="fc">&nbsp;                .setDatabase(redisDatabase)</b>
+<b class="fc">&nbsp;                .setConnectionPoolSize(20)</b>
+<b class="fc">&nbsp;                .setConnectionMinimumIdleSize(5)</b>
+<b class="fc">&nbsp;                .setIdleConnectionTimeout(10000)</b>
+<b class="fc">&nbsp;                .setConnectTimeout(10000)</b>
+<b class="fc">&nbsp;                .setTimeout(3000);</b>
+&nbsp;
+<b class="fc">&nbsp;        return Redisson.create(config);</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

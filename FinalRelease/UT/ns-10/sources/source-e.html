@@ -1,0 +1,117 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > WaitlistItemRepository</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Repository</a>
+</div>
+
+<h1>Coverage Summary for Class: WaitlistItemRepository (com.example.techprototype.Repository)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+</tr>
+  <tr>
+    <td class="name">WaitlistItemRepository$MockitoMock$ejfJv7La</td>
+  </tr>
+  <tr>
+    <td class="name">WaitlistItemRepository$MockitoMock$ejfJv7La$auxiliary$bW8mlCra</td>
+  </tr>
+  <tr>
+    <td class="name">WaitlistItemRepository$MockitoMock$ejfJv7La$auxiliary$ZzarQxLC</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Repository;
+&nbsp;
+&nbsp;import com.example.techprototype.Entity.WaitlistItem;
+&nbsp;import org.springframework.data.jpa.repository.JpaRepository;
+&nbsp;import org.springframework.data.jpa.repository.Query;
+&nbsp;import org.springframework.data.repository.query.Param;
+&nbsp;import org.springframework.stereotype.Repository;
+&nbsp;import java.time.LocalDate;
+&nbsp;import java.util.List;
+&nbsp;
+&nbsp;@Repository
+&nbsp;public interface WaitlistItemRepository extends JpaRepository&lt;WaitlistItem, Long&gt; {
+&nbsp;    
+&nbsp;    List&lt;WaitlistItem&gt; findByWaitlistId(Long waitlistId);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 查询指定条件的待兑现候补订单项
+&nbsp;     */
+&nbsp;    @Query(&quot;SELECT wi FROM WaitlistItem wi WHERE wi.trainId = :trainId AND wi.travelDate = :travelDate &quot; +
+&nbsp;           &quot;AND wi.departureStopId = :departureStopId AND wi.arrivalStopId = :arrivalStopId &quot; +
+&nbsp;           &quot;AND wi.carriageTypeId = :carriageTypeId AND wi.itemStatus = 1 &quot; +
+&nbsp;           &quot;ORDER BY wi.createdTime ASC&quot;)
+&nbsp;    List&lt;WaitlistItem&gt; findMatchingWaitlistItems(
+&nbsp;            @Param(&quot;trainId&quot;) Integer trainId,
+&nbsp;            @Param(&quot;travelDate&quot;) LocalDate travelDate,
+&nbsp;            @Param(&quot;departureStopId&quot;) Long departureStopId,
+&nbsp;            @Param(&quot;arrivalStopId&quot;) Long arrivalStopId,
+&nbsp;            @Param(&quot;carriageTypeId&quot;) Integer carriageTypeId);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 查询候补订单中未兑现的订单项
+&nbsp;     */
+&nbsp;    @Query(&quot;SELECT wi FROM WaitlistItem wi WHERE wi.waitlistId = :waitlistId AND wi.itemStatus = 1&quot;)
+&nbsp;    List&lt;WaitlistItem&gt; findPendingItemsByWaitlistId(@Param(&quot;waitlistId&quot;) Long waitlistId);
+&nbsp;
+&nbsp;    @Query(&quot;SELECT wi FROM WaitlistItem wi WHERE wi.waitlistId = :waitlistId AND wi.itemStatus IN (1, 2)&quot;)
+&nbsp;    List&lt;WaitlistItem&gt; findRefundableItemsByWaitlistId(@Param(&quot;waitlistId&quot;) Long waitlistId);
+&nbsp;
+&nbsp;    List&lt;WaitlistItem&gt; findByItemIdIn(List&lt;Long&gt; itemIds);
+&nbsp;} 
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

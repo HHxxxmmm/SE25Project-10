@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MyOrderResponse.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">TechPrototype</a> &gt; <a href="index.source.html" class="el_package">com.example.techprototype.DTO</a> &gt; <span class="el_source">MyOrderResponse.java</span></div><h1>MyOrderResponse.java</h1><pre class="source lang-java linenums">package com.example.techprototype.DTO;
+
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class MyOrderResponse {
+    
+    private String status;
+    private String message;
+    private List&lt;MyOrderInfo&gt; orders;
+    private LocalDateTime timestamp;
+    
+    public static MyOrderResponse success(List&lt;MyOrderInfo&gt; orders) {
+<span class="fc" id="L23">        return new MyOrderResponse(&quot;SUCCESS&quot;, &quot;获取成功&quot;, orders, LocalDateTime.now());</span>
+    }
+    
+    public static MyOrderResponse failure(String message) {
+<span class="fc" id="L27">        return new MyOrderResponse(&quot;FAILURE&quot;, message, null, LocalDateTime.now());</span>
+    }
+    
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class MyOrderInfo {
+        // 订单基本信息
+        private Long orderId;
+        private String orderNumber;
+        private LocalDateTime orderTime;
+        private BigDecimal totalAmount;
+        private Byte orderStatus;
+        private String orderStatusText;
+        private String paymentMethod;
+        private LocalDateTime paymentTime;
+        
+        // 车次信息（从订单中任意一张车票获取）
+        private Integer trainId;
+        private String trainNumber;
+        private LocalDate departureDate;
+        private LocalTime departureTime;
+        private LocalTime arrivalTime;
+        private String departureStationName;
+        private String departureCity;
+        private String arrivalStationName;
+        private String arrivalCity;
+        
+        // 车票数量
+        private Integer ticketCount;
+    }
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

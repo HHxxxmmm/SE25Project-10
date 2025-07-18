@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SeatBitmapUtil.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">TechPrototype</a> &gt; <a href="index.source.html" class="el_package">com.example.techprototype.Util</a> &gt; <span class="el_source">SeatBitmapUtil.java</span></div><h1>SeatBitmapUtil.java</h1><pre class="source lang-java linenums">package com.example.techprototype.Util;
+
+import java.time.LocalDate;
+
+/**
+ * 座位位图管理工具类
+ * 用于处理日期和区间的位图操作
+ * 全局基准日期：当前日期+1天
+ * 日期范围：基准日期 到 基准日期+9天 (date_1 到 date_10)
+ * 区间位图：使用最后10位表示区间占用，每个站点用2个bit表示
+ * 从最低位开始，每2个bit表示一个站点：
+ * - 低位：1表示到达该站点
+ * - 高位：1表示离开该站点
+ * 例如：区间1:2的bit码是0110，表示离开1号站点(10)和到达2号站点(01)
+ */
+<span class="nc" id="L16">public class SeatBitmapUtil {</span>
+    
+    // 全局基准日期 - 动态设置为当前日期加1天
+<span class="fc" id="L19">    public static final LocalDate BASE_DATE = LocalDate.now().plusDays(1);</span>
+    
+    /**
+     * 将日期转换为对应的日期索引 (1-10)
+     * @param date 目标日期
+     * @return 日期索引，如果超出范围返回-1
+     */
+    public static int getDateIndex(LocalDate date) {
+<span class="fc bfc" id="L27" title="All 4 branches covered.">        if (date.isBefore(BASE_DATE) || date.isAfter(BASE_DATE.plusDays(9))) {</span>
+<span class="fc" id="L28">            return -1; // 超出范围</span>
+        }
+<span class="fc" id="L30">        return (int) (date.toEpochDay() - BASE_DATE.toEpochDay() + 1);</span>
+    }
+    
+    /**
+     * 根据出发站和到达站的sequence_number生成区间掩码
+     * @param departureSequence 出发站序号
+     * @param arrivalSequence 到达站序号
+     * @return 区间掩码
+     */
+    public static long generateIntervalMask(int departureSequence, int arrivalSequence) {
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        if (departureSequence &gt;= arrivalSequence) {</span>
+<span class="fc" id="L41">            return 0L; // 无效区间</span>
+        }
+        
+<span class="fc" id="L44">        long mask = 0L;</span>
+        
+        // 设置出发站：高位为1（离开）
+        // 出发站的bit位置：2*(departureSequence-1) 和 2*(departureSequence-1)+1
+<span class="fc" id="L48">        int departureLowBit = 2 * (departureSequence - 1);</span>
+<span class="fc" id="L49">        int departureHighBit = 2 * (departureSequence - 1) + 1;</span>
+<span class="fc" id="L50">        mask |= (1L &lt;&lt; departureHighBit); // 高位为1（离开）</span>
+        
+        // 设置到达站：低位为1（到达）
+        // 到达站的bit位置：2*(arrivalSequence-1) 和 2*(arrivalSequence-1)+1
+<span class="fc" id="L54">        int arrivalLowBit = 2 * (arrivalSequence - 1);</span>
+<span class="fc" id="L55">        int arrivalHighBit = 2 * (arrivalSequence - 1) + 1;</span>
+<span class="fc" id="L56">        mask |= (1L &lt;&lt; arrivalLowBit); // 低位为1（到达）</span>
+        
+        // 设置中间站点：两个bit都为1（经过）
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        for (int i = departureSequence + 1; i &lt; arrivalSequence; i++) {</span>
+<span class="fc" id="L60">            int lowBit = 2 * (i - 1);</span>
+<span class="fc" id="L61">            int highBit = 2 * (i - 1) + 1;</span>
+<span class="fc" id="L62">            mask |= (1L &lt;&lt; lowBit);     // 低位（到达）</span>
+<span class="fc" id="L63">            mask |= (1L &lt;&lt; highBit);    // 高位（离开）</span>
+        }
+        
+<span class="fc" id="L66">        System.out.println(&quot;生成区间掩码 - 出发序号:&quot; + departureSequence + </span>
+                         &quot;, 到达序号:&quot; + arrivalSequence + 
+                         &quot;, 掩码:&quot; + mask + 
+<span class="fc" id="L69">                         &quot;, 二进制:&quot; + Long.toBinaryString(mask));</span>
+        
+<span class="fc" id="L71">        return mask;</span>
+    }
+    
+    /**
+     * 检查座位在指定日期和区间是否可用
+     * @param seat 座位对象
+     * @param date 目标日期
+     * @param intervalMask 区间掩码
+     * @return true表示可用，false表示不可用
+     */
+    public static boolean isSeatAvailable(com.example.techprototype.Entity.Seat seat, LocalDate date, long intervalMask) {
+<span class="fc" id="L82">        int dateIndex = getDateIndex(date);</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (dateIndex == -1) {</span>
+<span class="fc" id="L84">            return false; // 日期超出范围</span>
+        }
+        
+<span class="fc" id="L87">        long currentBitmap = getDateBitmap(seat, dateIndex);</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">        return (currentBitmap &amp; intervalMask) == 0; // 没有冲突</span>
+    }
+    
+    /**
+     * 锁定座位（设置区间占用）
+     * @param seat 座位对象
+     * @param date 目标日期
+     * @param intervalMask 区间掩码
+     */
+    public static void lockSeat(com.example.techprototype.Entity.Seat seat, LocalDate date, long intervalMask) {
+<span class="fc" id="L98">        int dateIndex = getDateIndex(date);</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        if (dateIndex == -1) {</span>
+<span class="fc" id="L100">            return; // 日期超出范围</span>
+        }
+        
+<span class="fc" id="L103">        long currentBitmap = getDateBitmap(seat, dateIndex);</span>
+<span class="fc" id="L104">        long newBitmap = currentBitmap | intervalMask; // OR操作设置占用</span>
+<span class="fc" id="L105">        setDateBitmap(seat, dateIndex, newBitmap);</span>
+<span class="fc" id="L106">    }</span>
+    
+    /**
+     * 释放座位（清除区间占用）
+     * @param seat 座位对象
+     * @param date 目标日期
+     * @param intervalMask 区间掩码
+     */
+    public static void releaseSeat(com.example.techprototype.Entity.Seat seat, LocalDate date, long intervalMask) {
+<span class="fc" id="L115">        int dateIndex = getDateIndex(date);</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        if (dateIndex == -1) {</span>
+<span class="nc" id="L117">            return; // 日期超出范围</span>
+        }
+        
+<span class="fc" id="L120">        long currentBitmap = getDateBitmap(seat, dateIndex);</span>
+<span class="fc" id="L121">        long newBitmap = currentBitmap &amp; (~intervalMask); // AND操作清除占用</span>
+<span class="fc" id="L122">        setDateBitmap(seat, dateIndex, newBitmap);</span>
+<span class="fc" id="L123">    }</span>
+    
+    /**
+     * 获取指定日期的位图值
+     * @param seat 座位对象
+     * @param dateIndex 日期索引 (1-10)
+     * @return 位图值
+     */
+    private static long getDateBitmap(com.example.techprototype.Entity.Seat seat, int dateIndex) {
+<span class="pc bpc" id="L132" title="1 of 11 branches missed.">        switch (dateIndex) {</span>
+<span class="fc" id="L133">            case 1: return seat.getDate1();</span>
+<span class="fc" id="L134">            case 2: return seat.getDate2();</span>
+<span class="fc" id="L135">            case 3: return seat.getDate3();</span>
+<span class="fc" id="L136">            case 4: return seat.getDate4();</span>
+<span class="fc" id="L137">            case 5: return seat.getDate5();</span>
+<span class="fc" id="L138">            case 6: return seat.getDate6();</span>
+<span class="fc" id="L139">            case 7: return seat.getDate7();</span>
+<span class="fc" id="L140">            case 8: return seat.getDate8();</span>
+<span class="fc" id="L141">            case 9: return seat.getDate9();</span>
+<span class="fc" id="L142">            case 10: return seat.getDate10();</span>
+<span class="nc" id="L143">            default: return 0L;</span>
+        }
+    }
+    
+    /**
+     * 设置指定日期的位图值
+     * @param seat 座位对象
+     * @param dateIndex 日期索引 (1-10)
+     * @param bitmap 位图值
+     */
+    private static void setDateBitmap(com.example.techprototype.Entity.Seat seat, int dateIndex, long bitmap) {
+<span class="pc bpc" id="L154" title="1 of 11 branches missed.">        switch (dateIndex) {</span>
+<span class="fc" id="L155">            case 1: seat.setDate1(bitmap); break;</span>
+<span class="fc" id="L156">            case 2: seat.setDate2(bitmap); break;</span>
+<span class="fc" id="L157">            case 3: seat.setDate3(bitmap); break;</span>
+<span class="fc" id="L158">            case 4: seat.setDate4(bitmap); break;</span>
+<span class="fc" id="L159">            case 5: seat.setDate5(bitmap); break;</span>
+<span class="fc" id="L160">            case 6: seat.setDate6(bitmap); break;</span>
+<span class="fc" id="L161">            case 7: seat.setDate7(bitmap); break;</span>
+<span class="fc" id="L162">            case 8: seat.setDate8(bitmap); break;</span>
+<span class="fc" id="L163">            case 9: seat.setDate9(bitmap); break;</span>
+<span class="fc" id="L164">            case 10: seat.setDate10(bitmap); break;</span>
+        }
+<span class="fc" id="L166">    }</span>
+    
+    /**
+     * 将位图转换为可读的字符串
+     * @param bitmap 位图值
+     * @return 可读的字符串，如 &quot;站点1离开,站点2到达&quot;
+     */
+    public static String bitmapToString(long bitmap) {
+<span class="fc" id="L174">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L175">        boolean first = true;</span>
+        
+        // 检查每个站点的2个bit
+<span class="fc bfc" id="L178" title="All 2 branches covered.">        for (int i = 1; i &lt;= 5; i++) { // 假设最多5个站点</span>
+<span class="fc" id="L179">            int lowBit = 2 * i - 1;</span>
+<span class="fc" id="L180">            int highBit = 2 * i;</span>
+            
+<span class="fc bfc" id="L182" title="All 2 branches covered.">            boolean hasArrival = (bitmap &amp; (1L &lt;&lt; lowBit)) != 0;</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">            boolean hasDeparture = (bitmap &amp; (1L &lt;&lt; highBit)) != 0;</span>
+            
+<span class="pc bpc" id="L185" title="1 of 4 branches missed.">            if (hasArrival || hasDeparture) {</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">                if (!first) sb.append(&quot;,&quot;);</span>
+<span class="pc bpc" id="L187" title="1 of 4 branches missed.">                if (hasArrival &amp;&amp; hasDeparture) {</span>
+<span class="fc" id="L188">                    sb.append(&quot;站点&quot;).append(i).append(&quot;经过&quot;);</span>
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">                } else if (hasArrival) {</span>
+<span class="fc" id="L190">                    sb.append(&quot;站点&quot;).append(i).append(&quot;到达&quot;);</span>
+<span class="nc bnc" id="L191" title="All 2 branches missed.">                } else if (hasDeparture) {</span>
+<span class="nc" id="L192">                    sb.append(&quot;站点&quot;).append(i).append(&quot;离开&quot;);</span>
+                }
+<span class="fc" id="L194">                first = false;</span>
+            }
+        }
+        
+<span class="fc bfc" id="L198" title="All 2 branches covered.">        return sb.length() == 0 ? &quot;无占用&quot; : sb.toString();</span>
+    }
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

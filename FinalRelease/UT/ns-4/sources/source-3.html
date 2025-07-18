@@ -1,0 +1,166 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > PassengerManagementController</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Controller</a>
+</div>
+
+<h1>Coverage Summary for Class: PassengerManagementController (com.example.techprototype.Controller)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">PassengerManagementController</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (5/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (10/10)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Controller;
+&nbsp;
+&nbsp;import com.example.techprototype.DTO.AddPassengerRequest;
+&nbsp;import com.example.techprototype.DTO.AddPassengerResponse;
+&nbsp;import com.example.techprototype.DTO.BookingResponse;
+&nbsp;import com.example.techprototype.DTO.CheckAddPassengerResponse;
+&nbsp;import com.example.techprototype.DTO.DeletePassengerRequest;
+&nbsp;import com.example.techprototype.Service.PassengerManagementService;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.http.ResponseEntity;
+&nbsp;import org.springframework.web.bind.annotation.*;
+&nbsp;
+&nbsp;import java.util.Map;
+&nbsp;
+&nbsp;@RestController
+&nbsp;@RequestMapping(&quot;/api/passenger&quot;)
+&nbsp;@CrossOrigin(origins = &quot;*&quot;)
+<b class="fc">&nbsp;public class PassengerManagementController {</b>
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private PassengerManagementService passengerManagementService;
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 检查是否可以添加乘车人
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/check-add&quot;)
+&nbsp;    public ResponseEntity&lt;CheckAddPassengerResponse&gt; checkCanAddPassenger(@RequestParam Long userId) {
+<b class="fc">&nbsp;        CheckAddPassengerResponse response = passengerManagementService.checkCanAddPassenger(userId);</b>
+<b class="fc">&nbsp;        return ResponseEntity.ok(response);</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 添加乘车人
+&nbsp;     */
+&nbsp;    @PostMapping(&quot;/add&quot;)
+&nbsp;    public ResponseEntity&lt;AddPassengerResponse&gt; addPassenger(@RequestBody AddPassengerRequest request) {
+<b class="fc">&nbsp;        AddPassengerResponse response = passengerManagementService.addPassenger(request);</b>
+<b class="fc">&nbsp;        return ResponseEntity.ok(response);</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 刷新用户状态（用于测试）
+&nbsp;     */
+&nbsp;    @PostMapping(&quot;/refresh-user/{userId}&quot;)
+&nbsp;    public ResponseEntity&lt;String&gt; refreshUserStatus(@PathVariable Long userId) {
+<b class="fc">&nbsp;        passengerManagementService.refreshUserStatus(userId);</b>
+<b class="fc">&nbsp;        return ResponseEntity.ok(&quot;用户状态已刷新&quot;);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * 删除乘车人
+&nbsp;     */
+&nbsp;    @DeleteMapping(&quot;/delete&quot;)
+&nbsp;    public ResponseEntity&lt;?&gt; deletePassenger(@RequestBody DeletePassengerRequest request) {
+&nbsp;        try {
+<b class="fc">&nbsp;            BookingResponse response = passengerManagementService.deletePassenger(request);</b>
+<b class="fc">&nbsp;            return ResponseEntity.ok(response);</b>
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            return ResponseEntity.badRequest().body(Map.of(&quot;error&quot;, e.getMessage()));</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;} 
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

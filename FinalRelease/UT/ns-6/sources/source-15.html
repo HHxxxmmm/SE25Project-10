@@ -1,0 +1,127 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > OrderDetailResponse</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.DTO</a>
+</div>
+
+<h1>Coverage Summary for Class: OrderDetailResponse (com.example.techprototype.DTO)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+</tr>
+  <tr>
+    <td class="name">OrderDetailResponse$TicketDetail</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.DTO;
+&nbsp;
+&nbsp;import lombok.Data;
+&nbsp;import lombok.NoArgsConstructor;
+&nbsp;import lombok.AllArgsConstructor;
+&nbsp;import java.math.BigDecimal;
+&nbsp;import java.time.LocalDate;
+&nbsp;import java.time.LocalDateTime;
+&nbsp;import java.time.LocalTime;
+&nbsp;import java.util.List;
+&nbsp;
+&nbsp;@Data
+&nbsp;@NoArgsConstructor
+&nbsp;@AllArgsConstructor
+&nbsp;public class OrderDetailResponse {
+&nbsp;    
+&nbsp;    // 订单基本信息
+&nbsp;    private Long orderId;
+&nbsp;    private String orderNumber;
+&nbsp;    private Byte orderStatus;
+&nbsp;    private LocalDateTime orderTime;
+&nbsp;    private LocalDateTime paymentTime;
+&nbsp;    private String paymentMethod;
+&nbsp;    private BigDecimal totalAmount;
+&nbsp;    private Integer ticketCount; // 订单包含的票数
+&nbsp;    
+&nbsp;    // 车次信息（所有车票共享相同信息）
+&nbsp;    private String trainNumber;
+&nbsp;    private LocalDate travelDate;
+&nbsp;    private LocalTime departureTime;
+&nbsp;    private LocalTime arrivalTime;
+&nbsp;    private String departureStation;
+&nbsp;    private String arrivalStation;
+&nbsp;    
+&nbsp;    // 车票列表
+&nbsp;    private List&lt;TicketDetail&gt; tickets;
+&nbsp;    
+&nbsp;    @Data
+&nbsp;    @NoArgsConstructor
+&nbsp;    @AllArgsConstructor
+&nbsp;    public static class TicketDetail {
+&nbsp;        private Long ticketId;
+&nbsp;        private String ticketNumber;
+&nbsp;        private Long passengerId;
+&nbsp;        private String passengerName;
+&nbsp;        private String idCardNumber;
+&nbsp;        private String phoneNumber; // 添加手机号字段
+&nbsp;        private Byte passengerType;
+&nbsp;        private Byte ticketType;
+&nbsp;        private String carriageType;
+&nbsp;        private String carriageNumber;
+&nbsp;        private String seatNumber;
+&nbsp;        private BigDecimal price;
+&nbsp;        private Byte ticketStatus;
+&nbsp;    }
+&nbsp;} 
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

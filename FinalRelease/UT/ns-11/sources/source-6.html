@@ -1,0 +1,105 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > OrderDAO</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.DAO</a>
+</div>
+
+<h1>Coverage Summary for Class: OrderDAO (com.example.techprototype.DAO)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+</tr>
+<tr>
+  <td class="name">OrderDAO</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.DAO;
+&nbsp;
+&nbsp;import com.example.techprototype.Entity.Order;
+&nbsp;import com.example.techprototype.Entity.Ticket;
+&nbsp;import org.apache.ibatis.annotations.Mapper;
+&nbsp;import org.apache.ibatis.annotations.Param;
+&nbsp;import org.apache.ibatis.annotations.Select;
+&nbsp;
+&nbsp;import java.util.List;
+&nbsp;import java.time.LocalDate;
+&nbsp;import java.util.Map;
+&nbsp;
+&nbsp;@Mapper
+&nbsp;public interface OrderDAO {
+&nbsp;    // 按用户和状态等筛选订单
+&nbsp;    @Select(&quot;&lt;script&gt;&quot; +
+&nbsp;            &quot;SELECT * FROM orders WHERE user_id = #{userId} &quot; +
+&nbsp;            &quot;&lt;if test=&#39;status != null&#39;&gt;AND order_status = #{status}&lt;/if&gt; &quot; +
+&nbsp;            &quot;&lt;if test=&#39;orderNumber != null&#39;&gt;AND order_number LIKE CONCAT(&#39;%&#39;,#{orderNumber},&#39;%&#39;)&lt;/if&gt; &quot; +
+&nbsp;            &quot;&lt;if test=&#39;startDate != null&#39;&gt;AND order_time &amp;gt;= #{startDate}&lt;/if&gt; &quot; +
+&nbsp;            &quot;&lt;if test=&#39;endDate != null&#39;&gt;AND order_time &amp;lt;= #{endDate}&lt;/if&gt; &quot; +
+&nbsp;            &quot;&lt;/script&gt;&quot;)
+&nbsp;    List&lt;Order&gt; findOrdersByConditions(@Param(&quot;userId&quot;) Long userId,
+&nbsp;                                       @Param(&quot;status&quot;) Byte status,
+&nbsp;                                       @Param(&quot;orderNumber&quot;) String orderNumber,
+&nbsp;                                       @Param(&quot;startDate&quot;) LocalDate startDate,
+&nbsp;                                       @Param(&quot;endDate&quot;) LocalDate endDate);
+&nbsp;
+&nbsp;    // 查询订单下所有车票详情（联表）
+&nbsp;    @Select(&quot;SELECT t.* FROM tickets t WHERE t.order_id = #{orderId}&quot;)
+&nbsp;    List&lt;Ticket&gt; findTicketsByOrderId(@Param(&quot;orderId&quot;) Long orderId);
+&nbsp;
+&nbsp;    // 订单+车票详情联表（示例：返回订单和车票所有字段）
+&nbsp;    @Select(&quot;SELECT o.*, t.* FROM orders o JOIN tickets t ON o.order_id = t.order_id WHERE o.order_id = #{orderId}&quot;)
+&nbsp;    List&lt;Map&lt;String, Object&gt;&gt; findOrderWithTickets(@Param(&quot;orderId&quot;) Long orderId);
+&nbsp;}
+&nbsp;
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

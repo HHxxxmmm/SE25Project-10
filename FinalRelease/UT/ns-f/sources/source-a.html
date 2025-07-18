@@ -1,0 +1,115 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TrainStop</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Entity</a>
+</div>
+
+<h1>Coverage Summary for Class: TrainStop (com.example.techprototype.Entity)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+</tr>
+  <tr>
+    <td class="name">TrainStop$HibernateInstantiator</td>
+  </tr>
+  <tr>
+    <td class="name">TrainStop$HibernateProxy</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Entity;
+&nbsp;
+&nbsp;import jakarta.persistence.*;
+&nbsp;import lombok.Data;
+&nbsp;import lombok.NoArgsConstructor;
+&nbsp;import lombok.AllArgsConstructor;
+&nbsp;import java.time.LocalTime;
+&nbsp;
+&nbsp;@Entity
+&nbsp;@Table(name = &quot;train_stops&quot;)
+&nbsp;@Data
+&nbsp;@NoArgsConstructor
+&nbsp;@AllArgsConstructor
+&nbsp;public class TrainStop {
+&nbsp;    
+&nbsp;    @Id
+&nbsp;    @GeneratedValue(strategy = GenerationType.IDENTITY)
+&nbsp;    @Column(name = &quot;stop_id&quot;)
+&nbsp;    private Long stopId;
+&nbsp;    
+&nbsp;    @Column(name = &quot;train_id&quot;, nullable = false)
+&nbsp;    private Integer trainId;
+&nbsp;    
+&nbsp;    @Column(name = &quot;station_id&quot;, nullable = false)
+&nbsp;    private Integer stationId;
+&nbsp;    
+&nbsp;    @Column(name = &quot;sequence_number&quot;, nullable = false)
+&nbsp;    private Integer sequenceNumber;
+&nbsp;    
+&nbsp;    @Column(name = &quot;arrival_time&quot;)
+&nbsp;    private LocalTime arrivalTime;
+&nbsp;    
+&nbsp;    @Column(name = &quot;departure_time&quot;)
+&nbsp;    private LocalTime departureTime;
+&nbsp;    
+&nbsp;    @Column(name = &quot;stop_minutes&quot;)
+&nbsp;    private Integer stopMinutes;
+&nbsp;    
+&nbsp;    @Column(name = &quot;distance_from_start&quot;)
+&nbsp;    private Integer distanceFromStart; // 距离始发站的距离(公里)
+&nbsp;} 
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

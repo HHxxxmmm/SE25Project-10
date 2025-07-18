@@ -1,0 +1,119 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > ProfileService</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Service</a>
+</div>
+
+<h1>Coverage Summary for Class: ProfileService (com.example.techprototype.Service)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+</tr>
+  <tr>
+    <td class="name">ProfileService$MockitoMock$RNTkdNgY</td>
+  </tr>
+  <tr>
+    <td class="name">ProfileService$MockitoMock$RNTkdNgY$auxiliary$CDkhfcMC</td>
+  </tr>
+  <tr>
+    <td class="name">ProfileService$MockitoMock$RNTkdNgY$auxiliary$HFgDlZT1</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Service;
+&nbsp;
+&nbsp;import com.example.techprototype.DTO.*;
+&nbsp;
+&nbsp;public interface ProfileService {
+&nbsp;
+&nbsp;    /**
+&nbsp;     * 获取用户个人资料
+&nbsp;     * @param userId 用户ID
+&nbsp;     * @return 个人资料响应，包含用户信息和关联乘客信息
+&nbsp;     */
+&nbsp;    ProfileResponse getUserProfile(Long userId);
+&nbsp;
+&nbsp;    /**
+&nbsp;     * 更新用户个人资料
+&nbsp;     * @param userId 用户ID
+&nbsp;     * @param request 更新请求
+&nbsp;     * @return 更新后的个人资料响应
+&nbsp;     */
+&nbsp;    ProfileResponse updateUserProfile(Long userId, ProfileRequest request);
+&nbsp;
+&nbsp;    /**
+&nbsp;     * 修改用户密码
+&nbsp;     * @param request 密码修改请求
+&nbsp;     * @return 密码修改响应
+&nbsp;     */
+&nbsp;    ChangePasswordResponse changePassword(ChangePasswordRequest request);
+&nbsp;
+&nbsp;    /**
+&nbsp;     * 更新用户最后登录时间
+&nbsp;     * @param request 包含用户ID和登录时间
+&nbsp;     * @return 基本响应
+&nbsp;     */
+&nbsp;    BasicResponse updateLastLoginTime(LastLoginUpdateRequest request);
+&nbsp;
+&nbsp;    /**
+&nbsp;     * 更新用户账户状态（管理员操作）
+&nbsp;     * @param request 包含用户ID和账户状态
+&nbsp;     * @return 基本响应
+&nbsp;     */
+&nbsp;    BasicResponse updateAccountStatus(AccountStatusUpdateRequest request);
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

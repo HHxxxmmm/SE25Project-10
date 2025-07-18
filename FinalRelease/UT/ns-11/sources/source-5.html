@@ -1,0 +1,146 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TrainDAO</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.DAO</a>
+</div>
+
+<h1>Coverage Summary for Class: TrainDAO (com.example.techprototype.DAO)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+</tr>
+  <tr>
+    <td class="name">TrainDAO$MockitoMock$FpvZ9L3r</td>
+  </tr>
+  <tr>
+    <td class="name">TrainDAO$MockitoMock$FpvZ9L3r$auxiliary$AZzbOCYz</td>
+  </tr>
+  <tr>
+    <td class="name">TrainDAO$MockitoMock$FpvZ9L3r$auxiliary$LhKSFGtG</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.DAO;
+&nbsp;
+&nbsp;import com.example.techprototype.Entity.Train;
+&nbsp;import org.apache.ibatis.annotations.Mapper;
+&nbsp;import org.apache.ibatis.annotations.Param;
+&nbsp;import org.apache.ibatis.annotations.Select;
+&nbsp;
+&nbsp;import java.time.LocalTime;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Map;
+&nbsp;
+&nbsp;@Mapper
+&nbsp;public interface TrainDAO {
+&nbsp;    // 直达
+&nbsp;    @Select(&quot;SELECT t.* FROM trains t &quot; +
+&nbsp;            &quot;JOIN train_stops s1 ON t.train_id = s1.train_id &quot; +
+&nbsp;            &quot;JOIN train_stops s2 ON t.train_id = s2.train_id &quot; +
+&nbsp;            &quot;WHERE s1.station_id = #{startStationId} AND s2.station_id = #{endStationId} AND s1.sequence_number &lt; s2.sequence_number&quot;)
+&nbsp;    List&lt;Train&gt; findDirectTrains(@Param(&quot;startStationId&quot;) Integer startStationId, @Param(&quot;endStationId&quot;) Integer endStationId);
+&nbsp;
+&nbsp;    // 按时间区间
+&nbsp;    @Select(&quot;SELECT t.* FROM trains t WHERE t.departure_time BETWEEN #{start} AND #{end}&quot;)
+&nbsp;    List&lt;Train&gt; findByDepartureTimeBetween(@Param(&quot;start&quot;) LocalTime start, @Param(&quot;end&quot;) LocalTime end);
+&nbsp;
+&nbsp;    // 中转查询优化方案
+&nbsp;    @Select(&quot;SELECT &quot; +
+&nbsp;            &quot;t1.train_id AS t1_train_id, t1.train_number AS t1_train_number, &quot; +
+&nbsp;            &quot;t1.train_type AS t1_train_type, t1.departure_time AS t1_departure_time, &quot; +
+&nbsp;            &quot;t1.arrival_time AS t1_arrival_time, t1.duration_minutes AS t1_duration_minutes, &quot; +
+&nbsp;            &quot;s1a.station_id AS start_station_id, s1b.station_id AS transfer_station_id, &quot; +
+&nbsp;            &quot;t2.train_id AS t2_train_id, t2.train_number AS t2_train_number, &quot; +
+&nbsp;            &quot;t2.train_type AS t2_train_type, t2.departure_time AS t2_departure_time, &quot; +
+&nbsp;            &quot;t2.arrival_time AS t2_arrival_time, t2.duration_minutes AS t2_duration_minutes, &quot; +
+&nbsp;            &quot;s2b.station_id AS end_station_id &quot; +
+&nbsp;            &quot;FROM trains t1 &quot; +
+&nbsp;            &quot;JOIN train_stops s1a ON t1.train_id = s1a.train_id &quot; +
+&nbsp;            &quot;JOIN train_stops s1b ON t1.train_id = s1b.train_id &quot; +
+&nbsp;            &quot;JOIN trains t2 ON t2.train_id IN ( &quot; +
+&nbsp;            &quot;   SELECT DISTINCT train_id FROM train_stops &quot; +
+&nbsp;            &quot;   WHERE station_id = #{transferStationId} OR station_id = #{endStationId}) &quot; +
+&nbsp;            &quot;JOIN train_stops s2a ON t2.train_id = s2a.train_id &quot; +
+&nbsp;            &quot;JOIN train_stops s2b ON t2.train_id = s2b.train_id &quot; +
+&nbsp;            &quot;WHERE s1a.station_id = #{startStationId} &quot; +
+&nbsp;            &quot;AND s1b.station_id = #{transferStationId} &quot; +
+&nbsp;            &quot;AND s2a.station_id = #{transferStationId} &quot; +
+&nbsp;            &quot;AND s2b.station_id = #{endStationId} &quot; +
+&nbsp;            &quot;AND s1a.sequence_number &lt; s1b.sequence_number &quot; +
+&nbsp;            &quot;AND s2a.sequence_number &lt; s2b.sequence_number &quot; +
+&nbsp;            &quot;AND t1.train_id != t2.train_id&quot;)
+&nbsp;    List&lt;Map&lt;String, Object&gt;&gt; findTransferTrains(
+&nbsp;            @Param(&quot;startStationId&quot;) Integer startStationId,
+&nbsp;            @Param(&quot;transferStationId&quot;) Integer transferStationId,
+&nbsp;            @Param(&quot;endStationId&quot;) Integer endStationId
+&nbsp;    );
+&nbsp;
+&nbsp;    // 添加中转站查询方法
+&nbsp;    @Select(&quot;SELECT DISTINCT ts.station_id &quot; +
+&nbsp;            &quot;FROM train_stops ts &quot; +
+&nbsp;            &quot;WHERE ts.station_id NOT IN (#{startStationId}, #{endStationId}) &quot; +
+&nbsp;            &quot;  AND EXISTS (SELECT 1 FROM train_stops s1 &quot; +
+&nbsp;            &quot;              WHERE s1.station_id = #{startStationId} &quot; +
+&nbsp;            &quot;                AND s1.train_id = ts.train_id) &quot; +
+&nbsp;            &quot;  AND EXISTS (SELECT 1 FROM train_stops s2 &quot; +
+&nbsp;            &quot;              WHERE s2.station_id = #{endStationId} &quot; +
+&nbsp;            &quot;                AND s2.train_id = ts.train_id)&quot;)
+&nbsp;    List&lt;Integer&gt; findAllTransferStations(
+&nbsp;            @Param(&quot;startStationId&quot;) Integer startStationId,
+&nbsp;            @Param(&quot;endStationId&quot;) Integer endStationId);
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

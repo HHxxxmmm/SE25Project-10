@@ -1,0 +1,148 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > PrepareOrderResponse</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.DTO</a>
+</div>
+
+<h1>Coverage Summary for Class: PrepareOrderResponse (com.example.techprototype.DTO)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+</tr>
+  <tr>
+    <td class="name">PrepareOrderResponse$CarriageInfo</td>
+  </tr>
+  <tr>
+    <td class="name">PrepareOrderResponse$PassengerInfo</td>
+  </tr>
+  <tr>
+    <td class="name">PrepareOrderResponse$TrainInfo</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.DTO;
+&nbsp;
+&nbsp;import lombok.Data;
+&nbsp;import lombok.NoArgsConstructor;
+&nbsp;import lombok.AllArgsConstructor;
+&nbsp;import java.math.BigDecimal;
+&nbsp;import java.time.LocalDate;
+&nbsp;import java.time.LocalTime;
+&nbsp;import java.util.List;
+&nbsp;
+&nbsp;@Data
+&nbsp;@NoArgsConstructor
+&nbsp;@AllArgsConstructor
+&nbsp;public class PrepareOrderResponse {
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 车次信息
+&nbsp;     */
+&nbsp;    private TrainInfo trainInfo;
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 席别信息列表
+&nbsp;     */
+&nbsp;    private List&lt;CarriageInfo&gt; carriages;
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 用户关联的乘客列表
+&nbsp;     */
+&nbsp;    private List&lt;PassengerInfo&gt; passengers;
+&nbsp;    
+&nbsp;    @Data
+&nbsp;    @NoArgsConstructor
+&nbsp;    @AllArgsConstructor
+&nbsp;    public static class TrainInfo {
+&nbsp;        private Integer trainId;           // 车次ID
+&nbsp;        private String trainNumber;        // 车次号
+&nbsp;        private String departureStation;   // 出发站
+&nbsp;        private String arrivalStation;     // 到达站
+&nbsp;        private Long departureStopId;      // 出发站停靠点ID
+&nbsp;        private Long arrivalStopId;        // 到达站停靠点ID
+&nbsp;        private LocalTime departureTime;   // 出发时间
+&nbsp;        private LocalTime arrivalTime;     // 到达时间
+&nbsp;        private LocalDate travelDate;      // 出发日期
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Data
+&nbsp;    @NoArgsConstructor
+&nbsp;    @AllArgsConstructor
+&nbsp;    public static class CarriageInfo {
+&nbsp;        private Long inventoryId;          // 库存ID
+&nbsp;        private Integer carriageTypeId;    // 席别类型ID
+&nbsp;        private String carriageTypeName;   // 席别名称
+&nbsp;        private BigDecimal price;          // 价格
+&nbsp;        private Boolean hasStock;          // 是否有余票
+&nbsp;        private Integer availableStock;    // 可用库存数量
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Data
+&nbsp;    @NoArgsConstructor
+&nbsp;    @AllArgsConstructor
+&nbsp;    public static class PassengerInfo {
+&nbsp;        private Long passengerId;          // 乘客ID
+&nbsp;        private String realName;           // 姓名
+&nbsp;        private String idCardNumber;       // 身份证号
+&nbsp;        private String phoneNumber;        // 手机号
+&nbsp;        private Byte passengerType;        // 乘客类型
+&nbsp;        private String passengerTypeName;  // 乘客类型名称
+&nbsp;        private Byte relationType;         // 关系类型
+&nbsp;        private String relationTypeName;   // 关系类型名称
+&nbsp;    }
+&nbsp;} 
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

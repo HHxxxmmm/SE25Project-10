@@ -1,0 +1,313 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > AuthController</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Controller</a>
+</div>
+
+<h1>Coverage Summary for Class: AuthController (com.example.techprototype.Controller)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">AuthController</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (6/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    62.5%
+  </span>
+  <span class="absValue">
+    (5/8)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (76/76)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Controller;
+&nbsp;
+&nbsp;import com.example.techprototype.DTO.LoginDTO;
+&nbsp;import com.example.techprototype.DTO.RegisterDTO;
+&nbsp;import com.example.techprototype.DTO.UserDTO;
+&nbsp;import com.example.techprototype.Service.UserService;
+&nbsp;import jakarta.servlet.http.Cookie;
+&nbsp;import jakarta.servlet.http.HttpServletRequest;
+&nbsp;import jakarta.servlet.http.HttpServletResponse;
+&nbsp;import jakarta.servlet.http.HttpSession;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.http.HttpStatus;
+&nbsp;import org.springframework.http.ResponseEntity;
+&nbsp;import org.springframework.web.bind.annotation.*;
+&nbsp;
+&nbsp;import java.util.HashMap;
+&nbsp;import java.util.Map;
+&nbsp;
+&nbsp;@RestController
+&nbsp;@RequestMapping(&quot;/api/auth&quot;)
+&nbsp;@CrossOrigin(origins = &quot;http://localhost:3000&quot;, allowCredentials = &quot;true&quot;)
+<b class="fc">&nbsp;public class AuthController {</b>
+&nbsp;
+<b class="fc">&nbsp;    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);</b>
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private UserService userService;
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 用户登录接口
+&nbsp;     *
+&nbsp;     * @param loginDTO 登录信息
+&nbsp;     * @param response HTTP响应对象
+&nbsp;     * @param session  HTTP会话对象
+&nbsp;     * @return 登录结果
+&nbsp;     */
+&nbsp;    @PostMapping(&quot;/login&quot;)
+&nbsp;    public ResponseEntity&lt;Object&gt; login(@RequestBody LoginDTO loginDTO, 
+&nbsp;                                      HttpServletResponse response,
+&nbsp;                                      HttpSession session) {
+<b class="fc">&nbsp;        logger.info(&quot;接收到登录请求: {}&quot;, loginDTO.getPhoneNumber());</b>
+<b class="fc">&nbsp;        Map&lt;String, Object&gt; responseData = new HashMap&lt;&gt;();</b>
+&nbsp;        
+&nbsp;        try {
+&nbsp;            // 登录认证
+<b class="fc">&nbsp;            UserDTO userDTO = userService.login(loginDTO);</b>
+&nbsp;            
+&nbsp;            // 存入session
+<b class="fc">&nbsp;            session.setAttribute(&quot;userId&quot;, userDTO.getUserId());</b>
+<b class="fc">&nbsp;            session.setAttribute(&quot;realName&quot;, userDTO.getRealName());</b>
+<b class="fc">&nbsp;            session.setAttribute(&quot;phoneNumber&quot;, userDTO.getPhoneNumber());</b>
+<b class="fc">&nbsp;            session.setAttribute(&quot;token&quot;, userDTO.getToken());</b>
+&nbsp;            
+&nbsp;            // 添加cookie
+<b class="fc">&nbsp;            Cookie userCookie = new Cookie(&quot;mini12306_auth&quot;, &quot;true&quot;);</b>
+<b class="fc">&nbsp;            userCookie.setPath(&quot;/&quot;);</b>
+<b class="fc">&nbsp;            userCookie.setMaxAge(24 * 60 * 60); // 24小时</b>
+<b class="fc">&nbsp;            userCookie.setHttpOnly(true);</b>
+<b class="fc">&nbsp;            response.addCookie(userCookie);</b>
+&nbsp;            
+&nbsp;            // 构建响应
+<b class="fc">&nbsp;            responseData.put(&quot;success&quot;, true);</b>
+<b class="fc">&nbsp;            responseData.put(&quot;message&quot;, &quot;登录成功&quot;);</b>
+<b class="fc">&nbsp;            responseData.put(&quot;user&quot;, userDTO);</b>
+&nbsp;            
+<b class="fc">&nbsp;            logger.info(&quot;用户 {} 登录成功&quot;, userDTO.getRealName());</b>
+<b class="fc">&nbsp;            return ResponseEntity.ok(responseData);</b>
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            logger.error(&quot;登录失败: {}&quot;, e.getMessage());</b>
+<b class="fc">&nbsp;            responseData.put(&quot;success&quot;, false);</b>
+<b class="fc">&nbsp;            responseData.put(&quot;message&quot;, e.getMessage());</b>
+<b class="fc">&nbsp;            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseData);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 用户注册接口
+&nbsp;     *
+&nbsp;     * @param registerDTO 注册信息
+&nbsp;     * @param response    HTTP响应对象
+&nbsp;     * @param session     HTTP会话对象
+&nbsp;     * @return 注册结果
+&nbsp;     */
+&nbsp;    @PostMapping(&quot;/register&quot;)
+&nbsp;    public ResponseEntity&lt;Object&gt; register(@RequestBody RegisterDTO registerDTO,
+&nbsp;                                         HttpServletResponse response,
+&nbsp;                                         HttpSession session) {
+<b class="fc">&nbsp;        logger.info(&quot;接收到注册请求: {}&quot;, registerDTO.getPhoneNumber());</b>
+<b class="fc">&nbsp;        Map&lt;String, Object&gt; responseData = new HashMap&lt;&gt;();</b>
+&nbsp;        
+&nbsp;        try {
+&nbsp;            // 注册用户
+<b class="fc">&nbsp;            UserDTO userDTO = userService.register(registerDTO);</b>
+&nbsp;            
+&nbsp;            // 存入session
+<b class="fc">&nbsp;            session.setAttribute(&quot;userId&quot;, userDTO.getUserId());</b>
+<b class="fc">&nbsp;            session.setAttribute(&quot;realName&quot;, userDTO.getRealName());</b>
+<b class="fc">&nbsp;            session.setAttribute(&quot;phoneNumber&quot;, userDTO.getPhoneNumber());</b>
+<b class="fc">&nbsp;            session.setAttribute(&quot;token&quot;, userDTO.getToken());</b>
+&nbsp;            
+&nbsp;            // 添加cookie
+<b class="fc">&nbsp;            Cookie userCookie = new Cookie(&quot;mini12306_auth&quot;, &quot;true&quot;);</b>
+<b class="fc">&nbsp;            userCookie.setPath(&quot;/&quot;);</b>
+<b class="fc">&nbsp;            userCookie.setMaxAge(24 * 60 * 60); // 24小时</b>
+<b class="fc">&nbsp;            userCookie.setHttpOnly(true);</b>
+<b class="fc">&nbsp;            response.addCookie(userCookie);</b>
+&nbsp;            
+&nbsp;            // 构建响应
+<b class="fc">&nbsp;            responseData.put(&quot;success&quot;, true);</b>
+<b class="fc">&nbsp;            responseData.put(&quot;message&quot;, &quot;注册成功&quot;);</b>
+<b class="fc">&nbsp;            responseData.put(&quot;user&quot;, userDTO);</b>
+&nbsp;            
+<b class="fc">&nbsp;            logger.info(&quot;用户 {} 注册成功&quot;, userDTO.getRealName());</b>
+<b class="fc">&nbsp;            return ResponseEntity.status(HttpStatus.CREATED).body(responseData);</b>
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            logger.error(&quot;注册失败: {}&quot;, e.getMessage());</b>
+<b class="fc">&nbsp;            responseData.put(&quot;success&quot;, false);</b>
+<b class="fc">&nbsp;            responseData.put(&quot;message&quot;, e.getMessage());</b>
+<b class="fc">&nbsp;            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseData);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 用户登出接口
+&nbsp;     *
+&nbsp;     * @param request  HTTP请求对象
+&nbsp;     * @param response HTTP响应对象
+&nbsp;     * @param session  HTTP会话对象
+&nbsp;     * @return 登出结果
+&nbsp;     */
+&nbsp;    @PostMapping(&quot;/logout&quot;)
+&nbsp;    public ResponseEntity&lt;Object&gt; logout(HttpServletRequest request, 
+&nbsp;                                       HttpServletResponse response, 
+&nbsp;                                       HttpSession session) {
+<b class="fc">&nbsp;        logger.info(&quot;接收到登出请求&quot;);</b>
+<b class="fc">&nbsp;        Map&lt;String, Object&gt; responseData = new HashMap&lt;&gt;();</b>
+&nbsp;        
+&nbsp;        // 清除session
+<b class="fc">&nbsp;        session.invalidate();</b>
+&nbsp;        
+&nbsp;        // 清除cookie
+<b class="fc">&nbsp;        Cookie[] cookies = request.getCookies();</b>
+<b class="pc">&nbsp;        if (cookies != null) {</b>
+<b class="pc">&nbsp;            for (Cookie cookie : cookies) {</b>
+<b class="pc">&nbsp;                if (&quot;mini12306_auth&quot;.equals(cookie.getName())) {</b>
+<b class="fc">&nbsp;                    cookie.setValue(&quot;&quot;);</b>
+<b class="fc">&nbsp;                    cookie.setPath(&quot;/&quot;);</b>
+<b class="fc">&nbsp;                    cookie.setMaxAge(0);</b>
+<b class="fc">&nbsp;                    response.addCookie(cookie);</b>
+&nbsp;                    break;
+&nbsp;                }
+&nbsp;            }
+&nbsp;        }
+&nbsp;        
+&nbsp;        // 构建响应
+<b class="fc">&nbsp;        responseData.put(&quot;success&quot;, true);</b>
+<b class="fc">&nbsp;        responseData.put(&quot;message&quot;, &quot;登出成功&quot;);</b>
+&nbsp;        
+<b class="fc">&nbsp;        logger.info(&quot;用户登出成功&quot;);</b>
+<b class="fc">&nbsp;        return ResponseEntity.ok(responseData);</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 获取当前登录用户信息
+&nbsp;     *
+&nbsp;     * @param session HTTP会话对象
+&nbsp;     * @return 用户信息
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/currentUser&quot;)
+&nbsp;    public ResponseEntity&lt;Object&gt; getCurrentUser(HttpSession session) {
+<b class="fc">&nbsp;        logger.info(&quot;接收到获取当前用户信息请求&quot;);</b>
+<b class="fc">&nbsp;        Map&lt;String, Object&gt; responseData = new HashMap&lt;&gt;();</b>
+&nbsp;        
+<b class="fc">&nbsp;        Long userId = (Long) session.getAttribute(&quot;userId&quot;);</b>
+<b class="fc">&nbsp;        if (userId != null) {</b>
+<b class="fc">&nbsp;            UserDTO userDTO = new UserDTO();</b>
+<b class="fc">&nbsp;            userDTO.setUserId(userId);</b>
+<b class="fc">&nbsp;            userDTO.setRealName((String) session.getAttribute(&quot;realName&quot;));</b>
+<b class="fc">&nbsp;            userDTO.setPhoneNumber((String) session.getAttribute(&quot;phoneNumber&quot;));</b>
+<b class="fc">&nbsp;            userDTO.setToken((String) session.getAttribute(&quot;token&quot;));</b>
+&nbsp;            
+<b class="fc">&nbsp;            responseData.put(&quot;success&quot;, true);</b>
+<b class="fc">&nbsp;            responseData.put(&quot;user&quot;, userDTO);</b>
+&nbsp;            
+<b class="fc">&nbsp;            logger.info(&quot;返回当前用户信息: {}&quot;, userDTO.getRealName());</b>
+<b class="fc">&nbsp;            return ResponseEntity.ok(responseData);</b>
+&nbsp;        } else {
+<b class="fc">&nbsp;            responseData.put(&quot;success&quot;, false);</b>
+<b class="fc">&nbsp;            responseData.put(&quot;message&quot;, &quot;未登录&quot;);</b>
+&nbsp;            
+<b class="fc">&nbsp;            logger.info(&quot;当前用户未登录&quot;);</b>
+<b class="fc">&nbsp;            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseData);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

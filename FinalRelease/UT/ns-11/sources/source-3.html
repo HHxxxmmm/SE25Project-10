@@ -1,0 +1,98 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TicketInventoryDAO</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.DAO</a>
+</div>
+
+<h1>Coverage Summary for Class: TicketInventoryDAO (com.example.techprototype.DAO)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+</tr>
+  <tr>
+    <td class="name">TicketInventoryDAO$MockitoMock$rmUy8uJN</td>
+  </tr>
+  <tr>
+    <td class="name">TicketInventoryDAO$MockitoMock$rmUy8uJN$auxiliary$6MCDuPID</td>
+  </tr>
+  <tr>
+    <td class="name">TicketInventoryDAO$MockitoMock$rmUy8uJN$auxiliary$PDx32vZT</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.DAO;
+&nbsp;
+&nbsp;import com.example.techprototype.Entity.TicketInventory;
+&nbsp;import java.time.LocalDate;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Optional;
+&nbsp;
+&nbsp;public interface TicketInventoryDAO {
+&nbsp;    
+&nbsp;    Optional&lt;TicketInventory&gt; findByKey(Integer trainId, Long departureStopId, Long arrivalStopId, LocalDate travelDate, Integer carriageTypeId);
+&nbsp;    
+&nbsp;    boolean updateAvailableSeats(Long inventoryId, Integer availableSeats, Long cacheVersion, Integer dbVersion);
+&nbsp;    
+&nbsp;    List&lt;TicketInventory&gt; findByTrainAndDate(Integer trainId, LocalDate travelDate);
+&nbsp;    
+&nbsp;    List&lt;TicketInventory&gt; findByTrainAndDateAndType(Integer trainId, LocalDate travelDate, Integer carriageTypeId);
+&nbsp;    
+&nbsp;    void save(TicketInventory ticketInventory);
+&nbsp;    
+&nbsp;    List&lt;TicketInventory&gt; findAll();
+&nbsp;} 
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

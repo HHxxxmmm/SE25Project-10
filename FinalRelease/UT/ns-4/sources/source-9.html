@@ -1,0 +1,232 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > WaitlistOrderController</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Controller</a>
+</div>
+
+<h1>Coverage Summary for Class: WaitlistOrderController (com.example.techprototype.Controller)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">WaitlistOrderController</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (8/8)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (14/14)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (29/29)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Controller;
+&nbsp;
+&nbsp;import com.example.techprototype.DTO.BookingRequest;
+&nbsp;import com.example.techprototype.DTO.BookingResponse;
+&nbsp;import com.example.techprototype.DTO.WaitlistOrderResponse;
+&nbsp;import com.example.techprototype.DTO.WaitlistOrderDetailResponse;
+&nbsp;import com.example.techprototype.Service.WaitlistOrderService;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.http.ResponseEntity;
+&nbsp;import org.springframework.web.bind.annotation.*;
+&nbsp;import java.util.List;
+&nbsp;
+&nbsp;@RestController
+&nbsp;@RequestMapping(&quot;/api/waitlist&quot;)
+&nbsp;@CrossOrigin(origins = &quot;*&quot;)
+<b class="fc">&nbsp;public class WaitlistOrderController {</b>
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private WaitlistOrderService waitlistOrderService;
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 创建候补订单
+&nbsp;     */
+&nbsp;    @PostMapping(&quot;/create&quot;)
+&nbsp;    public ResponseEntity&lt;BookingResponse&gt; createWaitlistOrder(@RequestBody BookingRequest request) {
+<b class="fc">&nbsp;        BookingResponse response = waitlistOrderService.createWaitlistOrder(request);</b>
+<b class="fc">&nbsp;        if (&quot;SUCCESS&quot;.equals(response.getStatus())) {</b>
+<b class="fc">&nbsp;            return ResponseEntity.ok(response);</b>
+&nbsp;        } else {
+<b class="fc">&nbsp;            return ResponseEntity.badRequest().body(response);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 获取我的候补订单
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/my&quot;)
+&nbsp;    public ResponseEntity&lt;WaitlistOrderResponse&gt; getMyWaitlistOrders(@RequestParam Long userId) {
+<b class="fc">&nbsp;        WaitlistOrderResponse response = waitlistOrderService.getMyWaitlistOrders(userId);</b>
+<b class="fc">&nbsp;        if (&quot;SUCCESS&quot;.equals(response.getStatus())) {</b>
+<b class="fc">&nbsp;            return ResponseEntity.ok(response);</b>
+&nbsp;        } else {
+<b class="fc">&nbsp;            return ResponseEntity.badRequest().body(response);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 获取候补订单详情
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/detail&quot;)
+&nbsp;    public ResponseEntity&lt;WaitlistOrderDetailResponse&gt; getWaitlistOrderDetail(
+&nbsp;            @RequestParam Long userId, 
+&nbsp;            @RequestParam Long waitlistId) {
+<b class="fc">&nbsp;        WaitlistOrderDetailResponse response = waitlistOrderService.getWaitlistOrderDetail(userId, waitlistId);</b>
+<b class="fc">&nbsp;        if (&quot;SUCCESS&quot;.equals(response.getStatus())) {</b>
+<b class="fc">&nbsp;            return ResponseEntity.ok(response);</b>
+&nbsp;        } else {
+<b class="fc">&nbsp;            return ResponseEntity.badRequest().body(response);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 支付候补订单
+&nbsp;     */
+&nbsp;    @PostMapping(&quot;/pay&quot;)
+&nbsp;    public ResponseEntity&lt;BookingResponse&gt; payWaitlistOrder(@RequestParam Long waitlistId, @RequestParam Long userId) {
+<b class="fc">&nbsp;        BookingResponse response = waitlistOrderService.payWaitlistOrder(waitlistId, userId);</b>
+<b class="fc">&nbsp;        if (&quot;SUCCESS&quot;.equals(response.getStatus())) {</b>
+<b class="fc">&nbsp;            return ResponseEntity.ok(response);</b>
+&nbsp;        } else {
+<b class="fc">&nbsp;            return ResponseEntity.badRequest().body(response);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 取消候补订单
+&nbsp;     */
+&nbsp;    @PostMapping(&quot;/cancel&quot;)
+&nbsp;    public ResponseEntity&lt;BookingResponse&gt; cancelWaitlistOrder(@RequestParam Long waitlistId, @RequestParam Long userId) {
+<b class="fc">&nbsp;        BookingResponse response = waitlistOrderService.cancelWaitlistOrder(waitlistId, userId);</b>
+<b class="fc">&nbsp;        if (&quot;SUCCESS&quot;.equals(response.getStatus())) {</b>
+<b class="fc">&nbsp;            return ResponseEntity.ok(response);</b>
+&nbsp;        } else {
+<b class="fc">&nbsp;            return ResponseEntity.badRequest().body(response);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 退款候补订单
+&nbsp;     */
+&nbsp;    @PostMapping(&quot;/refund&quot;)
+&nbsp;    public ResponseEntity&lt;BookingResponse&gt; refundWaitlistOrder(@RequestParam Long waitlistId, @RequestParam Long userId) {
+<b class="fc">&nbsp;        BookingResponse response = waitlistOrderService.refundWaitlistOrder(waitlistId, userId);</b>
+<b class="fc">&nbsp;        if (&quot;SUCCESS&quot;.equals(response.getStatus())) {</b>
+<b class="fc">&nbsp;            return ResponseEntity.ok(response);</b>
+&nbsp;        } else {
+<b class="fc">&nbsp;            return ResponseEntity.badRequest().body(response);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 部分退款候补订单项
+&nbsp;     */
+&nbsp;    @PostMapping(&quot;/refund-items&quot;)
+&nbsp;    public ResponseEntity&lt;BookingResponse&gt; refundWaitlistOrderItems(@RequestParam Long waitlistId, 
+&nbsp;                                                                   @RequestParam Long userId, 
+&nbsp;                                                                   @RequestBody List&lt;Long&gt; itemIds) {
+<b class="fc">&nbsp;        BookingResponse response = waitlistOrderService.refundWaitlistOrderItems(waitlistId, userId, itemIds);</b>
+<b class="fc">&nbsp;        if (&quot;SUCCESS&quot;.equals(response.getStatus())) {</b>
+<b class="fc">&nbsp;            return ResponseEntity.ok(response);</b>
+&nbsp;        } else {
+<b class="fc">&nbsp;            return ResponseEntity.badRequest().body(response);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;} 
+&nbsp;
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

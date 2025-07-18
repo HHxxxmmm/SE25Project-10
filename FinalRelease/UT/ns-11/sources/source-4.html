@@ -1,0 +1,105 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > PassengerDAO</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.DAO</a>
+</div>
+
+<h1>Coverage Summary for Class: PassengerDAO (com.example.techprototype.DAO)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+</tr>
+  <tr>
+    <td class="name">PassengerDAO$MockitoMock$LjY5GTwv</td>
+  </tr>
+  <tr>
+    <td class="name">PassengerDAO$MockitoMock$LjY5GTwv$auxiliary$Bisw2PZr</td>
+  </tr>
+  <tr>
+    <td class="name">PassengerDAO$MockitoMock$LjY5GTwv$auxiliary$Qw5ndizO</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.DAO;
+&nbsp;
+&nbsp;import com.example.techprototype.Entity.Passenger;
+&nbsp;import java.util.Optional;
+&nbsp;
+&nbsp;public interface PassengerDAO {
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 根据身份证号查找乘客
+&nbsp;     * @param idCardNumber 身份证号
+&nbsp;     * @return 乘客对象，可能为空
+&nbsp;     */
+&nbsp;    Optional&lt;Passenger&gt; findByIdCardNumber(String idCardNumber);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 保存乘客信息
+&nbsp;     * @param passenger 乘客对象
+&nbsp;     * @return 保存后的乘客对象
+&nbsp;     */
+&nbsp;    Passenger save(Passenger passenger);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 根据乘客ID查找乘客
+&nbsp;     * @param passengerId 乘客ID
+&nbsp;     * @return 乘客对象，可能为空
+&nbsp;     */
+&nbsp;    Optional&lt;Passenger&gt; findById(Long passengerId);
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

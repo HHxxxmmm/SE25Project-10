@@ -1,0 +1,179 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > PassengerDAOImpl</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.DAO.Impl</a>
+</div>
+
+<h1>Coverage Summary for Class: PassengerDAOImpl (com.example.techprototype.DAO.Impl)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">PassengerDAOImpl</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (5/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (18/18)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">PassengerDAOImpl$$SpringCGLIB$$0</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (5/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (18/18)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.DAO.Impl;
+&nbsp;
+&nbsp;import com.example.techprototype.DAO.PassengerDAO;
+&nbsp;import com.example.techprototype.Entity.Passenger;
+&nbsp;import jakarta.persistence.EntityManager;
+&nbsp;import jakarta.persistence.NoResultException;
+&nbsp;import jakarta.persistence.PersistenceContext;
+&nbsp;import jakarta.persistence.TypedQuery;
+&nbsp;import org.springframework.stereotype.Repository;
+&nbsp;import org.springframework.transaction.annotation.Transactional;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;import java.util.Optional;
+&nbsp;
+&nbsp;@Repository
+<b class="fc">&nbsp;public class PassengerDAOImpl implements PassengerDAO {</b>
+&nbsp;
+<b class="fc">&nbsp;    private static final Logger logger = LoggerFactory.getLogger(PassengerDAOImpl.class);</b>
+&nbsp;    
+&nbsp;    @PersistenceContext
+&nbsp;    private EntityManager entityManager;
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public Optional&lt;Passenger&gt; findByIdCardNumber(String idCardNumber) {
+<b class="fc">&nbsp;        logger.info(&quot;查询身份证号为: {} 的乘客&quot;, idCardNumber);</b>
+&nbsp;        try {
+<b class="fc">&nbsp;            TypedQuery&lt;Passenger&gt; query = entityManager.createQuery(</b>
+&nbsp;                    &quot;SELECT p FROM Passenger p WHERE p.idCardNumber = :idCardNumber&quot;, Passenger.class);
+<b class="fc">&nbsp;            query.setParameter(&quot;idCardNumber&quot;, idCardNumber);</b>
+<b class="fc">&nbsp;            return Optional.ofNullable(query.getSingleResult());</b>
+&nbsp;        } catch (NoResultException e) {
+<b class="fc">&nbsp;            logger.warn(&quot;未找到身份证号为 {} 的乘客&quot;, idCardNumber);</b>
+<b class="fc">&nbsp;            return Optional.empty();</b>
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            logger.error(&quot;查询身份证号为 {} 的乘客时发生错误: {}&quot;, idCardNumber, e.getMessage());</b>
+&nbsp;            throw e;
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    @Transactional
+&nbsp;    public Passenger save(Passenger passenger) {
+<b class="fc">&nbsp;        logger.info(&quot;保存乘客信息: {}&quot;, passenger.getRealName());</b>
+&nbsp;        try {
+<b class="fc">&nbsp;            entityManager.persist(passenger);</b>
+<b class="fc">&nbsp;            entityManager.flush();</b>
+<b class="fc">&nbsp;            logger.info(&quot;乘客保存成功，ID: {}&quot;, passenger.getPassengerId());</b>
+<b class="fc">&nbsp;            return passenger;</b>
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            logger.error(&quot;保存乘客信息时发生错误: {}&quot;, e.getMessage());</b>
+&nbsp;            throw e;
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public Optional&lt;Passenger&gt; findById(Long passengerId) {
+<b class="fc">&nbsp;        logger.info(&quot;查询ID为: {} 的乘客&quot;, passengerId);</b>
+&nbsp;        try {
+<b class="fc">&nbsp;            return Optional.ofNullable(entityManager.find(Passenger.class, passengerId));</b>
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            logger.error(&quot;查询ID为 {} 的乘客时发生错误: {}&quot;, passengerId, e.getMessage());</b>
+&nbsp;            throw e;
+&nbsp;        }
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,115 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > Train</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Entity</a>
+</div>
+
+<h1>Coverage Summary for Class: Train (com.example.techprototype.Entity)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+</tr>
+  <tr>
+    <td class="name">Train$HibernateInstantiator</td>
+  </tr>
+  <tr>
+    <td class="name">Train$HibernateProxy</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Entity;
+&nbsp;
+&nbsp;import jakarta.persistence.*;
+&nbsp;import lombok.Data;
+&nbsp;import lombok.NoArgsConstructor;
+&nbsp;import lombok.AllArgsConstructor;
+&nbsp;import java.time.LocalTime;
+&nbsp;
+&nbsp;@Entity
+&nbsp;@Table(name = &quot;trains&quot;)
+&nbsp;@Data
+&nbsp;@NoArgsConstructor
+&nbsp;@AllArgsConstructor
+&nbsp;public class Train {
+&nbsp;    
+&nbsp;    @Id
+&nbsp;    @GeneratedValue(strategy = GenerationType.IDENTITY)
+&nbsp;    @Column(name = &quot;train_id&quot;)
+&nbsp;    private Integer trainId;
+&nbsp;    
+&nbsp;    @Column(name = &quot;train_number&quot;, nullable = false, length = 20, unique = true)
+&nbsp;    private String trainNumber;
+&nbsp;    
+&nbsp;    @Column(name = &quot;train_type&quot;, nullable = false, length = 10)
+&nbsp;    private String trainType; // G-高铁, D-动车, K-快速, T-特快, Z-直达, C-城际
+&nbsp;    
+&nbsp;    @Column(name = &quot;start_station_id&quot;, nullable = false)
+&nbsp;    private Integer startStationId;
+&nbsp;    
+&nbsp;    @Column(name = &quot;end_station_id&quot;, nullable = false)
+&nbsp;    private Integer endStationId;
+&nbsp;    
+&nbsp;    @Column(name = &quot;departure_time&quot;, nullable = false)
+&nbsp;    private LocalTime departureTime;
+&nbsp;    
+&nbsp;    @Column(name = &quot;arrival_time&quot;, nullable = false)
+&nbsp;    private LocalTime arrivalTime;
+&nbsp;    
+&nbsp;    @Column(name = &quot;duration_minutes&quot;, nullable = false)
+&nbsp;    private Integer durationMinutes;
+&nbsp;} 
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

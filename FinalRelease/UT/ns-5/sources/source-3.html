@@ -1,0 +1,234 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > UserDAOImpl</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.DAO.Impl</a>
+</div>
+
+<h1>Coverage Summary for Class: UserDAOImpl (com.example.techprototype.DAO.Impl)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">UserDAOImpl</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (7/7)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (32/32)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">UserDAOImpl$$SpringCGLIB$$0</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (7/7)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (32/32)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.DAO.Impl;
+&nbsp;
+&nbsp;import com.example.techprototype.DAO.UserDAO;
+&nbsp;import com.example.techprototype.Entity.User;
+&nbsp;import jakarta.persistence.EntityManager;
+&nbsp;import jakarta.persistence.NoResultException;
+&nbsp;import jakarta.persistence.PersistenceContext;
+&nbsp;import jakarta.persistence.TypedQuery;
+&nbsp;import org.springframework.stereotype.Repository;
+&nbsp;import org.springframework.transaction.annotation.Transactional;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;import java.util.Optional;
+&nbsp;
+&nbsp;@Repository
+<b class="fc">&nbsp;public class UserDAOImpl implements UserDAO {</b>
+&nbsp;
+<b class="fc">&nbsp;    private static final Logger logger = LoggerFactory.getLogger(UserDAOImpl.class);</b>
+&nbsp;    
+&nbsp;    @PersistenceContext
+&nbsp;    private EntityManager entityManager;
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public Optional&lt;User&gt; findByPhoneNumber(String phoneNumber) {
+<b class="fc">&nbsp;        logger.info(&quot;查询手机号为: {} 的用户&quot;, phoneNumber);</b>
+&nbsp;        try {
+<b class="fc">&nbsp;            TypedQuery&lt;User&gt; query = entityManager.createQuery(</b>
+&nbsp;                    &quot;SELECT u FROM User u WHERE u.phoneNumber = :phoneNumber&quot;, User.class);
+<b class="fc">&nbsp;            query.setParameter(&quot;phoneNumber&quot;, phoneNumber);</b>
+<b class="fc">&nbsp;            return Optional.ofNullable(query.getSingleResult());</b>
+&nbsp;        } catch (NoResultException e) {
+<b class="fc">&nbsp;            logger.warn(&quot;未找到手机号为 {} 的用户&quot;, phoneNumber);</b>
+<b class="fc">&nbsp;            return Optional.empty();</b>
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            logger.error(&quot;查询手机号为 {} 的用户时发生错误: {}&quot;, phoneNumber, e.getMessage());</b>
+&nbsp;            throw e;
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    @Transactional
+&nbsp;    public User save(User user) {
+<b class="fc">&nbsp;        logger.info(&quot;保存用户信息: {}&quot;, user.getPhoneNumber());</b>
+&nbsp;        try {
+<b class="fc">&nbsp;            entityManager.persist(user);</b>
+<b class="fc">&nbsp;            entityManager.flush();</b>
+<b class="fc">&nbsp;            logger.info(&quot;用户保存成功，ID: {}&quot;, user.getUserId());</b>
+<b class="fc">&nbsp;            return user;</b>
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            logger.error(&quot;保存用户信息时发生错误: {}&quot;, e.getMessage());</b>
+&nbsp;            throw e;
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public Optional&lt;User&gt; findById(Long userId) {
+<b class="fc">&nbsp;        logger.info(&quot;查询ID为: {} 的用户&quot;, userId);</b>
+&nbsp;        try {
+<b class="fc">&nbsp;            return Optional.ofNullable(entityManager.find(User.class, userId));</b>
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            logger.error(&quot;查询ID为 {} 的用户时发生错误: {}&quot;, userId, e.getMessage());</b>
+&nbsp;            throw e;
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public Optional&lt;User&gt; findByEmail(String email) {
+<b class="fc">&nbsp;        logger.info(&quot;查询邮箱为: {} 的用户&quot;, email);</b>
+<b class="fc">&nbsp;        if (email == null || email.trim().isEmpty()) {</b>
+<b class="fc">&nbsp;            return Optional.empty();</b>
+&nbsp;        }
+&nbsp;        
+&nbsp;        try {
+<b class="fc">&nbsp;            TypedQuery&lt;User&gt; query = entityManager.createQuery(</b>
+&nbsp;                    &quot;SELECT u FROM User u WHERE u.email = :email&quot;, User.class);
+<b class="fc">&nbsp;            query.setParameter(&quot;email&quot;, email);</b>
+<b class="fc">&nbsp;            return Optional.ofNullable(query.getSingleResult());</b>
+&nbsp;        } catch (NoResultException e) {
+<b class="fc">&nbsp;            logger.warn(&quot;未找到邮箱为 {} 的用户&quot;, email);</b>
+<b class="fc">&nbsp;            return Optional.empty();</b>
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            logger.error(&quot;查询邮箱为 {} 的用户时发生错误: {}&quot;, email, e.getMessage());</b>
+&nbsp;            throw e;
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    @Transactional
+&nbsp;    public void update(User user) {
+<b class="fc">&nbsp;        logger.info(&quot;更新用户信息: {}&quot;, user.getUserId());</b>
+&nbsp;        try {
+<b class="fc">&nbsp;            entityManager.merge(user);</b>
+<b class="fc">&nbsp;            entityManager.flush();</b>
+<b class="fc">&nbsp;            logger.info(&quot;用户信息更新成功，ID: {}&quot;, user.getUserId());</b>
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            logger.error(&quot;更新用户信息时发生错误: {}&quot;, e.getMessage());</b>
+&nbsp;            throw e;
+&nbsp;        }
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

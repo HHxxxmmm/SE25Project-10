@@ -1,0 +1,371 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > UserServiceImpl</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Service.Impl</a>
+</div>
+
+<h1>Coverage Summary for Class: UserServiceImpl (com.example.techprototype.Service.Impl)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">UserServiceImpl</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (8/8)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    84.4%
+  </span>
+  <span class="absValue">
+    (27/32)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    95.3%
+  </span>
+  <span class="absValue">
+    (102/107)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">UserServiceImpl$$SpringCGLIB$$0</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (8/8)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    84.4%
+  </span>
+  <span class="absValue">
+    (27/32)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    95.3%
+  </span>
+  <span class="absValue">
+    (102/107)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Service.Impl;
+&nbsp;
+&nbsp;import com.example.techprototype.DAO.PassengerDAO;
+&nbsp;import com.example.techprototype.DAO.UserDAO;
+&nbsp;import com.example.techprototype.DAO.UserPassengerRelationDAO;
+&nbsp;import com.example.techprototype.DTO.LoginDTO;
+&nbsp;import com.example.techprototype.DTO.RegisterDTO;
+&nbsp;import com.example.techprototype.DTO.UserDTO;
+&nbsp;import com.example.techprototype.Entity.Passenger;
+&nbsp;import com.example.techprototype.Entity.User;
+&nbsp;import com.example.techprototype.Entity.UserPassengerRelation;
+&nbsp;import com.example.techprototype.Service.UserService;
+&nbsp;import com.example.techprototype.Util.JwtUtil;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;import org.springframework.transaction.annotation.Transactional;
+&nbsp;
+&nbsp;import java.security.MessageDigest;
+&nbsp;import java.security.NoSuchAlgorithmException;
+&nbsp;import java.time.LocalDateTime;
+&nbsp;import java.util.Optional;
+&nbsp;import java.util.regex.Pattern;
+&nbsp;
+&nbsp;@Service
+<b class="fc">&nbsp;public class UserServiceImpl implements UserService {</b>
+&nbsp;
+<b class="fc">&nbsp;    private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);</b>
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private UserDAO userDAO;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private PassengerDAO passengerDAO;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private UserPassengerRelationDAO userPassengerRelationDAO;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private JwtUtil jwtUtil;
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public UserDTO login(LoginDTO loginDTO) throws Exception {
+<b class="fc">&nbsp;        logger.info(&quot;用户登录: {}&quot;, loginDTO.getPhoneNumber());</b>
+&nbsp;        
+&nbsp;        // 验证手机号
+<b class="fc">&nbsp;        Optional&lt;User&gt; userOptional = userDAO.findByPhoneNumber(loginDTO.getPhoneNumber());</b>
+<b class="fc">&nbsp;        if (!userOptional.isPresent()) {</b>
+<b class="fc">&nbsp;            logger.warn(&quot;登录失败: 手机号 {} 未注册&quot;, loginDTO.getPhoneNumber());</b>
+<b class="fc">&nbsp;            throw new Exception(&quot;用户不存在&quot;);</b>
+&nbsp;        }
+&nbsp;        
+<b class="fc">&nbsp;        User user = userOptional.get();</b>
+&nbsp;        
+&nbsp;        // 验证密码 - 支持MD5和BCrypt两种格式
+<b class="fc">&nbsp;        String currentPasswordHash = user.getPasswordHash();</b>
+<b class="fc">&nbsp;        boolean passwordValid = false;</b>
+&nbsp;        
+&nbsp;        // 检查是否是MD5格式的密码（32位十六进制字符串）
+<b class="pc">&nbsp;        if (currentPasswordHash.length() == 32 &amp;&amp; currentPasswordHash.matches(&quot;[a-fA-F0-9]{32}&quot;)) {</b>
+&nbsp;            // MD5格式，计算当前密码的MD5值进行比较
+<b class="fc">&nbsp;            String md5Password = generateMD5Password(loginDTO.getPassword());</b>
+<b class="fc">&nbsp;            passwordValid = currentPasswordHash.equalsIgnoreCase(md5Password);</b>
+&nbsp;        } else {
+&nbsp;            // BCrypt格式，使用BCrypt编码器验证
+<b class="fc">&nbsp;            org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder passwordEncoder = </b>
+&nbsp;                new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
+<b class="fc">&nbsp;            passwordValid = passwordEncoder.matches(loginDTO.getPassword(), currentPasswordHash);</b>
+&nbsp;        }
+&nbsp;        
+<b class="fc">&nbsp;        if (!passwordValid) {</b>
+<b class="fc">&nbsp;            logger.warn(&quot;登录失败: 密码错误, 用户手机号: {}&quot;, loginDTO.getPhoneNumber());</b>
+<b class="fc">&nbsp;            throw new Exception(&quot;密码错误&quot;);</b>
+&nbsp;        }
+&nbsp;        
+&nbsp;        // 更新最后登录时间
+<b class="fc">&nbsp;        user.setLastLoginTime(LocalDateTime.now());</b>
+<b class="fc">&nbsp;        userDAO.update(user);</b>
+&nbsp;        
+&nbsp;        // 生成JWT令牌
+<b class="fc">&nbsp;        String token = jwtUtil.generateToken(user.getUserId());</b>
+&nbsp;        
+&nbsp;        // 构建返回对象
+<b class="fc">&nbsp;        UserDTO userDTO = new UserDTO();</b>
+<b class="fc">&nbsp;        userDTO.setUserId(user.getUserId());</b>
+<b class="fc">&nbsp;        userDTO.setRealName(user.getRealName());</b>
+<b class="fc">&nbsp;        userDTO.setPhoneNumber(user.getPhoneNumber());</b>
+<b class="fc">&nbsp;        userDTO.setEmail(user.getEmail());</b>
+<b class="fc">&nbsp;        userDTO.setToken(token);</b>
+<b class="fc">&nbsp;        userDTO.setPassengerId(user.getPassengerId());</b>
+&nbsp;        
+<b class="fc">&nbsp;        logger.info(&quot;用户 {} 登录成功&quot;, user.getRealName());</b>
+<b class="fc">&nbsp;        return userDTO;</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    @Transactional
+&nbsp;    public UserDTO register(RegisterDTO registerDTO) throws Exception {
+<b class="fc">&nbsp;        logger.info(&quot;用户注册开始: {}&quot;, registerDTO.getPhoneNumber());</b>
+&nbsp;        
+&nbsp;        // 验证手机号是否已注册
+<b class="fc">&nbsp;        if (userDAO.findByPhoneNumber(registerDTO.getPhoneNumber()).isPresent()) {</b>
+<b class="fc">&nbsp;            logger.warn(&quot;注册失败: 手机号 {} 已被注册&quot;, registerDTO.getPhoneNumber());</b>
+<b class="fc">&nbsp;            throw new Exception(&quot;手机号已被注册&quot;);</b>
+&nbsp;        }
+&nbsp;        
+&nbsp;        // 验证邮箱是否已注册(如果提供了邮箱)
+<b class="pc">&nbsp;        if (registerDTO.getEmail() != null &amp;&amp; !registerDTO.getEmail().trim().isEmpty() &amp;&amp; </b>
+<b class="fc">&nbsp;                userDAO.findByEmail(registerDTO.getEmail()).isPresent()) {</b>
+<b class="fc">&nbsp;            logger.warn(&quot;注册失败: 邮箱 {} 已被注册&quot;, registerDTO.getEmail());</b>
+<b class="fc">&nbsp;            throw new Exception(&quot;邮箱已被注册&quot;);</b>
+&nbsp;        }
+&nbsp;        
+&nbsp;        // 验证身份证号码合法性
+<b class="fc">&nbsp;        if (!validateIdCard(registerDTO.getIdCardNumber())) {</b>
+<b class="fc">&nbsp;            logger.warn(&quot;注册失败: 身份证号 {} 不合法&quot;, registerDTO.getIdCardNumber());</b>
+<b class="fc">&nbsp;            throw new Exception(&quot;身份证号码不合法&quot;);</b>
+&nbsp;        }
+&nbsp;        
+&nbsp;        // 创建或查找乘客
+&nbsp;        Passenger passenger;
+<b class="fc">&nbsp;        Optional&lt;Passenger&gt; existingPassenger = passengerDAO.findByIdCardNumber(registerDTO.getIdCardNumber());</b>
+&nbsp;        
+<b class="pc">&nbsp;        if (existingPassenger.isPresent()) {</b>
+<b class="nc">&nbsp;            passenger = existingPassenger.get();</b>
+<b class="nc">&nbsp;            logger.info(&quot;找到已存在的乘客信息，ID: {}&quot;, passenger.getPassengerId());</b>
+&nbsp;        } else {
+<b class="fc">&nbsp;            passenger = new Passenger();</b>
+<b class="fc">&nbsp;            passenger.setRealName(registerDTO.getRealName());</b>
+<b class="fc">&nbsp;            passenger.setIdCardNumber(registerDTO.getIdCardNumber());</b>
+<b class="fc">&nbsp;            passenger.setPassengerType((byte) 1); // 默认成人</b>
+<b class="fc">&nbsp;            passenger.setPhoneNumber(registerDTO.getPhoneNumber());</b>
+<b class="fc">&nbsp;            passenger.setStudentTypeLeft(0); // 默认非学生</b>
+&nbsp;            
+<b class="fc">&nbsp;            passenger = passengerDAO.save(passenger);</b>
+<b class="fc">&nbsp;            logger.info(&quot;创建新乘客信息，ID: {}&quot;, passenger.getPassengerId());</b>
+&nbsp;        }
+&nbsp;        
+&nbsp;        // 创建用户
+<b class="fc">&nbsp;        User user = new User();</b>
+<b class="fc">&nbsp;        user.setRealName(registerDTO.getRealName());</b>
+<b class="fc">&nbsp;        user.setPasswordHash(generateMD5Password(registerDTO.getPassword()));</b>
+<b class="fc">&nbsp;        user.setPhoneNumber(registerDTO.getPhoneNumber());</b>
+<b class="fc">&nbsp;        user.setEmail(registerDTO.getEmail());</b>
+<b class="fc">&nbsp;        user.setRegistrationTime(LocalDateTime.now());</b>
+<b class="fc">&nbsp;        user.setAccountStatus((byte) 1); // 账号状态正常</b>
+<b class="fc">&nbsp;        user.setRelatedPassenger(1); // 至少关联自己作为乘客</b>
+<b class="fc">&nbsp;        user.setPassengerId(passenger.getPassengerId()); // 关联到自己的乘客信息</b>
+&nbsp;        
+<b class="fc">&nbsp;        user = userDAO.save(user);</b>
+<b class="fc">&nbsp;        logger.info(&quot;创建用户成功, ID: {}&quot;, user.getUserId());</b>
+&nbsp;        
+&nbsp;        // 创建用户与乘客的关联关系
+<b class="fc">&nbsp;        UserPassengerRelation relation = new UserPassengerRelation();</b>
+<b class="fc">&nbsp;        relation.setUserId(user.getUserId());</b>
+<b class="fc">&nbsp;        relation.setPassengerId(passenger.getPassengerId());</b>
+<b class="fc">&nbsp;        relation.setRelationType((byte) 1); // 1-本人</b>
+<b class="fc">&nbsp;        relation.setAddedTime(LocalDateTime.now());</b>
+&nbsp;        
+<b class="fc">&nbsp;        userPassengerRelationDAO.save(relation);</b>
+<b class="fc">&nbsp;        logger.info(&quot;创建用户和乘客关系成功&quot;);</b>
+&nbsp;        
+&nbsp;        // 生成JWT令牌
+<b class="fc">&nbsp;        String token = jwtUtil.generateToken(user.getUserId());</b>
+&nbsp;        
+&nbsp;        // 构建返回对象
+<b class="fc">&nbsp;        UserDTO userDTO = new UserDTO();</b>
+<b class="fc">&nbsp;        userDTO.setUserId(user.getUserId());</b>
+<b class="fc">&nbsp;        userDTO.setRealName(user.getRealName());</b>
+<b class="fc">&nbsp;        userDTO.setPhoneNumber(user.getPhoneNumber());</b>
+<b class="fc">&nbsp;        userDTO.setEmail(user.getEmail());</b>
+<b class="fc">&nbsp;        userDTO.setToken(token);</b>
+<b class="fc">&nbsp;        userDTO.setPassengerId(passenger.getPassengerId());</b>
+&nbsp;        
+<b class="fc">&nbsp;        logger.info(&quot;用户注册完成: {}&quot;, user.getRealName());</b>
+<b class="fc">&nbsp;        return userDTO;</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public User getUserById(Long userId) {
+<b class="fc">&nbsp;        logger.info(&quot;根据ID查询用户: {}&quot;, userId);</b>
+<b class="fc">&nbsp;        Optional&lt;User&gt; userOptional = userDAO.findById(userId);</b>
+<b class="fc">&nbsp;        return userOptional.orElse(null);</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public User getUserByPhoneNumber(String phoneNumber) {
+<b class="fc">&nbsp;        logger.info(&quot;根据手机号查询用户: {}&quot;, phoneNumber);</b>
+<b class="fc">&nbsp;        Optional&lt;User&gt; userOptional = userDAO.findByPhoneNumber(phoneNumber);</b>
+<b class="fc">&nbsp;        return userOptional.orElse(null);</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public boolean validateIdCard(String idCardNumber) {
+<b class="fc">&nbsp;        logger.info(&quot;验证身份证号: {}&quot;, idCardNumber);</b>
+&nbsp;        
+&nbsp;        // 身份证号码为18位，15位也是合法的
+<b class="fc">&nbsp;        if (idCardNumber == null || (idCardNumber.length() != 18 &amp;&amp; idCardNumber.length() != 15)) {</b>
+<b class="fc">&nbsp;            return false;</b>
+&nbsp;        }
+&nbsp;        
+&nbsp;        // 简单的正则表达式验证
+<b class="fc">&nbsp;        String regex = &quot;^[1-9]\\d{5}(19|20)\\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\\d|3[01])\\d{3}[0-9Xx]$&quot;;</b>
+<b class="fc">&nbsp;        if (idCardNumber.length() == 18) {</b>
+<b class="fc">&nbsp;            return Pattern.matches(regex, idCardNumber);</b>
+&nbsp;        } else {
+&nbsp;            // 15位身份证转18位验证
+<b class="fc">&nbsp;            regex = &quot;^[1-9]\\d{5}\\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\\d|3[01])\\d{3}$&quot;;</b>
+<b class="fc">&nbsp;            return Pattern.matches(regex, idCardNumber);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public String generateMD5Password(String password) {
+<b class="fc">&nbsp;        logger.debug(&quot;生成MD5密码&quot;);</b>
+&nbsp;        
+&nbsp;        try {
+<b class="fc">&nbsp;            MessageDigest md = MessageDigest.getInstance(&quot;MD5&quot;);</b>
+<b class="fc">&nbsp;            byte[] messageDigest = md.digest(password.getBytes());</b>
+&nbsp;            
+<b class="fc">&nbsp;            StringBuilder hexString = new StringBuilder();</b>
+<b class="fc">&nbsp;            for (byte b : messageDigest) {</b>
+<b class="fc">&nbsp;                String hex = Integer.toHexString(0xff &amp; b);</b>
+<b class="pc">&nbsp;                if (hex.length() == 1) {</b>
+<b class="nc">&nbsp;                    hexString.append(&#39;0&#39;);</b>
+&nbsp;                }
+<b class="fc">&nbsp;                hexString.append(hex);</b>
+&nbsp;            }
+&nbsp;            
+<b class="fc">&nbsp;            return hexString.toString();</b>
+&nbsp;        } catch (NoSuchAlgorithmException e) {
+<b class="nc">&nbsp;            logger.error(&quot;MD5加密失败: {}&quot;, e.getMessage());</b>
+<b class="nc">&nbsp;            throw new RuntimeException(&quot;MD5加密失败&quot;, e);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

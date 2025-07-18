@@ -1,0 +1,107 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TrainStopRepository</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Repository</a>
+</div>
+
+<h1>Coverage Summary for Class: TrainStopRepository (com.example.techprototype.Repository)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+</tr>
+  <tr>
+    <td class="name">TrainStopRepository$MockitoMock$XcUh60bS</td>
+  </tr>
+  <tr>
+    <td class="name">TrainStopRepository$MockitoMock$XcUh60bS$auxiliary$a59PJyyR</td>
+  </tr>
+  <tr>
+    <td class="name">TrainStopRepository$MockitoMock$XcUh60bS$auxiliary$yYHBVdUq</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Repository;
+&nbsp;
+&nbsp;import com.example.techprototype.Entity.TrainStop;
+&nbsp;import org.springframework.data.jpa.repository.JpaRepository;
+&nbsp;import org.springframework.stereotype.Repository;
+&nbsp;import java.util.Optional;
+&nbsp;import java.util.List;
+&nbsp;
+&nbsp;@Repository
+&nbsp;public interface TrainStopRepository extends JpaRepository&lt;TrainStop, Long&gt; {
+&nbsp;    
+&nbsp;    Optional&lt;TrainStop&gt; findByStopId(Long stopId);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 根据车次ID和站点ID查询车次停靠信息
+&nbsp;     */
+&nbsp;    TrainStop findByTrainIdAndStationId(Integer trainId, Integer stationId);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 根据车次ID和停靠点ID查询车次停靠信息
+&nbsp;     */
+&nbsp;    Optional&lt;TrainStop&gt; findByTrainIdAndStopId(Integer trainId, Long stopId);
+&nbsp;
+&nbsp;    List&lt;TrainStop&gt; findByTrainIdOrderBySequenceNumberAsc(Integer trainId);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 根据站点ID查询所有停靠该站点的车次停靠信息
+&nbsp;     */
+&nbsp;    List&lt;TrainStop&gt; findByStationId(Integer stationId);
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

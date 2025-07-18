@@ -1,0 +1,329 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TimeConflictService</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Service</a>
+</div>
+
+<h1>Coverage Summary for Class: TimeConflictService (com.example.techprototype.Service)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TimeConflictService</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (7/7)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    89.6%
+  </span>
+  <span class="absValue">
+    (43/48)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (76/76)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Service;
+&nbsp;
+&nbsp;import com.example.techprototype.Entity.Ticket;
+&nbsp;import com.example.techprototype.Entity.TrainStop;
+&nbsp;import com.example.techprototype.Repository.TicketRepository;
+&nbsp;import com.example.techprototype.Repository.TrainStopRepository;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;
+&nbsp;import java.time.LocalDate;
+&nbsp;import java.time.LocalTime;
+&nbsp;import java.time.LocalDateTime;
+&nbsp;import java.util.List;
+&nbsp;import java.util.ArrayList;
+&nbsp;import java.util.Optional;
+&nbsp;
+&nbsp;@Service
+<b class="fc">&nbsp;public class TimeConflictService {</b>
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private TicketRepository ticketRepository;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private TrainStopRepository trainStopRepository;
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 检查乘客在指定时间段内是否有时间冲突的车票
+&nbsp;     * 
+&nbsp;     * @param passengerId 乘客ID
+&nbsp;     * @param travelDate 出行日期
+&nbsp;     * @param trainId 车次ID
+&nbsp;     * @param departureStopId 出发站ID
+&nbsp;     * @param arrivalStopId 到达站ID
+&nbsp;     * @param excludeTicketId 排除的车票ID（用于改签时排除原票）
+&nbsp;     * @return 冲突的车票列表，如果没有冲突返回空列表
+&nbsp;     */
+&nbsp;    public List&lt;Ticket&gt; checkTimeConflict(Long passengerId, LocalDate travelDate, 
+&nbsp;                                        Integer trainId, Long departureStopId, Long arrivalStopId,
+&nbsp;                                        Long excludeTicketId) {
+&nbsp;        
+<b class="fc">&nbsp;        System.out.println(&quot;开始检查时间冲突 - 乘客ID: &quot; + passengerId + &quot;, 车次: &quot; + trainId + </b>
+&nbsp;                          &quot;, 出发站: &quot; + departureStopId + &quot;, 到达站: &quot; + arrivalStopId + 
+&nbsp;                          &quot;, 日期: &quot; + travelDate);
+&nbsp;        
+&nbsp;        // 获取新票的时间段
+<b class="fc">&nbsp;        LocalTime newDepartureTime = getDepartureTime(trainId, departureStopId);</b>
+<b class="fc">&nbsp;        LocalTime newArrivalTime = getArrivalTime(trainId, arrivalStopId);</b>
+&nbsp;        
+<b class="fc">&nbsp;        System.out.println(&quot;新票时间 - 出发: &quot; + newDepartureTime + &quot;, 到达: &quot; + newArrivalTime);</b>
+&nbsp;        
+&nbsp;        // 对于区间票，使用出发站的出发时间和到达站的到达时间
+<b class="fc">&nbsp;        if (newDepartureTime == null) {</b>
+<b class="fc">&nbsp;            System.out.println(&quot;无法获取出发时间，跳过时间冲突检测&quot;);</b>
+<b class="fc">&nbsp;            return List.of();</b>
+&nbsp;        }
+&nbsp;        
+<b class="fc">&nbsp;        if (newArrivalTime == null) {</b>
+<b class="fc">&nbsp;            System.out.println(&quot;无法获取到达时间，跳过时间冲突检测&quot;);</b>
+<b class="fc">&nbsp;            return List.of();</b>
+&nbsp;        }
+&nbsp;        
+&nbsp;        // 计算新票的实际出发和到达日期时间
+<b class="fc">&nbsp;        LocalDateTime newDepartureDateTime = LocalDateTime.of(travelDate, newDepartureTime);</b>
+<b class="fc">&nbsp;        LocalDateTime newArrivalDateTime = LocalDateTime.of(travelDate, newArrivalTime);</b>
+&nbsp;        
+&nbsp;        // 如果到达时间早于出发时间，说明跨天了
+<b class="fc">&nbsp;        if (newArrivalTime.isBefore(newDepartureTime)) {</b>
+<b class="fc">&nbsp;            newArrivalDateTime = newArrivalDateTime.plusDays(1);</b>
+<b class="fc">&nbsp;            System.out.println(&quot;检测到跨天车票，到达时间调整为: &quot; + newArrivalDateTime);</b>
+&nbsp;        }
+&nbsp;        
+&nbsp;        // 获取需要检查的日期范围（新票出发日期前后各1天，以覆盖跨天情况）
+<b class="fc">&nbsp;        LocalDate checkStartDate = travelDate.minusDays(1);</b>
+<b class="fc">&nbsp;        LocalDate checkEndDate = newArrivalDateTime.toLocalDate();</b>
+&nbsp;        
+<b class="fc">&nbsp;        System.out.println(&quot;检查日期范围: &quot; + checkStartDate + &quot; 到 &quot; + checkEndDate);</b>
+&nbsp;        
+&nbsp;        // 查询乘客在日期范围内的所有有效车票
+<b class="fc">&nbsp;        List&lt;Ticket&gt; allExistingTickets = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (LocalDate date = checkStartDate; !date.isAfter(checkEndDate); date = date.plusDays(1)) {</b>
+&nbsp;            List&lt;Ticket&gt; ticketsForDate;
+<b class="fc">&nbsp;            if (excludeTicketId != null) {</b>
+<b class="fc">&nbsp;                ticketsForDate = ticketRepository.findValidTicketsByPassengerAndDate(</b>
+&nbsp;                        passengerId, date, excludeTicketId);
+&nbsp;            } else {
+<b class="fc">&nbsp;                ticketsForDate = ticketRepository.findValidTicketsByPassengerAndDate(</b>
+&nbsp;                        passengerId, date);
+&nbsp;            }
+<b class="fc">&nbsp;            System.out.println(&quot;日期 &quot; + date + &quot; 找到 &quot; + ticketsForDate.size() + &quot; 张车票&quot;);</b>
+<b class="fc">&nbsp;            allExistingTickets.addAll(ticketsForDate);</b>
+&nbsp;        }
+&nbsp;        
+<b class="fc">&nbsp;        System.out.println(&quot;总共找到 &quot; + allExistingTickets.size() + &quot; 张现有车票&quot;);</b>
+&nbsp;        
+&nbsp;        // 创建final变量用于lambda表达式
+<b class="fc">&nbsp;        final LocalDateTime finalNewDepartureDateTime = newDepartureDateTime;</b>
+<b class="fc">&nbsp;        final LocalDateTime finalNewArrivalDateTime = newArrivalDateTime;</b>
+&nbsp;        
+&nbsp;        // 检查时间冲突
+<b class="fc">&nbsp;        List&lt;Ticket&gt; conflictTickets = allExistingTickets.stream()</b>
+<b class="fc">&nbsp;                .filter(ticket -&gt; hasTimeConflict(ticket, finalNewDepartureDateTime, finalNewArrivalDateTime))</b>
+<b class="fc">&nbsp;                .toList();</b>
+&nbsp;        
+<b class="fc">&nbsp;        System.out.println(&quot;检测到 &quot; + conflictTickets.size() + &quot; 张冲突车票&quot;);</b>
+&nbsp;        
+<b class="fc">&nbsp;        return conflictTickets;</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 检查乘客在指定时间段内是否有时间冲突的车票（不排除任何车票）
+&nbsp;     */
+&nbsp;    public List&lt;Ticket&gt; checkTimeConflict(Long passengerId, LocalDate travelDate, 
+&nbsp;                                        Integer trainId, Long departureStopId, Long arrivalStopId) {
+<b class="fc">&nbsp;        return checkTimeConflict(passengerId, travelDate, trainId, departureStopId, arrivalStopId, null);</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 检查两个时间段是否有冲突
+&nbsp;     * 冲突条件：两个时间段有重叠
+&nbsp;     */
+&nbsp;    private boolean hasTimeConflict(Ticket existingTicket, LocalDateTime newDepartureDateTime, LocalDateTime newArrivalDateTime) {
+&nbsp;        // 获取现有车票的时间段
+<b class="fc">&nbsp;        LocalTime existingDepartureTime = getDepartureTime(existingTicket.getTrainId(), existingTicket.getDepartureStopId());</b>
+<b class="fc">&nbsp;        LocalTime existingArrivalTime = getArrivalTime(existingTicket.getTrainId(), existingTicket.getArrivalStopId());</b>
+&nbsp;        
+<b class="pc">&nbsp;        if (existingDepartureTime == null || existingArrivalTime == null) {</b>
+<b class="fc">&nbsp;            return false; // 无法获取时间信息，不阻止</b>
+&nbsp;        }
+&nbsp;        
+&nbsp;        // 计算现有车票的实际出发和到达日期时间
+<b class="fc">&nbsp;        LocalDateTime existingDepartureDateTime = LocalDateTime.of(existingTicket.getTravelDate(), existingDepartureTime);</b>
+<b class="fc">&nbsp;        LocalDateTime existingArrivalDateTime = LocalDateTime.of(existingTicket.getTravelDate(), existingArrivalTime);</b>
+&nbsp;        
+&nbsp;        // 如果到达时间早于出发时间，说明跨天了
+<b class="fc">&nbsp;        if (existingArrivalTime.isBefore(existingDepartureTime)) {</b>
+<b class="fc">&nbsp;            existingArrivalDateTime = existingArrivalDateTime.plusDays(1);</b>
+&nbsp;        }
+&nbsp;        
+&nbsp;        // 检查时间重叠
+&nbsp;        // 情况1：新票的出发时间在现有票的时间段内
+<b class="fc">&nbsp;        if (newDepartureDateTime.isAfter(existingDepartureDateTime) &amp;&amp; newDepartureDateTime.isBefore(existingArrivalDateTime)) {</b>
+<b class="fc">&nbsp;            return true;</b>
+&nbsp;        }
+&nbsp;        
+&nbsp;        // 情况2：新票的到达时间在现有票的时间段内
+<b class="pc">&nbsp;        if (newArrivalDateTime.isAfter(existingDepartureDateTime) &amp;&amp; newArrivalDateTime.isBefore(existingArrivalDateTime)) {</b>
+<b class="fc">&nbsp;            return true;</b>
+&nbsp;        }
+&nbsp;        
+&nbsp;        // 情况3：新票的时间段完全包含现有票的时间段
+<b class="pc">&nbsp;        if (newDepartureDateTime.isBefore(existingDepartureDateTime) &amp;&amp; newArrivalDateTime.isAfter(existingArrivalDateTime)) {</b>
+<b class="fc">&nbsp;            return true;</b>
+&nbsp;        }
+&nbsp;        
+&nbsp;        // 情况4：新票的时间段与现有票的时间段完全重叠
+<b class="pc">&nbsp;        if (newDepartureDateTime.equals(existingDepartureDateTime) &amp;&amp; newArrivalDateTime.equals(existingArrivalDateTime)) {</b>
+<b class="fc">&nbsp;            return true;</b>
+&nbsp;        }
+&nbsp;        
+<b class="fc">&nbsp;        return false;</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 获取车次在指定站的出发时间
+&nbsp;     */
+&nbsp;    private LocalTime getDepartureTime(Integer trainId, Long stopId) {
+<b class="fc">&nbsp;        Optional&lt;TrainStop&gt; trainStopOpt = trainStopRepository.findByStopId(stopId);</b>
+<b class="fc">&nbsp;        LocalTime departureTime = trainStopOpt.map(TrainStop::getDepartureTime).orElse(null);</b>
+<b class="fc">&nbsp;        System.out.println(&quot;查询出发时间 - stopId: &quot; + stopId + &quot;, 结果: &quot; + departureTime);</b>
+<b class="fc">&nbsp;        return departureTime;</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 获取车次在指定站的到达时间
+&nbsp;     */
+&nbsp;    private LocalTime getArrivalTime(Integer trainId, Long stopId) {
+<b class="fc">&nbsp;        Optional&lt;TrainStop&gt; trainStopOpt = trainStopRepository.findByStopId(stopId);</b>
+<b class="fc">&nbsp;        LocalTime arrivalTime = trainStopOpt.map(TrainStop::getArrivalTime).orElse(null);</b>
+<b class="fc">&nbsp;        System.out.println(&quot;查询到达时间 - stopId: &quot; + stopId + &quot;, 结果: &quot; + arrivalTime);</b>
+<b class="fc">&nbsp;        return arrivalTime;</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 生成时间冲突的错误信息
+&nbsp;     */
+&nbsp;    public String generateConflictMessage(List&lt;Ticket&gt; conflictTickets) {
+<b class="fc">&nbsp;        if (conflictTickets.isEmpty()) {</b>
+<b class="fc">&nbsp;            return &quot;&quot;;</b>
+&nbsp;        }
+&nbsp;        
+<b class="fc">&nbsp;        StringBuilder message = new StringBuilder(&quot;乘客在同一时间段内已有其他车票，存在时间冲突：\n&quot;);</b>
+&nbsp;        
+<b class="fc">&nbsp;        for (Ticket ticket : conflictTickets) {</b>
+<b class="fc">&nbsp;            LocalTime departureTime = getDepartureTime(ticket.getTrainId(), ticket.getDepartureStopId());</b>
+<b class="fc">&nbsp;            LocalTime arrivalTime = getArrivalTime(ticket.getTrainId(), ticket.getArrivalStopId());</b>
+&nbsp;            
+&nbsp;            // 计算实际到达日期
+<b class="fc">&nbsp;            LocalDate actualArrivalDate = ticket.getTravelDate();</b>
+<b class="pc">&nbsp;            if (arrivalTime != null &amp;&amp; departureTime != null &amp;&amp; arrivalTime.isBefore(departureTime)) {</b>
+<b class="fc">&nbsp;                actualArrivalDate = actualArrivalDate.plusDays(1);</b>
+&nbsp;            }
+&nbsp;            
+<b class="fc">&nbsp;            message.append(String.format(&quot;- 车票号: %s, 车次: %d, 日期: %s, 时间: %s-%s\n&quot;, </b>
+<b class="fc">&nbsp;                    ticket.getTicketNumber(), </b>
+<b class="fc">&nbsp;                    ticket.getTrainId(),</b>
+<b class="fc">&nbsp;                    ticket.getTravelDate() + (actualArrivalDate.equals(ticket.getTravelDate()) ? &quot;&quot; : &quot;~&quot; + actualArrivalDate),</b>
+<b class="fc">&nbsp;                    departureTime != null ? departureTime.toString() : &quot;未知&quot;,</b>
+<b class="fc">&nbsp;                    arrivalTime != null ? arrivalTime.toString() : &quot;未知&quot;));</b>
+&nbsp;        }
+&nbsp;        
+<b class="fc">&nbsp;        return message.toString();</b>
+&nbsp;    }
+&nbsp;} 
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

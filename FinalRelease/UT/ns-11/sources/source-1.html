@@ -1,0 +1,107 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > UserPassengerRelationDAO</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.DAO</a>
+</div>
+
+<h1>Coverage Summary for Class: UserPassengerRelationDAO (com.example.techprototype.DAO)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+</tr>
+  <tr>
+    <td class="name">UserPassengerRelationDAO$MockitoMock$PXzbCev3</td>
+  </tr>
+  <tr>
+    <td class="name">UserPassengerRelationDAO$MockitoMock$PXzbCev3$auxiliary$7zEi4oNU</td>
+  </tr>
+  <tr>
+    <td class="name">UserPassengerRelationDAO$MockitoMock$PXzbCev3$auxiliary$wwgc1UZy</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.DAO;
+&nbsp;
+&nbsp;import com.example.techprototype.Entity.UserPassengerRelation;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Optional;
+&nbsp;
+&nbsp;public interface UserPassengerRelationDAO {
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 保存用户与乘客的关系
+&nbsp;     * @param relation 关系对象
+&nbsp;     * @return 保存后的关系对象
+&nbsp;     */
+&nbsp;    UserPassengerRelation save(UserPassengerRelation relation);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 根据用户ID查询所有关联的乘客关系
+&nbsp;     * @param userId 用户ID
+&nbsp;     * @return 关系列表
+&nbsp;     */
+&nbsp;    List&lt;UserPassengerRelation&gt; findAllByUserId(Long userId);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 根据用户ID和乘客ID查询关系
+&nbsp;     * @param userId 用户ID
+&nbsp;     * @param passengerId 乘客ID
+&nbsp;     * @return 关系对象，可能为空
+&nbsp;     */
+&nbsp;    Optional&lt;UserPassengerRelation&gt; findByUserIdAndPassengerId(Long userId, Long passengerId);
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

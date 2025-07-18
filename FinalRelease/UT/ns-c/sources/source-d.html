@@ -1,0 +1,128 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > WaitlistOrderService</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Service</a>
+</div>
+
+<h1>Coverage Summary for Class: WaitlistOrderService (com.example.techprototype.Service)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+</tr>
+  <tr>
+    <td class="name">WaitlistOrderService$MockitoMock$VSaDi0U3</td>
+  </tr>
+  <tr>
+    <td class="name">WaitlistOrderService$MockitoMock$VSaDi0U3$auxiliary$e3FyO4et</td>
+  </tr>
+  <tr>
+    <td class="name">WaitlistOrderService$MockitoMock$VSaDi0U3$auxiliary$tcgrYaYW</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Service;
+&nbsp;
+&nbsp;import com.example.techprototype.DTO.BookingRequest;
+&nbsp;import com.example.techprototype.DTO.BookingResponse;
+&nbsp;import com.example.techprototype.DTO.WaitlistOrderResponse;
+&nbsp;import com.example.techprototype.DTO.WaitlistOrderDetailResponse;
+&nbsp;import java.util.List;
+&nbsp;
+&nbsp;public interface WaitlistOrderService {
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 创建候补订单
+&nbsp;     */
+&nbsp;    BookingResponse createWaitlistOrder(BookingRequest request);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 获取用户的候补订单列表
+&nbsp;     */
+&nbsp;    WaitlistOrderResponse getMyWaitlistOrders(Long userId);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 获取候补订单详情
+&nbsp;     */
+&nbsp;    WaitlistOrderDetailResponse getWaitlistOrderDetail(Long userId, Long waitlistId);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 支付候补订单
+&nbsp;     */
+&nbsp;    BookingResponse payWaitlistOrder(Long waitlistId, Long userId);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 取消候补订单
+&nbsp;     */
+&nbsp;    BookingResponse cancelWaitlistOrder(Long waitlistId, Long userId);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 处理候补订单兑现
+&nbsp;     */
+&nbsp;    void processWaitlistFulfillment();
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 退款候补订单
+&nbsp;     */
+&nbsp;    BookingResponse refundWaitlistOrder(Long waitlistId, Long userId);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 部分退款候补订单项
+&nbsp;     */
+&nbsp;    BookingResponse refundWaitlistOrderItems(Long waitlistId, Long userId, List&lt;Long&gt; itemIds);
+&nbsp;} 
+&nbsp; 
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,158 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TrainController</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Controller</a>
+</div>
+
+<h1>Coverage Summary for Class: TrainController (com.example.techprototype.Controller)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TrainController</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (6/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (8/8)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Controller;
+&nbsp;
+&nbsp;import com.example.techprototype.Entity.Train;
+&nbsp;import com.example.techprototype.Service.TrainService;
+&nbsp;import com.example.techprototype.DTO.TrainListDTO;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.format.annotation.DateTimeFormat;
+&nbsp;import org.springframework.http.ResponseEntity;
+&nbsp;import org.springframework.web.bind.annotation.*;
+&nbsp;
+&nbsp;import java.time.LocalTime;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Map;
+&nbsp;
+&nbsp;@RestController
+&nbsp;@RequestMapping(&quot;/api/trains&quot;)
+<b class="fc">&nbsp;public class TrainController {</b>
+&nbsp;    @Autowired
+&nbsp;    private TrainService trainService;
+&nbsp;
+&nbsp;    @GetMapping(&quot;/search&quot;)
+&nbsp;    public ResponseEntity&lt;?&gt; searchTrains(
+&nbsp;            @RequestParam String fromStation,
+&nbsp;            @RequestParam String toStation,
+&nbsp;            @RequestParam String travelDate) {
+&nbsp;        try {
+<b class="fc">&nbsp;            List&lt;Map&lt;String, Object&gt;&gt; trains = trainService.searchTrainsByStations(fromStation, toStation, travelDate);</b>
+<b class="fc">&nbsp;            return ResponseEntity.ok(trains);</b>
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            return ResponseEntity.badRequest().body(Map.of(&quot;error&quot;, e.getMessage()));</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @GetMapping(&quot;/direct&quot;)
+&nbsp;    public List&lt;Train&gt; getDirectTrains(@RequestParam Integer startStationId, @RequestParam Integer endStationId) {
+<b class="fc">&nbsp;        return trainService.findDirectTrains(startStationId, endStationId);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @GetMapping(&quot;/byTime&quot;)
+&nbsp;    public List&lt;Train&gt; getTrainsByTime(@RequestParam @DateTimeFormat(pattern = &quot;HH:mm&quot;) LocalTime start,
+&nbsp;                                       @RequestParam @DateTimeFormat(pattern = &quot;HH:mm&quot;) LocalTime end) {
+<b class="fc">&nbsp;        return trainService.findTrainsByDepartureTime(start, end);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @GetMapping(&quot;/transfer&quot;)
+&nbsp;    public List&lt;Map&lt;String, Object&gt;&gt; getTransferTrains(@RequestParam Integer startStationId, @RequestParam Integer endStationId) {
+<b class="fc">&nbsp;        return trainService.findTransferTrains(startStationId, endStationId);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @GetMapping(&quot;/list&quot;)
+&nbsp;    public List&lt;TrainListDTO&gt; getTrainListDTO() {
+<b class="fc">&nbsp;        return trainService.getAllTrainListDTO();</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

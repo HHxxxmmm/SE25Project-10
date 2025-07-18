@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderTimeoutService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">TechPrototype</a> &gt; <a href="index.source.html" class="el_package">com.example.techprototype.Service</a> &gt; <span class="el_source">OrderTimeoutService.java</span></div><h1>OrderTimeoutService.java</h1><pre class="source lang-java linenums">package com.example.techprototype.Service;
+
+import com.example.techprototype.Entity.Order;
+import com.example.techprototype.Entity.Ticket;
+import com.example.techprototype.Entity.WaitlistOrder;
+import com.example.techprototype.Entity.WaitlistItem;
+import com.example.techprototype.Enums.OrderStatus;
+import com.example.techprototype.Enums.WaitlistOrderStatus;
+import com.example.techprototype.Enums.WaitlistItemStatus;
+import com.example.techprototype.Repository.OrderRepository;
+import com.example.techprototype.Repository.TicketRepository;
+import com.example.techprototype.Repository.WaitlistOrderRepository;
+import com.example.techprototype.Repository.WaitlistItemRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+<span class="fc" id="L23">public class OrderTimeoutService {</span>
+    
+    @Autowired
+    private OrderRepository orderRepository;
+    
+    @Autowired
+    private TicketRepository ticketRepository;
+    
+    @Autowired
+    private SeatService seatService;
+    
+    @Autowired
+    private RedisService redisService;
+    
+    @Autowired
+    private WaitlistOrderRepository waitlistOrderRepository;
+    
+    @Autowired
+    private WaitlistItemRepository waitlistItemRepository;
+    
+    /**
+     * 每30秒检查一次超时订单
+     * 超时时间：15分钟
+     */
+    @Scheduled(fixedRate = 30000) // 30秒
+    @Transactional
+    public void handleTimeoutOrders() {
+        try {
+            // 查找15分钟前创建的待支付订单
+<span class="fc" id="L52">            LocalDateTime timeoutThreshold = LocalDateTime.now().minusMinutes(15);</span>
+            
+<span class="fc" id="L54">            List&lt;Order&gt; timeoutOrders = orderRepository.findTimeoutOrders(timeoutThreshold);</span>
+            
+<span class="fc bfc" id="L56" title="All 2 branches covered.">            for (Order order : timeoutOrders) {</span>
+<span class="fc" id="L57">                handleTimeoutOrder(order);</span>
+<span class="fc" id="L58">            }</span>
+            
+<span class="fc bfc" id="L60" title="All 2 branches covered.">            if (!timeoutOrders.isEmpty()) {</span>
+<span class="fc" id="L61">                System.out.println(&quot;处理超时订单: &quot; + timeoutOrders.size() + &quot;个&quot;);</span>
+            }
+            
+            // 候补订单兑现现在由库存回滚触发，不再需要定时检查
+            // processWaitlistFulfillment();
+            
+<span class="fc" id="L67">        } catch (Exception e) {</span>
+<span class="fc" id="L68">            System.err.println(&quot;处理超时订单失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L69">        }</span>
+<span class="fc" id="L70">    }</span>
+    
+    private void handleTimeoutOrder(Order order) {
+        try {
+        // 1. 更新订单状态为已取消
+<span class="fc" id="L75">        order.setOrderStatus((byte) OrderStatus.CANCELLED.getCode());</span>
+<span class="fc" id="L76">        orderRepository.save(order);</span>
+        
+        // 2. 获取订单下的车票
+<span class="fc" id="L79">        List&lt;Ticket&gt; tickets = ticketRepository.findByOrderId(order.getOrderId());</span>
+        
+            // 3. 更新车票状态为已取消并释放资源
+<span class="fc bfc" id="L82" title="All 2 branches covered.">        for (Ticket ticket : tickets) {</span>
+                // 更新车票状态为已取消
+<span class="fc" id="L84">            ticket.setTicketStatus((byte) 3); // 已退票状态</span>
+<span class="fc" id="L85">            ticketRepository.save(ticket);</span>
+            
+            // 释放座位（使用新的位图管理方式）
+<span class="fc bfc" id="L88" title="All 4 branches covered.">                if (ticket.getSeatNumber() != null &amp;&amp; ticket.getCarriageNumber() != null) {</span>
+<span class="fc" id="L89">            seatService.releaseSeat(ticket);</span>
+        }
+        
+                // 回滚库存
+<span class="fc" id="L93">                redisService.incrStock(ticket.getTrainId(), ticket.getDepartureStopId(),</span>
+<span class="fc" id="L94">                        ticket.getArrivalStopId(), ticket.getTravelDate(), </span>
+<span class="fc" id="L95">                        ticket.getCarriageTypeId(), 1);</span>
+<span class="fc" id="L96">            }</span>
+            
+<span class="fc" id="L98">            System.out.println(&quot;超时订单处理完成: &quot; + order.getOrderNumber() + &quot;, 释放了 &quot; + tickets.size() + &quot; 张车票的座位和库存&quot;);</span>
+            
+<span class="fc" id="L100">        } catch (Exception e) {</span>
+<span class="fc" id="L101">            System.err.println(&quot;处理超时订单失败: &quot; + order.getOrderNumber() + &quot;, 错误: &quot; + e.getMessage());</span>
+<span class="fc" id="L102">        }</span>
+<span class="fc" id="L103">    }</span>
+    
+    /**
+     * 处理候补订单兑现
+     * 注意：这个方法现在只监测库存回滚，不主动尝试减库存
+     */
+    private void processWaitlistFulfillment() {
+        // 暂时禁用主动兑现逻辑，改为监测库存回滚操作
+        // 库存回滚操作会在其他地方触发候补订单兑现
+<span class="fc" id="L112">        System.out.println(&quot;候补订单兑现：等待库存回滚触发...&quot;);</span>
+<span class="fc" id="L113">    }</span>
+    
+    /**
+     * 兑现候补订单项
+     */
+    private boolean fulfillWaitlistItem(WaitlistItem item, WaitlistOrder order) {
+        try {
+            // 这里实现具体的兑现逻辑
+            // 1. 创建正式订单和车票
+            // 2. 更新候补订单项状态
+            // 3. 检查候补订单是否全部兑现
+            
+            // 简化实现，实际需要完整的订单创建逻辑
+<span class="fc" id="L126">            item.setItemStatus((byte) WaitlistItemStatus.FULFILLED.getCode());</span>
+<span class="fc" id="L127">            waitlistItemRepository.save(item);</span>
+            
+            // 检查候补订单是否全部兑现
+<span class="fc" id="L130">            List&lt;WaitlistItem&gt; remainingItems = waitlistItemRepository.findPendingItemsByWaitlistId(order.getWaitlistId());</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">            if (remainingItems.isEmpty()) {</span>
+<span class="fc" id="L132">                order.setOrderStatus((byte) WaitlistOrderStatus.FULFILLED.getCode());</span>
+<span class="fc" id="L133">                waitlistOrderRepository.save(order);</span>
+            }
+            
+<span class="fc" id="L136">            return true;</span>
+<span class="fc" id="L137">        } catch (Exception e) {</span>
+<span class="fc" id="L138">            System.err.println(&quot;兑现候补订单项失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L139">            return false;</span>
+        }
+    }
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

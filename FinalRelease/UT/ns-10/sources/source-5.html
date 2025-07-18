@@ -1,0 +1,117 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > SeatRepository</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Repository</a>
+</div>
+
+<h1>Coverage Summary for Class: SeatRepository (com.example.techprototype.Repository)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+</tr>
+  <tr>
+    <td class="name">SeatRepository$MockitoMock$h3S8aSAy</td>
+  </tr>
+  <tr>
+    <td class="name">SeatRepository$MockitoMock$h3S8aSAy$auxiliary$T2koedLx</td>
+  </tr>
+  <tr>
+    <td class="name">SeatRepository$MockitoMock$h3S8aSAy$auxiliary$y76oHCdn</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Repository;
+&nbsp;
+&nbsp;import com.example.techprototype.Entity.Seat;
+&nbsp;import org.springframework.data.jpa.repository.JpaRepository;
+&nbsp;import org.springframework.data.jpa.repository.Lock;
+&nbsp;import org.springframework.data.jpa.repository.Query;
+&nbsp;import org.springframework.data.repository.query.Param;
+&nbsp;import org.springframework.stereotype.Repository;
+&nbsp;import jakarta.persistence.LockModeType;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Optional;
+&nbsp;
+&nbsp;@Repository
+&nbsp;public interface SeatRepository extends JpaRepository&lt;Seat, Long&gt; {
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 查找指定车厢的所有座位
+&nbsp;     */
+&nbsp;    @Query(&quot;SELECT s FROM Seat s WHERE s.carriageId = :carriageId&quot;)
+&nbsp;    List&lt;Seat&gt; findByCarriageId(@Param(&quot;carriageId&quot;) Long carriageId);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 查找指定车次和车厢类型的所有座位
+&nbsp;     */
+&nbsp;    @Query(&quot;SELECT s FROM Seat s WHERE s.carriageId IN (SELECT tc.carriageId FROM TrainCarriage tc WHERE tc.trainId = :trainId AND tc.typeId = :typeId)&quot;)
+&nbsp;    List&lt;Seat&gt; findByTrainAndType(@Param(&quot;trainId&quot;) Integer trainId, @Param(&quot;typeId&quot;) Integer typeId);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 根据车厢ID和座位号查找座位
+&nbsp;     */
+&nbsp;    List&lt;Seat&gt; findByCarriageIdAndSeatNumber(Long carriageId, String seatNumber);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 查找指定车厢的可用座位（基于位图查询）
+&nbsp;     * 注意：这个方法需要在Service层结合位图逻辑使用
+&nbsp;     */
+&nbsp;    @Lock(LockModeType.PESSIMISTIC_WRITE)
+&nbsp;    @Query(&quot;SELECT s FROM Seat s WHERE s.carriageId = :carriageId ORDER BY s.seatId&quot;)
+&nbsp;    List&lt;Seat&gt; findSeatsByCarriageIdForUpdate(@Param(&quot;carriageId&quot;) Long carriageId);
+&nbsp;} 
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,117 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > OrderRepository</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Repository</a>
+</div>
+
+<h1>Coverage Summary for Class: OrderRepository (com.example.techprototype.Repository)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+</tr>
+  <tr>
+    <td class="name">OrderRepository$MockitoMock$ZAlxdyFW</td>
+  </tr>
+  <tr>
+    <td class="name">OrderRepository$MockitoMock$ZAlxdyFW$auxiliary$EihwAp26</td>
+  </tr>
+  <tr>
+    <td class="name">OrderRepository$MockitoMock$ZAlxdyFW$auxiliary$VxwAC2Bp</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Repository;
+&nbsp;
+&nbsp;import com.example.techprototype.Entity.Order;
+&nbsp;import org.springframework.data.jpa.repository.JpaRepository;
+&nbsp;import org.springframework.data.jpa.repository.Query;
+&nbsp;import org.springframework.data.repository.query.Param;
+&nbsp;import org.springframework.stereotype.Repository;
+&nbsp;import java.time.LocalDate;
+&nbsp;import java.time.LocalDateTime;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Optional;
+&nbsp;
+&nbsp;@Repository
+&nbsp;public interface OrderRepository extends JpaRepository&lt;Order, Long&gt; {
+&nbsp;    
+&nbsp;    Optional&lt;Order&gt; findByOrderNumber(String orderNumber);
+&nbsp;    
+&nbsp;    Optional&lt;Order&gt; findByOrderNumberAndUserId(String orderNumber, Long userId);
+&nbsp;    
+&nbsp;    Optional&lt;Order&gt; findByOrderIdAndUserId(Long orderId, Long userId);
+&nbsp;    
+&nbsp;    List&lt;Order&gt; findByUserIdOrderByOrderTimeDesc(Long userId);
+&nbsp;    
+&nbsp;    List&lt;Order&gt; findByUserIdAndOrderNumberContaining(Long userId, String orderNumber);
+&nbsp;    
+&nbsp;    List&lt;Order&gt; findByUserIdAndOrderStatus(Long userId, Byte orderStatus);
+&nbsp;    
+&nbsp;    @Query(&quot;SELECT DISTINCT o FROM Order o JOIN Ticket t ON o.orderId = t.orderId &quot; +
+&nbsp;           &quot;WHERE o.userId = :userId AND t.travelDate BETWEEN :startDate AND :endDate &quot; +
+&nbsp;           &quot;ORDER BY o.orderTime DESC&quot;)
+&nbsp;    List&lt;Order&gt; findByUserIdAndTicketTravelDateBetween(@Param(&quot;userId&quot;) Long userId, 
+&nbsp;                                                       @Param(&quot;startDate&quot;) LocalDate startDate, 
+&nbsp;                                                       @Param(&quot;endDate&quot;) LocalDate endDate);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 查询超时的待支付订单
+&nbsp;     */
+&nbsp;    @Query(&quot;SELECT o FROM Order o WHERE o.orderStatus = 0 AND o.orderTime &lt; :timeoutThreshold&quot;)
+&nbsp;    List&lt;Order&gt; findTimeoutOrders(@Param(&quot;timeoutThreshold&quot;) LocalDateTime timeoutThreshold);
+&nbsp;} 
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

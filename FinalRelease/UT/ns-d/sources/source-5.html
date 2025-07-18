@@ -1,0 +1,292 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > PrepareOrderServiceImpl</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Service.Impl</a>
+</div>
+
+<h1>Coverage Summary for Class: PrepareOrderServiceImpl (com.example.techprototype.Service.Impl)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">PrepareOrderServiceImpl</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (24/24)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (83/83)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Service.Impl;
+&nbsp;
+&nbsp;import com.example.techprototype.DTO.PrepareOrderRequest;
+&nbsp;import com.example.techprototype.DTO.PrepareOrderResponse;
+&nbsp;import com.example.techprototype.Entity.*;
+&nbsp;import com.example.techprototype.Repository.*;
+&nbsp;import com.example.techprototype.Service.PrepareOrderService;
+&nbsp;import com.example.techprototype.Service.RedisService;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;
+&nbsp;import java.util.ArrayList;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Optional;
+&nbsp;
+&nbsp;@Service
+<b class="fc">&nbsp;public class PrepareOrderServiceImpl implements PrepareOrderService {</b>
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private TicketInventoryRepository ticketInventoryRepository;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private TrainRepository trainRepository;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private StationRepository stationRepository;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private CarriageTypeRepository carriageTypeRepository;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private UserPassengerRelationRepository userPassengerRelationRepository;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private PassengerRepository passengerRepository;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private TrainStopRepository trainStopRepository;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private RedisService redisService;
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public PrepareOrderResponse prepareOrder(PrepareOrderRequest request) {
+&nbsp;        // 1. 获取库存信息
+<b class="fc">&nbsp;        List&lt;TicketInventory&gt; inventories = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (Long inventoryId : request.getInventoryIds()) {</b>
+<b class="fc">&nbsp;            Optional&lt;TicketInventory&gt; inventory = ticketInventoryRepository.findById(inventoryId);</b>
+<b class="fc">&nbsp;            if (inventory.isPresent()) {</b>
+<b class="fc">&nbsp;                inventories.add(inventory.get());</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;        
+<b class="fc">&nbsp;        if (inventories.isEmpty()) {</b>
+<b class="fc">&nbsp;            throw new RuntimeException(&quot;未找到有效的库存信息&quot;);</b>
+&nbsp;        }
+&nbsp;        
+&nbsp;        // 2. 获取车次信息（所有库存应该属于同一车次）
+<b class="fc">&nbsp;        TicketInventory firstInventory = inventories.get(0);</b>
+<b class="fc">&nbsp;        Train train = trainRepository.findById(firstInventory.getTrainId())</b>
+<b class="fc">&nbsp;                .orElseThrow(() -&gt; new RuntimeException(&quot;未找到车次信息&quot;));</b>
+&nbsp;        
+&nbsp;        // 3. 获取出发站和到达站信息（从train_stops表获取）
+<b class="fc">&nbsp;        TrainStop departureStop = trainStopRepository.findById(firstInventory.getDepartureStopId())</b>
+<b class="fc">&nbsp;                .orElseThrow(() -&gt; new RuntimeException(&quot;未找到出发站信息&quot;));</b>
+<b class="fc">&nbsp;        TrainStop arrivalStop = trainStopRepository.findById(firstInventory.getArrivalStopId())</b>
+<b class="fc">&nbsp;                .orElseThrow(() -&gt; new RuntimeException(&quot;未找到到达站信息&quot;));</b>
+&nbsp;        
+&nbsp;        // 4. 获取站点详细信息
+<b class="fc">&nbsp;        Station departureStation = stationRepository.findById(departureStop.getStationId())</b>
+<b class="fc">&nbsp;                .orElseThrow(() -&gt; new RuntimeException(&quot;未找到出发站详细信息&quot;));</b>
+<b class="fc">&nbsp;        Station arrivalStation = stationRepository.findById(arrivalStop.getStationId())</b>
+<b class="fc">&nbsp;                .orElseThrow(() -&gt; new RuntimeException(&quot;未找到到达站详细信息&quot;));</b>
+&nbsp;        
+&nbsp;        // 5. 构建车次信息
+<b class="fc">&nbsp;        PrepareOrderResponse.TrainInfo trainInfo = new PrepareOrderResponse.TrainInfo();</b>
+<b class="fc">&nbsp;        trainInfo.setTrainId(train.getTrainId());</b>
+<b class="fc">&nbsp;        trainInfo.setTrainNumber(train.getTrainNumber());</b>
+<b class="fc">&nbsp;        trainInfo.setDepartureStation(departureStation.getStationName());</b>
+<b class="fc">&nbsp;        trainInfo.setArrivalStation(arrivalStation.getStationName());</b>
+<b class="fc">&nbsp;        trainInfo.setDepartureStopId(departureStop.getStopId());</b>
+<b class="fc">&nbsp;        trainInfo.setArrivalStopId(arrivalStop.getStopId());</b>
+<b class="fc">&nbsp;        trainInfo.setDepartureTime(departureStop.getDepartureTime());</b>
+<b class="fc">&nbsp;        trainInfo.setArrivalTime(arrivalStop.getArrivalTime());</b>
+<b class="fc">&nbsp;        trainInfo.setTravelDate(firstInventory.getTravelDate());</b>
+&nbsp;        
+&nbsp;        // 6. 构建席别信息
+<b class="fc">&nbsp;        List&lt;PrepareOrderResponse.CarriageInfo&gt; carriages = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (TicketInventory inventory : inventories) {</b>
+<b class="fc">&nbsp;            CarriageType carriageType = carriageTypeRepository.findById(inventory.getCarriageTypeId())</b>
+<b class="fc">&nbsp;                    .orElseThrow(() -&gt; new RuntimeException(&quot;未找到席别信息&quot;));</b>
+&nbsp;            
+<b class="fc">&nbsp;            PrepareOrderResponse.CarriageInfo carriageInfo = new PrepareOrderResponse.CarriageInfo();</b>
+<b class="fc">&nbsp;            carriageInfo.setInventoryId(inventory.getInventoryId());</b>
+<b class="fc">&nbsp;            carriageInfo.setCarriageTypeId(inventory.getCarriageTypeId());</b>
+<b class="fc">&nbsp;            carriageInfo.setCarriageTypeName(carriageType.getTypeName());</b>
+<b class="fc">&nbsp;            carriageInfo.setPrice(inventory.getPrice());</b>
+&nbsp;            
+&nbsp;            // 从Redis获取库存信息
+<b class="fc">&nbsp;            Optional&lt;Integer&gt; redisStock = redisService.getStock(</b>
+<b class="fc">&nbsp;                    inventory.getTrainId(),</b>
+<b class="fc">&nbsp;                    inventory.getDepartureStopId(),</b>
+<b class="fc">&nbsp;                    inventory.getArrivalStopId(),</b>
+<b class="fc">&nbsp;                    inventory.getTravelDate(),</b>
+<b class="fc">&nbsp;                    inventory.getCarriageTypeId()</b>
+&nbsp;            );
+&nbsp;            
+<b class="fc">&nbsp;            if (redisStock.isPresent()) {</b>
+<b class="fc">&nbsp;                int stock = redisStock.get();</b>
+<b class="fc">&nbsp;                carriageInfo.setHasStock(stock &gt; 0);</b>
+<b class="fc">&nbsp;                carriageInfo.setAvailableStock(stock);</b>
+&nbsp;            } else {
+&nbsp;                // 如果Redis中没有数据，使用数据库中的可用座位数
+<b class="fc">&nbsp;                carriageInfo.setHasStock(inventory.getAvailableSeats() &gt; 0);</b>
+<b class="fc">&nbsp;                carriageInfo.setAvailableStock(inventory.getAvailableSeats());</b>
+&nbsp;            }
+&nbsp;            
+<b class="fc">&nbsp;            carriages.add(carriageInfo);</b>
+&nbsp;        }
+&nbsp;        
+&nbsp;        // 7. 获取用户关联的乘客信息
+<b class="fc">&nbsp;        List&lt;UserPassengerRelation&gt; relations = userPassengerRelationRepository.findByUserId(request.getUserId());</b>
+<b class="fc">&nbsp;        List&lt;PrepareOrderResponse.PassengerInfo&gt; passengers = new ArrayList&lt;&gt;();</b>
+&nbsp;        
+<b class="fc">&nbsp;        for (UserPassengerRelation relation : relations) {</b>
+<b class="fc">&nbsp;            Passenger passenger = passengerRepository.findById(relation.getPassengerId())</b>
+<b class="fc">&nbsp;                    .orElseThrow(() -&gt; new RuntimeException(&quot;未找到乘客信息&quot;));</b>
+&nbsp;            
+<b class="fc">&nbsp;            PrepareOrderResponse.PassengerInfo passengerInfo = new PrepareOrderResponse.PassengerInfo();</b>
+<b class="fc">&nbsp;            passengerInfo.setPassengerId(passenger.getPassengerId());</b>
+<b class="fc">&nbsp;            passengerInfo.setRealName(passenger.getRealName());</b>
+<b class="fc">&nbsp;            passengerInfo.setIdCardNumber(passenger.getIdCardNumber());</b>
+<b class="fc">&nbsp;            passengerInfo.setPhoneNumber(passenger.getPhoneNumber());</b>
+<b class="fc">&nbsp;            passengerInfo.setPassengerType(passenger.getPassengerType());</b>
+<b class="fc">&nbsp;            passengerInfo.setPassengerTypeName(getPassengerTypeName(passenger.getPassengerType()));</b>
+<b class="fc">&nbsp;            passengerInfo.setRelationType(relation.getRelationType());</b>
+<b class="fc">&nbsp;            passengerInfo.setRelationTypeName(getRelationTypeName(relation.getRelationType()));</b>
+&nbsp;            
+<b class="fc">&nbsp;            passengers.add(passengerInfo);</b>
+&nbsp;        }
+&nbsp;        
+&nbsp;        // 8. 构建响应
+<b class="fc">&nbsp;        PrepareOrderResponse response = new PrepareOrderResponse();</b>
+<b class="fc">&nbsp;        response.setTrainInfo(trainInfo);</b>
+<b class="fc">&nbsp;        response.setCarriages(carriages);</b>
+<b class="fc">&nbsp;        response.setPassengers(passengers);</b>
+&nbsp;        
+<b class="fc">&nbsp;        return response;</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 获取乘客类型名称
+&nbsp;     */
+&nbsp;    private String getPassengerTypeName(Byte passengerType) {
+<b class="fc">&nbsp;        switch (passengerType) {</b>
+<b class="fc">&nbsp;            case 1: return &quot;成人&quot;;</b>
+<b class="fc">&nbsp;            case 2: return &quot;儿童&quot;;</b>
+<b class="fc">&nbsp;            case 3: return &quot;学生&quot;;</b>
+<b class="fc">&nbsp;            case 4: return &quot;残疾&quot;;</b>
+<b class="fc">&nbsp;            case 5: return &quot;军人&quot;;</b>
+<b class="fc">&nbsp;            default: return &quot;未知&quot;;</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 获取关系类型名称
+&nbsp;     */
+&nbsp;    private String getRelationTypeName(Byte relationType) {
+<b class="fc">&nbsp;        switch (relationType) {</b>
+<b class="fc">&nbsp;            case 1: return &quot;本人&quot;;</b>
+<b class="fc">&nbsp;            case 2: return &quot;亲属&quot;;</b>
+<b class="fc">&nbsp;            case 3: return &quot;其他&quot;;</b>
+<b class="fc">&nbsp;            default: return &quot;未知&quot;;</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;} 
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

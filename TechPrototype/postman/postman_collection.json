@@ -1,0 +1,852 @@
+{
+  "info": {
+    "name": "Mini12306 票务核心系统测试集",
+    "description": "包含购票、退票、改签、支付等票务核心功能的测试用例，支持乘客关系验证和改签配对机制",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "orderId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "newOrderId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. 准备提交订单",
+      "item": [
+        {
+          "name": "准备提交订单",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": {{userId}},\n  \"inventoryIds\": [1, 11, 21]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/prepare-order/prepare",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "prepare-order", "prepare"]
+            }
+          },
+          "description": "准备提交订单功能：\n1. 根据用户ID和库存ID列表获取订单准备信息\n2. 返回车次信息、席别信息、价格、余票情况\n3. 返回用户关联的乘客信息\n4. 前端使用此接口获取提交订单页面的所有数据\n5. 测试参数：userId=1, inventoryIds=[1,11,21]"
+        }
+      ]
+    },
+    {
+      "name": "1. 购票操作",
+      "item": [
+        {
+          "name": "购票 - 成人票",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.status === 'SUCCESS') {",
+                  "        pm.collectionVariables.set('orderId', response.orderId);",
+                  "        console.log('订单ID已保存:', response.orderId);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": {{userId}},\n  \"trainId\": 1,\n  \"departureStopId\": 1,\n  \"arrivalStopId\": 2,\n  \"travelDate\": \"2025-07-01\",\n  \"carriageTypeId\": 3,\n  \"passengers\": [\n    {\n      \"passengerId\": 319,\n      \"ticketType\": 1,\n      \"carriageTypeId\": 3\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ticket/book",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ticket", "book"]
+            }
+          },
+          "description": "购票功能说明：\n1. 系统会验证乘客ID与用户的关联关系\n2. 只有关联的乘客才能购票\n3. 支持多种票种：1-成人, 2-儿童, 3-学生, 4-残疾, 5-军人\n4. 购票成功后返回订单号，需要及时支付\n5. 使用二等座(carriageTypeId=3)确保库存充足\n6. 每个乘客必须包含carriageTypeId字段"
+        },
+        {
+          "name": "购票 - 多人票",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": {{userId}},\n  \"trainId\": 2,\n  \"departureStopId\": 1,\n  \"arrivalStopId\": 2,\n  \"travelDate\": \"2025-07-02\",\n  \"carriageTypeId\": 3,\n  \"passengers\": [\n    {\n      \"passengerId\": 327,\n      \"ticketType\": 1,\n      \"carriageTypeId\": 3\n    },\n    {\n      \"passengerId\": 4285,\n      \"ticketType\": 2,\n      \"carriageTypeId\": 3\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ticket/book",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ticket", "book"]
+            }
+          },
+          "description": "多人票购票：\n1. 支持一个订单购买多张票\n2. 每张票可以有不同的票种\n3. 所有乘客ID必须与用户有关联关系\n4. 使用不同日期避免时间冲突\n5. 使用车次2和二等座分散库存压力\n6. 每个乘客必须包含carriageTypeId字段"
+        },
+        {
+          "name": "购票 - 不同区间",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": {{userId}},\n  \"trainId\": 3,\n  \"departureStopId\": 1,\n  \"arrivalStopId\": 3,\n  \"travelDate\": \"2025-07-03\",\n  \"carriageTypeId\": 3,\n  \"passengers\": [\n    {\n      \"passengerId\": 319,\n      \"ticketType\": 1,\n      \"carriageTypeId\": 3\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ticket/book",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ticket", "book"]
+            }
+          },
+          "description": "不同区间购票：\n1. 支持不同的出发站和到达站组合\n2. 系统会自动处理区间占用逻辑\n3. 使用不同日期避免时间冲突\n4. 使用车次3和二等座分散库存压力\n5. 每个乘客必须包含carriageTypeId字段"
+        },
+        {
+          "name": "购票 - 不同座位类型",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": {{userId}},\n  \"trainId\": 4,\n  \"departureStopId\": 1,\n  \"arrivalStopId\": 2,\n  \"travelDate\": \"2025-07-04\",\n  \"carriageTypeId\": 3,\n  \"passengers\": [\n    {\n      \"passengerId\": 327,\n      \"ticketType\": 1,\n      \"carriageTypeId\": 3\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ticket/book",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ticket", "book"]
+            }
+          },
+          "description": "不同座位类型：\n1. 支持不同的车厢类型\n2. 1-商务座, 2-一等座, 3-二等座等\n3. 使用不同日期避免时间冲突\n4. 使用车次4和二等座分散库存压力\n5. 每个乘客必须包含carriageTypeId字段"
+        }
+      ]
+    },
+    {
+      "name": "2. 支付操作",
+      "item": [
+        {
+          "name": "支付订单",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.status === 'SUCCESS') {",
+                  "        console.log('支付成功，订单ID:', response.orderId);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/payment/pay?orderId={{orderId}}&userId={{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payment", "pay"],
+              "query": [
+                {
+                  "key": "orderId",
+                  "value": "{{orderId}}"
+                },
+                {
+                  "key": "userId",
+                  "value": "{{userId}}"
+                }
+              ]
+            }
+          },
+          "description": "支付功能说明：\n1. 支付后车票状态从PENDING变为UNUSED\n2. 如果是改签订单，会处理原票状态更新\n3. 原票状态更新为CHANGED，库存回滚，座位释放"
+        }
+      ]
+    },
+    {
+      "name": "3. 退票操作",
+      "item": [
+        {
+          "name": "退票",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": {{userId}},\n  \"orderId\": {{orderId}},\n  \"ticketIds\": [1],\n  \"refundReason\": \"行程变更\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ticket/refund",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ticket", "refund"]
+            }
+          },
+          "description": "退票功能说明：\n1. 只能退已支付的车票（状态为UNUSED）\n2. 退票后车票状态变为REFUNDED\n3. 库存会自动回滚\n4. 座位会被释放\n5. 订单总价会相应调整\n6. 如果订单没有有效车票，订单状态变为已取消\n\n注意：ticketIds需要替换为实际的车票ID。请先使用'获取订单车票信息'接口查看订单下的车票ID，然后将[1]替换为实际的车票ID。"
+        }
+      ]
+    },
+    {
+      "name": "4. 改签操作",
+      "item": [
+        {
+          "name": "改签",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.status === 'SUCCESS') {",
+                  "        pm.collectionVariables.set('newOrderId', response.orderId);",
+                  "        console.log('改签新订单ID已保存:', response.orderId);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": {{userId}},\n  \"originalOrderId\": {{orderId}},\n  \"ticketIds\": [1],\n  \"newTrainId\": 23,\n  \"newDepartureStopId\": 111,\n  \"newArrivalStopId\": 112,\n  \"newTravelDate\": \"2025-07-02\",\n  \"newCarriageTypeId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ticket/change",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ticket", "change"]
+            }
+          },
+          "description": "改签功能说明：\n1. 改签会创建新订单，原订单中的改签车票暂时保持不变\n2. 不允许修改乘车人\n3. 新出发站和到达站必须在同一城市\n4. 改签时会在Redis中记录配对关系：新票ID -> 原票ID:乘客ID\n5. 支付新订单后，原票状态更新为CHANGED，库存回滚，座位释放\n6. 原订单总价会减去改签车票的金额\n7. 如果原订单没有有效车票，订单状态变为已取消\n\n注意：ticketIds需要替换为实际的车票ID。请先使用'获取订单车票信息'接口查看订单下的车票ID，然后将[1]替换为实际的车票ID。"
+        },
+        {
+          "name": "支付改签订单",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.status === 'SUCCESS') {",
+                  "        console.log('改签订单支付成功，原票状态已更新');",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/payment/pay?orderId={{newOrderId}}&userId={{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payment", "pay"],
+              "query": [
+                {
+                  "key": "orderId",
+                  "value": "{{newOrderId}}"
+                },
+                {
+                  "key": "userId",
+                  "value": "{{userId}}"
+                }
+              ]
+            }
+          },
+          "description": "支付改签订单：\n1. 支付后新票状态变为UNUSED\n2. 系统会根据Redis配对关系找到对应的原票\n3. 原票状态更新为CHANGED\n4. 原票库存回滚，座位释放\n5. 原订单总价调整\n6. Redis配对关系被清理"
+        }
+      ]
+    },
+    {
+      "name": "5. 测试接口",
+      "item": [
+        {
+          "name": "测试购票",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/test/book",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "test", "book"]
+            }
+          }
+        },
+        {
+          "name": "测试查询库存",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/test/stock",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "test", "stock"]
+            }
+          }
+        },
+        {
+          "name": "测试支付",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/test/pay?orderNumber={{orderNumber}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "test", "pay"],
+              "query": [
+                {
+                  "key": "orderNumber",
+                  "value": "{{orderNumber}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "测试完整流程：购票+等待+支付",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/test/book-and-pay",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "test", "book-and-pay"]
+            }
+          }
+        },
+        {
+          "name": "检查订单是否存在",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/test/check-order?orderNumber={{orderNumber}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "test", "check-order"],
+              "query": [
+                {
+                  "key": "orderNumber",
+                  "value": "{{orderNumber}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "获取订单车票信息",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/test/order-tickets?orderNumber={{orderNumber}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "test", "order-tickets"],
+              "query": [
+                {
+                  "key": "orderNumber",
+                  "value": "{{orderNumber}}"
+                }
+              ]
+            }
+          },
+          "description": "获取订单车票信息：\n1. 查看订单下的所有车票\n2. 获取车票ID用于退票和改签操作\n3. 查看车票状态、座位信息等"
+        },
+        {
+          "name": "测试座位数据",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/test/seats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "test", "seats"]
+            }
+          }
+        },
+        {
+          "name": "测试改签完整流程",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/test/change-and-pay",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "test", "change-and-pay"]
+            }
+          },
+          "description": "测试改签完整流程：\n1. 创建测试订单\n2. 支付订单\n3. 进行改签\n4. 支付改签订单\n5. 验证原票状态更新"
+        },
+        {
+          "name": "测试时间冲突检测",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/test/test-time-conflict",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "test", "test-time-conflict"]
+            }
+          },
+          "description": "测试时间冲突检测：\n1. 先购票并支付一张票\n2. 尝试购买同一乘客、同一时间段的车票\n3. 验证系统正确检测到时间冲突并拒绝购票"
+        },
+        {
+          "name": "测试不同时间段购票",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/test/test-different-time",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "test", "test-different-time"]
+            }
+          },
+          "description": "测试不同时间段购票：\n1. 先购票并支付一张票（7月1日）\n2. 尝试购买同一乘客、不同时间段的车票（7月2日）\n3. 验证系统允许不同时间段的票"
+        },
+        {
+          "name": "测试跨天时间冲突检测",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/test/test-cross-day-conflict",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "test", "test-cross-day-conflict"]
+            }
+          },
+          "description": "测试跨天时间冲突检测：\n1. 先购票并支付一张跨天票（7月1日23:00-7月2日02:00）\n2. 尝试购买时间冲突的票（7月2日01:00-04:00）\n3. 验证系统正确检测到跨天时间冲突"
+        },
+        {
+          "name": "测试待支付状态时间冲突检测",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/test/test-pending-conflict",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "test", "test-pending-conflict"]
+            }
+          },
+          "description": "测试待支付状态时间冲突检测：\n1. 先购票（不支付，保持待支付状态）\n2. 尝试购买相同时间段的车票\n3. 验证系统正确检测到待支付状态的时间冲突"
+        }
+      ]
+    },
+    {
+      "name": "6. 高并发测试",
+      "item": [
+        {
+          "name": "高并发测试端点",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/test/concurrent-test?count=1000",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "test", "concurrent-test"],
+              "query": [
+                {
+                  "key": "count",
+                  "value": "1000"
+                }
+              ]
+            }
+          },
+          "description": "高并发测试说明：\n1. 并发执行1000个购票请求\n2. 使用多个车次（1-20循环）分散库存压力\n3. 使用二等座（carriageTypeId=3）确保库存充足\n4. 测试库存扣减的原子性和分布式锁的有效性\n5. 返回详细的测试结果统计\n6. 注意：时间冲突检测和用户乘客关系验证已启用"
+        }
+      ]
+    },
+    {
+      "name": "订单管理",
+      "item": [
+        {
+          "name": "取消订单",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": {{userId}},\n  \"orderId\": {{orderId}},\n  \"cancelReason\": \"用户主动取消\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "cancel"]
+            }
+          },
+          "description": "取消订单接口：\n1. 根据用户ID和订单ID取消订单\n2. 只能取消待支付(0)或已支付(1)状态的订单\n3. 取消后订单状态变为已取消(3)，车票状态变为已退票(3)\n4. 订单总金额归零\n5. 使用订单ID而不是订单号",
+          "response": []
+        },
+        {
+          "name": "支付订单",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/payment/pay?orderId={{orderId}}&userId={{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payment", "pay"],
+              "query": [
+                {
+                  "key": "orderId",
+                  "value": "{{orderId}}"
+                },
+                {
+                  "key": "userId",
+                  "value": "{{userId}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "7. 本人车票管理",
+      "item": [
+        {
+          "name": "获取本人车票",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ticket/my-tickets?userId={{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ticket", "my-tickets"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{userId}}",
+                  "description": "用户ID"
+                }
+              ]
+            }
+          },
+          "description": "获取本人车票接口：\n1. 根据用户ID查询关联乘客的车票\n2. 返回所有有效车票（未使用、已使用、待支付状态）\n3. 包含车票详细信息：车次、车站、座位、价格等\n4. 按创建时间倒序排列"
+        },
+        {
+          "name": "根据状态获取本人车票",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ticket/my-tickets/status?userId={{userId}}&ticketStatus=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ticket", "my-tickets", "status"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{userId}}",
+                  "description": "用户ID"
+                },
+                {
+                  "key": "ticketStatus",
+                  "value": "0",
+                  "description": "车票状态：0-待支付, 1-未使用, 2-已使用, 3-已退票, 4-已改签"
+                }
+              ]
+            }
+          },
+          "description": "根据车票状态获取本人车票接口：\n1. 根据用户ID和车票状态查询车票\n2. 支持按状态筛选：待支付、未使用、已使用、已退票、已改签\n3. 按创建时间倒序排列\n4. 适用于前端车票状态分类展示"
+        },
+        {
+          "name": "根据出发日期范围获取本人车票",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ticket/my-tickets/date-range?userId={{userId}}&startDate=2025-07-01&endDate=2025-07-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ticket", "my-tickets", "date-range"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{userId}}",
+                  "description": "用户ID"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2025-07-01",
+                  "description": "开始日期（YYYY-MM-DD格式，查询该日期开始有车票出发的订单）",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-07-31",
+                  "description": "结束日期（YYYY-MM-DD格式，查询该日期结束有车票出发的订单）",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "description": "根据出发日期范围获取本人车票接口：\n1. 根据用户ID和出发日期范围查询车票\n2. 支持按日期区间筛选，包含开始日期和结束日期\n3. 只返回有效车票（待支付、未使用、已使用状态）\n4. 按创建时间倒序排列\n5. 适用于前端日期筛选功能"
+        },
+        {
+          "name": "根据状态和日期范围获取本人车票",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ticket/my-tickets/status-date-range?userId={{userId}}&ticketStatus=1&startDate=2025-07-01&endDate=2025-07-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ticket", "my-tickets", "status-date-range"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{userId}}",
+                  "description": "用户ID"
+                },
+                {
+                  "key": "ticketStatus",
+                  "value": "1",
+                  "description": "车票状态：0-待支付, 1-未使用, 2-已使用, 3-已退票, 4-已改签"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2025-07-01",
+                  "description": "开始日期（YYYY-MM-DD格式，查询该日期开始有车票出发的订单）",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-07-31",
+                  "description": "结束日期（YYYY-MM-DD格式，查询该日期结束有车票出发的订单）",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "description": "根据车票状态和出发日期范围获取本人车票接口：\n1. 根据用户ID、车票状态和出发日期范围查询车票\n2. 支持同时按状态和日期区间筛选\n3. 按创建时间倒序排列\n4. 适用于前端多条件筛选功能\n5. 可以精确筛选特定状态和日期范围的车票"
+        },
+        {
+          "name": "获取车票详情",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ticket/detail?ticketId=1&userId={{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ticket", "detail"],
+              "query": [
+                {
+                  "key": "ticketId",
+                  "value": "1",
+                  "description": "车票ID"
+                },
+                {
+                  "key": "userId",
+                  "value": "{{userId}}",
+                  "description": "用户ID"
+                }
+              ]
+            }
+          },
+          "description": "获取车票详情接口：\n1. 根据车票ID和用户ID获取车票详细信息\n2. 包含权限验证：\n   - 车票的乘客ID与用户的乘客ID一致，或\n   - 车票所属订单的用户ID与当前用户ID一致\n3. 返回完整的车票信息：车次、车站、乘客、订单等\n4. 适用于前端车票详情页面"
+        },
+        {
+          "name": "获取我的订单",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/my?userId=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "my"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "1",
+                  "description": "用户ID"
+                }
+              ]
+            },
+            "description": "获取指定用户的所有订单，包含车次信息"
+          },
+          "response": []
+        },
+        {
+          "name": "根据条件获取我的订单",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/my/filter?userId=1&orderNumber=2025&startDate=2025-07-01&endDate=2025-07-31&orderStatus=1&trainNumber=G1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "my",
+                "filter"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "1",
+                  "description": "用户ID"
+                },
+                {
+                  "key": "orderNumber",
+                  "value": "2025",
+                  "description": "订单号（模糊匹配）",
+                  "disabled": true
+                },
+                {
+                  "key": "startDate",
+                  "value": "2025-07-01",
+                  "description": "开始日期（YYYY-MM-DD格式，查询该日期开始有车票出发的订单）",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-07-31",
+                  "description": "结束日期（YYYY-MM-DD格式，查询该日期结束有车票出发的订单）",
+                  "disabled": true
+                },
+                {
+                  "key": "orderStatus",
+                  "value": "1",
+                  "description": "订单状态：0-待支付，1-已支付，2-已完成，3-已取消",
+                  "disabled": true
+                },
+                {
+                  "key": "trainNumber",
+                  "value": "G1",
+                  "description": "车次号（模糊匹配）",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "根据条件过滤获取用户的订单，支持按订单号、时间范围、订单状态、车次号过滤"
+          },
+          "response": []
+        },
+        {
+          "name": "获取订单详情",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/detail?userId=1&orderId=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "detail"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "1",
+                  "description": "用户ID"
+                },
+                {
+                  "key": "orderId",
+                  "value": "1",
+                  "description": "订单ID"
+                }
+              ]
+            },
+            "description": "获取订单详情接口：\n1. 根据用户ID和订单ID获取订单详细信息\n2. 包含权限验证：订单必须属于指定用户\n3. 返回订单基本信息和所有车票详情\n4. 车票信息包含车票ID、乘客信息、席别、票种、票价、状态等\n5. 适用于前端订单详情页面和后续退票改签操作"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+} 

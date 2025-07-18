@@ -1,0 +1,559 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > RedisServiceImpl</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Service.Impl</a>
+</div>
+
+<h1>Coverage Summary for Class: RedisServiceImpl (com.example.techprototype.Service.Impl)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">RedisServiceImpl</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (21/21)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (43/43)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    99.4%
+  </span>
+  <span class="absValue">
+    (167/168)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Service.Impl;
+&nbsp;
+&nbsp;import com.example.techprototype.Service.RedisService;
+&nbsp;import org.redisson.api.RLock;
+&nbsp;import org.redisson.api.RedissonClient;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.data.redis.core.RedisTemplate;
+&nbsp;import org.springframework.data.redis.core.script.DefaultRedisScript;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;import cn.hutool.core.lang.Snowflake;
+&nbsp;import cn.hutool.core.util.IdUtil;
+&nbsp;
+&nbsp;import java.time.LocalDate;
+&nbsp;import java.time.LocalDateTime;
+&nbsp;import java.util.Arrays;
+&nbsp;import java.util.Optional;
+&nbsp;import java.util.concurrent.TimeUnit;
+&nbsp;import java.util.List;
+&nbsp;import java.util.ArrayList;
+&nbsp;import com.example.techprototype.Entity.Order;
+&nbsp;import com.example.techprototype.Entity.Ticket;
+&nbsp;import com.example.techprototype.Entity.WaitlistOrder;
+&nbsp;import com.example.techprototype.Entity.WaitlistItem;
+&nbsp;import com.example.techprototype.Enums.WaitlistOrderStatus;
+&nbsp;import com.example.techprototype.Enums.WaitlistItemStatus;
+&nbsp;import com.example.techprototype.Enums.OrderStatus;
+&nbsp;import com.example.techprototype.Enums.TicketStatus;
+&nbsp;import com.example.techprototype.Repository.WaitlistOrderRepository;
+&nbsp;import com.example.techprototype.Repository.WaitlistItemRepository;
+&nbsp;import com.example.techprototype.Repository.OrderRepository;
+&nbsp;import com.example.techprototype.Repository.TicketRepository;
+&nbsp;import com.fasterxml.jackson.core.JsonProcessingException;
+&nbsp;import com.fasterxml.jackson.databind.ObjectMapper;
+&nbsp;import org.springframework.scheduling.annotation.Async;
+&nbsp;import java.math.BigDecimal;
+&nbsp;
+&nbsp;@Service
+<b class="fc">&nbsp;public class RedisServiceImpl implements RedisService {</b>
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private RedisTemplate&lt;String, Object&gt; redisTemplate;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private RedissonClient redissonClient;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private WaitlistOrderRepository waitlistOrderRepository;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private WaitlistItemRepository waitlistItemRepository;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private OrderRepository orderRepository;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private TicketRepository ticketRepository;
+&nbsp;    
+<b class="fc">&nbsp;    private final Snowflake snowflake = IdUtil.getSnowflake(1, 1);</b>
+&nbsp;    
+&nbsp;    // Lua脚本：原子减库存
+&nbsp;    private static final String DECR_STOCK_SCRIPT = 
+&nbsp;        &quot;local key = KEYS[1] &quot; +
+&nbsp;        &quot;local quantity_str = ARGV[1] &quot; +
+&nbsp;        &quot;local quantity = tonumber(quantity_str) &quot; +
+&nbsp;        &quot;if quantity == nil then &quot; +
+&nbsp;        &quot;    return -2 &quot; +
+&nbsp;        &quot;end &quot; +
+&nbsp;        &quot;local current = redis.call(&#39;get&#39;, key) &quot; +
+&nbsp;        &quot;if current == nil then &quot; +
+&nbsp;        &quot;    return -1 &quot; +
+&nbsp;        &quot;end &quot; +
+&nbsp;        &quot;current = tonumber(current) &quot; +
+&nbsp;        &quot;if current == nil then &quot; +
+&nbsp;        &quot;    return -3 &quot; +
+&nbsp;        &quot;end &quot; +
+&nbsp;        &quot;if current &gt;= quantity then &quot; +
+&nbsp;        &quot;    redis.call(&#39;decrby&#39;, key, quantity) &quot; +
+&nbsp;        &quot;    return 1 &quot; +
+&nbsp;        &quot;else &quot; +
+&nbsp;        &quot;    return 0 &quot; +
+&nbsp;        &quot;end&quot;;
+&nbsp;    
+&nbsp;    // Lua脚本：原子加库存
+&nbsp;    private static final String INCR_STOCK_SCRIPT = 
+&nbsp;        &quot;local key = KEYS[1] &quot; +
+&nbsp;        &quot;local quantity_str = ARGV[1] &quot; +
+&nbsp;        &quot;local quantity = tonumber(quantity_str) &quot; +
+&nbsp;        &quot;if quantity == nil then &quot; +
+&nbsp;        &quot;    return -1 &quot; +
+&nbsp;        &quot;end &quot; +
+&nbsp;        &quot;redis.call(&#39;incrby&#39;, key, quantity) &quot; +
+&nbsp;        &quot;return 1&quot;;
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public boolean decrStock(Integer trainId, Long departureStopId, Long arrivalStopId, LocalDate travelDate, Integer carriageTypeId, int quantity) {
+<b class="fc">&nbsp;        String key = buildStockKey(trainId, departureStopId, arrivalStopId, travelDate, carriageTypeId);</b>
+<b class="fc">&nbsp;        System.out.println(&quot;尝试减库存，key: &quot; + key + &quot;, quantity: &quot; + quantity);</b>
+&nbsp;        
+<b class="fc">&nbsp;        DefaultRedisScript&lt;Long&gt; script = new DefaultRedisScript&lt;&gt;();</b>
+<b class="fc">&nbsp;        script.setScriptText(DECR_STOCK_SCRIPT);</b>
+<b class="fc">&nbsp;        script.setResultType(Long.class);</b>
+&nbsp;        
+<b class="fc">&nbsp;        Long result = redisTemplate.execute(script, Arrays.asList(key), String.valueOf(quantity));</b>
+<b class="fc">&nbsp;        System.out.println(&quot;减库存结果: &quot; + result);</b>
+&nbsp;        
+<b class="fc">&nbsp;        if (result == null) {</b>
+<b class="fc">&nbsp;            System.err.println(&quot;Lua脚本执行失败，key: &quot; + key);</b>
+<b class="fc">&nbsp;            return false;</b>
+&nbsp;        }
+&nbsp;        
+<b class="fc">&nbsp;        switch (result.intValue()) {</b>
+<b class="fc">&nbsp;            case 1: return true;  // 成功</b>
+<b class="fc">&nbsp;            case 0: return false; // 库存不足</b>
+&nbsp;            case -1: 
+<b class="fc">&nbsp;                System.err.println(&quot;库存key不存在: &quot; + key);</b>
+<b class="fc">&nbsp;                return false;</b>
+&nbsp;            case -2: 
+<b class="fc">&nbsp;                System.err.println(&quot;数量参数无效: &quot; + quantity);</b>
+<b class="fc">&nbsp;                return false;</b>
+&nbsp;            case -3: 
+<b class="fc">&nbsp;                System.err.println(&quot;库存值格式错误: &quot; + key);</b>
+<b class="fc">&nbsp;                return false;</b>
+&nbsp;            default:
+<b class="fc">&nbsp;                System.err.println(&quot;未知错误码: &quot; + result);</b>
+<b class="fc">&nbsp;                return false;</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public boolean incrStock(Integer trainId, Long departureStopId, Long arrivalStopId, LocalDate travelDate, Integer carriageTypeId, int quantity) {
+<b class="fc">&nbsp;        String key = buildStockKey(trainId, departureStopId, arrivalStopId, travelDate, carriageTypeId);</b>
+<b class="fc">&nbsp;        System.out.println(&quot;尝试加库存，key: &quot; + key + &quot;, quantity: &quot; + quantity);</b>
+&nbsp;        
+<b class="fc">&nbsp;        DefaultRedisScript&lt;Long&gt; script = new DefaultRedisScript&lt;&gt;();</b>
+<b class="fc">&nbsp;        script.setScriptText(INCR_STOCK_SCRIPT);</b>
+<b class="fc">&nbsp;        script.setResultType(Long.class);</b>
+&nbsp;        
+<b class="fc">&nbsp;        Long result = redisTemplate.execute(script, Arrays.asList(key), String.valueOf(quantity));</b>
+<b class="fc">&nbsp;        System.out.println(&quot;加库存结果: &quot; + result);</b>
+&nbsp;        
+<b class="fc">&nbsp;        boolean success = result != null &amp;&amp; result == 1;</b>
+&nbsp;        
+&nbsp;        // 如果库存增加成功，触发候补订单兑现检查
+<b class="fc">&nbsp;        if (success) {</b>
+<b class="fc">&nbsp;            System.out.println(&quot;库存回滚成功，触发候补订单兑现检查: &quot; + key);</b>
+&nbsp;            // 异步触发候补订单兑现检查
+<b class="fc">&nbsp;            triggerWaitlistFulfillment(trainId, departureStopId, arrivalStopId, travelDate, carriageTypeId);</b>
+&nbsp;        }
+&nbsp;        
+<b class="fc">&nbsp;        return success;</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public Optional&lt;Integer&gt; getStock(Integer trainId, Long departureStopId, Long arrivalStopId, LocalDate travelDate, Integer carriageTypeId) {
+<b class="fc">&nbsp;        String key = buildStockKey(trainId, departureStopId, arrivalStopId, travelDate, carriageTypeId);</b>
+<b class="fc">&nbsp;        Object value = redisTemplate.opsForValue().get(key);</b>
+<b class="fc">&nbsp;        if (value != null) {</b>
+<b class="fc">&nbsp;            return Optional.of(Integer.valueOf(value.toString()));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        return Optional.empty();</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public void setStock(Integer trainId, Long departureStopId, Long arrivalStopId, LocalDate travelDate, Integer carriageTypeId, int quantity) {
+<b class="fc">&nbsp;        String key = buildStockKey(trainId, departureStopId, arrivalStopId, travelDate, carriageTypeId);</b>
+<b class="fc">&nbsp;        System.out.println(&quot;设置库存，key: &quot; + key + &quot;, quantity: &quot; + quantity);</b>
+<b class="fc">&nbsp;        redisTemplate.opsForValue().set(key, String.valueOf(quantity));</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public boolean tryLock(String lockKey, long waitTime, long leaseTime) {
+<b class="fc">&nbsp;        RLock lock = redissonClient.getLock(lockKey);</b>
+&nbsp;        try {
+<b class="fc">&nbsp;            return lock.tryLock(waitTime, leaseTime, TimeUnit.SECONDS);</b>
+&nbsp;        } catch (InterruptedException e) {
+<b class="fc">&nbsp;            Thread.currentThread().interrupt();</b>
+<b class="fc">&nbsp;            return false;</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public void unlock(String lockKey) {
+<b class="fc">&nbsp;        RLock lock = redissonClient.getLock(lockKey);</b>
+<b class="fc">&nbsp;        if (lock.isHeldByCurrentThread()) {</b>
+<b class="fc">&nbsp;            lock.unlock();</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public String generateOrderNumber() {
+<b class="fc">&nbsp;        return String.valueOf(snowflake.nextId());</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public void setChangeMapping(String mappingKey, String mappingValue) {
+<b class="fc">&nbsp;        redisTemplate.opsForValue().set(mappingKey, mappingValue);</b>
+<b class="fc">&nbsp;        System.out.println(&quot;设置改签配对: &quot; + mappingKey + &quot; -&gt; &quot; + mappingValue);</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public Optional&lt;String&gt; getChangeMapping(String mappingKey) {
+<b class="fc">&nbsp;        Object value = redisTemplate.opsForValue().get(mappingKey);</b>
+<b class="fc">&nbsp;        if (value != null) {</b>
+<b class="fc">&nbsp;            return Optional.of(value.toString());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        return Optional.empty();</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public void deleteChangeMapping(String mappingKey) {
+<b class="fc">&nbsp;        redisTemplate.delete(mappingKey);</b>
+<b class="fc">&nbsp;        System.out.println(&quot;删除改签配对: &quot; + mappingKey);</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    private String buildStockKey(Integer trainId, Long departureStopId, Long arrivalStopId, LocalDate travelDate, Integer carriageTypeId) {
+<b class="fc">&nbsp;        return String.format(&quot;stock:%d:%d:%d:%s:%d&quot;, trainId, departureStopId, arrivalStopId, travelDate, carriageTypeId);</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public void cacheOrder(Order order) {
+&nbsp;        try {
+<b class="fc">&nbsp;            ObjectMapper mapper = new ObjectMapper();</b>
+<b class="fc">&nbsp;            String orderJson = mapper.writeValueAsString(order);</b>
+<b class="fc">&nbsp;            String key = &quot;order:&quot; + order.getOrderNumber();</b>
+<b class="fc">&nbsp;            redisTemplate.opsForValue().set(key, orderJson, 30, TimeUnit.MINUTES); // 30分钟过期</b>
+<b class="fc">&nbsp;            System.out.println(&quot;订单已缓存到Redis: &quot; + order.getOrderNumber());</b>
+&nbsp;        } catch (JsonProcessingException e) {
+<b class="nc">&nbsp;            System.err.println(&quot;缓存订单失败: &quot; + e.getMessage());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public Optional&lt;Order&gt; getCachedOrder(String orderNumber) {
+&nbsp;        try {
+<b class="fc">&nbsp;            String key = &quot;order:&quot; + orderNumber;</b>
+<b class="fc">&nbsp;            Object value = redisTemplate.opsForValue().get(key);</b>
+<b class="fc">&nbsp;            if (value != null) {</b>
+<b class="fc">&nbsp;                ObjectMapper mapper = new ObjectMapper();</b>
+<b class="fc">&nbsp;                Order order = mapper.readValue(value.toString(), Order.class);</b>
+<b class="fc">&nbsp;                return Optional.of(order);</b>
+&nbsp;            }
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            System.err.println(&quot;从Redis获取订单失败: &quot; + e.getMessage());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        return Optional.empty();</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public void cacheTicket(Ticket ticket) {
+&nbsp;        try {
+<b class="fc">&nbsp;            ObjectMapper mapper = new ObjectMapper();</b>
+<b class="fc">&nbsp;            String ticketJson = mapper.writeValueAsString(ticket);</b>
+<b class="fc">&nbsp;            String key = &quot;ticket:&quot; + ticket.getTicketId();</b>
+<b class="fc">&nbsp;            redisTemplate.opsForValue().set(key, ticketJson, 30, TimeUnit.MINUTES); // 30分钟过期</b>
+&nbsp;            
+&nbsp;            // 同时缓存到订单车票列表
+<b class="fc">&nbsp;            String orderTicketsKey = &quot;order_tickets:&quot; + ticket.getOrderId();</b>
+<b class="fc">&nbsp;            redisTemplate.opsForList().rightPush(orderTicketsKey, ticket.getTicketId());</b>
+<b class="fc">&nbsp;            redisTemplate.expire(orderTicketsKey, 30, TimeUnit.MINUTES);</b>
+&nbsp;            
+<b class="fc">&nbsp;            System.out.println(&quot;车票已缓存到Redis: &quot; + ticket.getTicketId());</b>
+&nbsp;        } catch (JsonProcessingException e) {
+<b class="fc">&nbsp;            System.err.println(&quot;缓存车票失败: &quot; + e.getMessage());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public List&lt;Ticket&gt; getCachedTickets(Long orderId) {
+&nbsp;        try {
+<b class="fc">&nbsp;            String orderTicketsKey = &quot;order_tickets:&quot; + orderId;</b>
+<b class="fc">&nbsp;            List&lt;Object&gt; ticketIds = redisTemplate.opsForList().range(orderTicketsKey, 0, -1);</b>
+<b class="fc">&nbsp;            if (ticketIds == null || ticketIds.isEmpty()) {</b>
+<b class="fc">&nbsp;                return new ArrayList&lt;&gt;();</b>
+&nbsp;            }
+&nbsp;            
+<b class="fc">&nbsp;            List&lt;Ticket&gt; tickets = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;            ObjectMapper mapper = new ObjectMapper();</b>
+&nbsp;            
+<b class="fc">&nbsp;            for (Object ticketIdObj : ticketIds) {</b>
+<b class="fc">&nbsp;                String ticketKey = &quot;ticket:&quot; + ticketIdObj;</b>
+<b class="fc">&nbsp;                Object ticketValue = redisTemplate.opsForValue().get(ticketKey);</b>
+<b class="fc">&nbsp;                if (ticketValue != null) {</b>
+<b class="fc">&nbsp;                    Ticket ticket = mapper.readValue(ticketValue.toString(), Ticket.class);</b>
+<b class="fc">&nbsp;                    tickets.add(ticket);</b>
+&nbsp;                }
+&nbsp;            }
+&nbsp;            
+<b class="fc">&nbsp;            return tickets;</b>
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            System.err.println(&quot;从Redis获取车票失败: &quot; + e.getMessage());</b>
+<b class="fc">&nbsp;            return new ArrayList&lt;&gt;();</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public void deleteCachedOrder(String orderNumber) {
+<b class="fc">&nbsp;        String key = &quot;order:&quot; + orderNumber;</b>
+<b class="fc">&nbsp;        redisTemplate.delete(key);</b>
+<b class="fc">&nbsp;        System.out.println(&quot;已删除订单缓存: &quot; + orderNumber);</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public void deleteCachedTicket(Long ticketId) {
+<b class="fc">&nbsp;        String key = &quot;ticket:&quot; + ticketId;</b>
+<b class="fc">&nbsp;        redisTemplate.delete(key);</b>
+<b class="fc">&nbsp;        System.out.println(&quot;已删除车票缓存: &quot; + ticketId);</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 触发候补订单兑现检查
+&nbsp;     * 当库存回滚时，检查是否有对应的候补订单可以兑现
+&nbsp;     */
+&nbsp;    @Async
+&nbsp;    public void triggerWaitlistFulfillment(Integer trainId, Long departureStopId, Long arrivalStopId, 
+&nbsp;                                         LocalDate travelDate, Integer carriageTypeId) {
+&nbsp;        try {
+<b class="fc">&nbsp;            System.out.println(&quot;开始检查候补订单兑现: 车次&quot; + trainId + &quot;, 席别&quot; + carriageTypeId);</b>
+&nbsp;            
+&nbsp;            // 查询待兑现的候补订单（按创建时间升序，早的优先）
+<b class="fc">&nbsp;            List&lt;WaitlistOrder&gt; pendingOrders = waitlistOrderRepository.findPendingFulfillmentOrders(LocalDateTime.now());</b>
+&nbsp;            
+&nbsp;            // 按时间顺序处理候补订单，确保先创建的优先兑现
+<b class="fc">&nbsp;            for (WaitlistOrder order : pendingOrders) {</b>
+&nbsp;                // 检查这个候补订单是否可以完全兑现
+<b class="fc">&nbsp;                boolean fulfilled = checkAndFulfillWaitlistOrder(order);</b>
+<b class="fc">&nbsp;                if (fulfilled) {</b>
+<b class="fc">&nbsp;                    System.out.println(&quot;候补订单兑现成功: &quot; + order.getWaitlistId() + &quot;, 创建时间: &quot; + order.getOrderTime());</b>
+&nbsp;                    // 如果这个候补订单兑现成功，继续检查下一个
+&nbsp;                    continue;
+&nbsp;                } else {
+<b class="fc">&nbsp;                    System.out.println(&quot;候补订单暂无法兑现: &quot; + order.getWaitlistId() + &quot;, 创建时间: &quot; + order.getOrderTime());</b>
+&nbsp;                    // 如果这个候补订单无法兑现，继续检查下一个（可能有其他席别的库存）
+&nbsp;                }
+&nbsp;            }
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            System.err.println(&quot;候补订单兑现检查失败: &quot; + e.getMessage());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 检查并兑现候补订单
+&nbsp;     * 只有当候补订单的所有项都有库存时，才创建完整订单
+&nbsp;     * @return true 如果候补订单兑现成功，false 如果无法兑现
+&nbsp;     */
+&nbsp;    private boolean checkAndFulfillWaitlistOrder(WaitlistOrder order) {
+&nbsp;        try {
+<b class="fc">&nbsp;            List&lt;WaitlistItem&gt; pendingItems = waitlistItemRepository.findPendingItemsByWaitlistId(order.getWaitlistId());</b>
+&nbsp;            
+&nbsp;            // 检查所有待处理项是否都有库存
+<b class="fc">&nbsp;            boolean allItemsAvailable = true;</b>
+<b class="fc">&nbsp;            for (WaitlistItem item : pendingItems) {</b>
+<b class="fc">&nbsp;                Optional&lt;Integer&gt; stock = getStock(item.getTrainId(), item.getDepartureStopId(), </b>
+<b class="fc">&nbsp;                        item.getArrivalStopId(), item.getTravelDate(), item.getCarriageTypeId());</b>
+<b class="fc">&nbsp;                if (stock.isEmpty() || stock.get() &lt;= 0) {</b>
+<b class="fc">&nbsp;                    allItemsAvailable = false;</b>
+&nbsp;                    break;
+&nbsp;                }
+&nbsp;            }
+&nbsp;            
+&nbsp;            // 如果所有项都有库存，创建完整订单
+<b class="fc">&nbsp;            if (allItemsAvailable) {</b>
+<b class="fc">&nbsp;                System.out.println(&quot;候补订单所有项都有库存，开始创建完整订单: &quot; + order.getWaitlistId());</b>
+<b class="fc">&nbsp;                createCompleteOrderFromWaitlist(order, pendingItems);</b>
+<b class="fc">&nbsp;                return true; // 兑现成功</b>
+&nbsp;            }
+&nbsp;            
+<b class="fc">&nbsp;            return false; // 无法兑现</b>
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            System.err.println(&quot;检查候补订单兑现失败: &quot; + e.getMessage());</b>
+<b class="fc">&nbsp;            return false; // 异常情况，无法兑现</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 从候补订单创建完整订单
+&nbsp;     * 只有当候补订单的所有项都有库存时，才创建完整订单
+&nbsp;     */
+&nbsp;    private void createCompleteOrderFromWaitlist(WaitlistOrder order, List&lt;WaitlistItem&gt; items) {
+&nbsp;        try {
+&nbsp;            // 1. 创建正式订单
+<b class="fc">&nbsp;            Order newOrder = new Order();</b>
+<b class="fc">&nbsp;            newOrder.setOrderNumber(generateOrderNumber());</b>
+<b class="fc">&nbsp;            newOrder.setUserId(order.getUserId());</b>
+<b class="fc">&nbsp;            newOrder.setOrderStatus((byte) OrderStatus.PAID.getCode()); // 已支付状态</b>
+<b class="fc">&nbsp;            newOrder.setOrderTime(LocalDateTime.now());</b>
+<b class="fc">&nbsp;            newOrder.setPaymentTime(LocalDateTime.now()); // 设置支付时间</b>
+<b class="fc">&nbsp;            newOrder.setPaymentMethod(&quot;候补订单兑现&quot;); // 设置支付方式</b>
+&nbsp;            
+&nbsp;            // 计算总金额
+<b class="fc">&nbsp;            BigDecimal totalAmount = items.stream()</b>
+<b class="fc">&nbsp;                    .map(WaitlistItem::getPrice)</b>
+<b class="fc">&nbsp;                    .reduce(BigDecimal.ZERO, BigDecimal::add);</b>
+<b class="fc">&nbsp;            newOrder.setTotalAmount(totalAmount);</b>
+<b class="fc">&nbsp;            newOrder.setTicketCount(items.size()); // 设置票数为候补项数量</b>
+&nbsp;            
+<b class="fc">&nbsp;            orderRepository.save(newOrder);</b>
+&nbsp;            
+&nbsp;            // 2. 为每个候补项创建车票记录
+<b class="fc">&nbsp;            for (WaitlistItem item : items) {</b>
+<b class="fc">&nbsp;                Ticket ticket = new Ticket();</b>
+<b class="fc">&nbsp;                ticket.setOrderId(newOrder.getOrderId());</b>
+<b class="fc">&nbsp;                ticket.setTrainId(item.getTrainId());</b>
+<b class="fc">&nbsp;                ticket.setDepartureStopId(item.getDepartureStopId());</b>
+<b class="fc">&nbsp;                ticket.setArrivalStopId(item.getArrivalStopId());</b>
+<b class="fc">&nbsp;                ticket.setTravelDate(item.getTravelDate());</b>
+<b class="fc">&nbsp;                ticket.setCarriageTypeId(item.getCarriageTypeId());</b>
+<b class="fc">&nbsp;                ticket.setPassengerId(item.getPassengerId());</b>
+<b class="fc">&nbsp;                ticket.setTicketType(item.getTicketType());</b>
+<b class="fc">&nbsp;                ticket.setTicketStatus((byte) TicketStatus.UNUSED.getCode());</b>
+<b class="fc">&nbsp;                ticket.setTicketNumber(&quot;T&quot; + System.currentTimeMillis() + (int)(Math.random() * 1000));</b>
+<b class="fc">&nbsp;                ticket.setCreatedTime(LocalDateTime.now());</b>
+<b class="fc">&nbsp;                ticket.setPrice(item.getPrice());</b>
+&nbsp;                
+<b class="fc">&nbsp;                ticketRepository.save(ticket);</b>
+&nbsp;                
+&nbsp;                // 3. 扣减Redis库存
+<b class="fc">&nbsp;                boolean stockReduced = decrStock(item.getTrainId(), item.getDepartureStopId(), </b>
+<b class="fc">&nbsp;                        item.getArrivalStopId(), item.getTravelDate(), item.getCarriageTypeId(), 1);</b>
+<b class="fc">&nbsp;                if (stockReduced) {</b>
+<b class="fc">&nbsp;                    System.out.println(&quot;候补订单兑现时扣减库存成功: 车次&quot; + item.getTrainId() + </b>
+<b class="fc">&nbsp;                                     &quot;, 席别&quot; + item.getCarriageTypeId() + &quot;, 数量-1&quot;);</b>
+&nbsp;                } else {
+<b class="fc">&nbsp;                    System.err.println(&quot;候补订单兑现时扣减库存失败: 车次&quot; + item.getTrainId() + </b>
+<b class="fc">&nbsp;                                     &quot;, 席别&quot; + item.getCarriageTypeId());</b>
+&nbsp;                }
+&nbsp;                
+&nbsp;                // 4. 更新候补订单项状态
+<b class="fc">&nbsp;                item.setItemStatus((byte) WaitlistItemStatus.FULFILLED.getCode());</b>
+<b class="fc">&nbsp;                waitlistItemRepository.save(item);</b>
+&nbsp;            }
+&nbsp;            
+&nbsp;            // 5. 更新候补订单状态为已兑现
+<b class="fc">&nbsp;            order.setOrderStatus((byte) WaitlistOrderStatus.FULFILLED.getCode());</b>
+<b class="fc">&nbsp;            waitlistOrderRepository.save(order);</b>
+&nbsp;            
+<b class="fc">&nbsp;            System.out.println(&quot;候补订单完整兑现完成: 订单&quot; + newOrder.getOrderNumber() + </b>
+<b class="fc">&nbsp;                             &quot;, 包含&quot; + items.size() + &quot;张车票, 总金额&quot; + totalAmount);</b>
+&nbsp;            
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            System.err.println(&quot;创建完整订单失败: &quot; + e.getMessage());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;} 
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

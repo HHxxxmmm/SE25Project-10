@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">TechPrototype</a> &gt; <a href="index.source.html" class="el_package">com.example.techprototype.Controller</a> &gt; <span class="el_source">OrderController.java</span></div><h1>OrderController.java</h1><pre class="source lang-java linenums">package com.example.techprototype.Controller;
+
+import com.example.techprototype.DTO.BookingRequest;
+import com.example.techprototype.DTO.BookingResponse;
+import com.example.techprototype.DTO.CancelOrderRequest;
+import com.example.techprototype.DTO.MyOrderResponse;
+import com.example.techprototype.DTO.OrderDetailResponse;
+import com.example.techprototype.DTO.RefundPreparationRequest;
+import com.example.techprototype.DTO.RefundPreparationResponse;
+import com.example.techprototype.DTO.BasicResponse;
+import com.example.techprototype.Entity.Order;
+import com.example.techprototype.Repository.OrderRepository;
+import com.example.techprototype.Service.OrderService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+@RestController
+@RequestMapping(&quot;/api/orders&quot;)
+@CrossOrigin(origins = &quot;*&quot;)
+<span class="fc" id="L28">public class OrderController {</span>
+    
+    @Autowired
+    private OrderService orderService;
+    
+    @Autowired
+    private OrderRepository orderRepository;
+    
+    /**
+     * 创建订单
+     */
+    @PostMapping(&quot;/create&quot;)
+    public BookingResponse createOrder(@RequestBody BookingRequest request) {
+<span class="fc" id="L41">        return orderService.createOrder(request);</span>
+    }
+    
+    /**
+     * 取消订单
+     */
+    @PostMapping(&quot;/cancel&quot;)
+    public BookingResponse cancelOrder(@RequestBody CancelOrderRequest request) {
+<span class="fc" id="L49">        return orderService.cancelOrder(request);</span>
+    }
+    
+    /**
+     * 获取我的订单
+     */
+    @GetMapping(&quot;/my&quot;)
+    public MyOrderResponse getMyOrders(@RequestParam Long userId) {
+<span class="fc" id="L57">        return orderService.getMyOrders(userId);</span>
+    }
+    
+    /**
+     * 根据条件获取我的订单
+     */
+    @GetMapping(&quot;/my/filter&quot;)
+    public MyOrderResponse getMyOrdersByConditions(
+            @RequestParam Long userId,
+            @RequestParam(required = false) String orderNumber,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) Byte orderStatus,
+            @RequestParam(required = false) String trainNumber) {
+<span class="fc" id="L71">        return orderService.getMyOrdersByConditions(userId, orderNumber, startDate, endDate, orderStatus, trainNumber);</span>
+    }
+    
+    /**
+     * 获取订单详情
+     */
+    @GetMapping(&quot;/detail&quot;)
+    public OrderDetailResponse getOrderDetail(@RequestParam Long userId, @RequestParam Long orderId) {
+<span class="fc" id="L79">        return orderService.getOrderDetail(userId, orderId);</span>
+    }
+    
+    /**
+     * 退票准备阶段 - 获取退票信息
+     */
+    @PostMapping(&quot;/refund/preparation&quot;)
+    public RefundPreparationResponse getRefundPreparation(@RequestBody RefundPreparationRequest request) {
+<span class="fc" id="L87">        return orderService.getRefundPreparation(request);</span>
+    }
+    
+    /**
+     * 根据订单号获取订单ID
+     */
+    @GetMapping(&quot;/order-id&quot;)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; getOrderIdByOrderNumber(@RequestParam String orderNumber) {
+        try {
+<span class="fc" id="L96">            Optional&lt;Order&gt; order = orderRepository.findByOrderNumber(orderNumber);</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">            if (order.isPresent()) {</span>
+<span class="fc" id="L98">                Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L99">                response.put(&quot;orderId&quot;, order.get().getOrderId());</span>
+<span class="fc" id="L100">                response.put(&quot;orderNumber&quot;, order.get().getOrderNumber());</span>
+<span class="fc" id="L101">                response.put(&quot;status&quot;, &quot;SUCCESS&quot;);</span>
+<span class="fc" id="L102">                return ResponseEntity.ok(response);</span>
+            } else {
+<span class="fc" id="L104">                Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L105">                response.put(&quot;status&quot;, &quot;NOT_FOUND&quot;);</span>
+<span class="fc" id="L106">                response.put(&quot;message&quot;, &quot;订单不存在&quot;);</span>
+<span class="fc" id="L107">                return ResponseEntity.ok(response);</span>
+            }
+<span class="fc" id="L109">        } catch (Exception e) {</span>
+<span class="fc" id="L110">            Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L111">            response.put(&quot;status&quot;, &quot;ERROR&quot;);</span>
+<span class="fc" id="L112">            response.put(&quot;message&quot;, &quot;查询失败: &quot; + e.getMessage());</span>
+<span class="fc" id="L113">            return ResponseEntity.ok(response);</span>
+        }
+    }
+    
+    /**
+     * 检查订单是否已超时
+     */
+    @GetMapping(&quot;/check-timeout&quot;)
+    public BasicResponse checkOrderTimeout(@RequestParam Long orderId, @RequestParam Long userId) {
+        try {
+<span class="fc" id="L123">            Optional&lt;Order&gt; orderOpt = orderRepository.findByOrderIdAndUserId(orderId, userId);</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">            if (orderOpt.isEmpty()) {</span>
+<span class="fc" id="L125">                return BasicResponse.failure(&quot;订单不存在&quot;);</span>
+            }
+            
+<span class="fc" id="L128">            Order order = orderOpt.get();</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">            if (order.getOrderStatus() != 0) { // 不是待支付状态</span>
+<span class="fc" id="L130">                return BasicResponse.failure(&quot;订单状态不正确&quot;);</span>
+            }
+            
+            // 检查是否超时（15分钟）
+<span class="fc" id="L134">            LocalDateTime timeoutThreshold = LocalDateTime.now().minusMinutes(15);</span>
+<span class="fc" id="L135">            boolean isTimeout = order.getOrderTime().isBefore(timeoutThreshold);</span>
+            
+<span class="fc bfc" id="L137" title="All 2 branches covered.">            if (isTimeout) {</span>
+<span class="fc" id="L138">                return BasicResponse.failure(&quot;订单已超时&quot;);</span>
+            } else {
+<span class="fc" id="L140">                return BasicResponse.success(&quot;订单未超时&quot;);</span>
+            }
+            
+<span class="fc" id="L143">        } catch (Exception e) {</span>
+<span class="fc" id="L144">            return BasicResponse.failure(&quot;检查订单超时失败: &quot; + e.getMessage());</span>
+        }
+    }
+} 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

@@ -1,0 +1,130 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > UserService</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Service</a>
+</div>
+
+<h1>Coverage Summary for Class: UserService (com.example.techprototype.Service)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+</tr>
+  <tr>
+    <td class="name">UserService$MockitoMock$UzkQiaD3</td>
+  </tr>
+  <tr>
+    <td class="name">UserService$MockitoMock$UzkQiaD3$auxiliary$2Bgz9Dwc</td>
+  </tr>
+  <tr>
+    <td class="name">UserService$MockitoMock$UzkQiaD3$auxiliary$ygL1kXDy</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Service;
+&nbsp;
+&nbsp;import com.example.techprototype.DTO.LoginDTO;
+&nbsp;import com.example.techprototype.DTO.RegisterDTO;
+&nbsp;import com.example.techprototype.DTO.UserDTO;
+&nbsp;import com.example.techprototype.Entity.User;
+&nbsp;
+&nbsp;public interface UserService {
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 用户登录
+&nbsp;     * @param loginDTO 登录信息
+&nbsp;     * @return 用户信息
+&nbsp;     * @throws Exception 登录失败异常
+&nbsp;     */
+&nbsp;    UserDTO login(LoginDTO loginDTO) throws Exception;
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 用户注册
+&nbsp;     * @param registerDTO 注册信息
+&nbsp;     * @return 注册成功的用户信息
+&nbsp;     * @throws Exception 注册失败异常
+&nbsp;     */
+&nbsp;    UserDTO register(RegisterDTO registerDTO) throws Exception;
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 通过ID查询用户
+&nbsp;     * @param userId 用户ID
+&nbsp;     * @return 用户信息
+&nbsp;     */
+&nbsp;    User getUserById(Long userId);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 通过手机号查询用户
+&nbsp;     * @param phoneNumber 手机号
+&nbsp;     * @return 用户信息
+&nbsp;     */
+&nbsp;    User getUserByPhoneNumber(String phoneNumber);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 校验身份证合法性
+&nbsp;     * @param idCardNumber 身份证号
+&nbsp;     * @return 是否合法
+&nbsp;     */
+&nbsp;    boolean validateIdCard(String idCardNumber);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 生成MD5密码
+&nbsp;     * @param password 原始密码
+&nbsp;     * @return MD5加密后的密码
+&nbsp;     */
+&nbsp;    String generateMD5Password(String password);
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

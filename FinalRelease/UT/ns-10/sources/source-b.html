@@ -1,0 +1,110 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TicketInventoryRepository</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Repository</a>
+</div>
+
+<h1>Coverage Summary for Class: TicketInventoryRepository (com.example.techprototype.Repository)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+</tr>
+  <tr>
+    <td class="name">TicketInventoryRepository$MockitoMock$pxVUprPN</td>
+  </tr>
+  <tr>
+    <td class="name">TicketInventoryRepository$MockitoMock$pxVUprPN$auxiliary$9bhk7HIW</td>
+  </tr>
+  <tr>
+    <td class="name">TicketInventoryRepository$MockitoMock$pxVUprPN$auxiliary$rYOKqSyi</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Repository;
+&nbsp;
+&nbsp;import com.example.techprototype.Entity.TicketInventory;
+&nbsp;import org.springframework.data.jpa.repository.JpaRepository;
+&nbsp;import org.springframework.data.jpa.repository.Lock;
+&nbsp;import org.springframework.data.jpa.repository.Query;
+&nbsp;import org.springframework.data.repository.query.Param;
+&nbsp;import org.springframework.stereotype.Repository;
+&nbsp;import jakarta.persistence.LockModeType;
+&nbsp;import java.time.LocalDate;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Optional;
+&nbsp;
+&nbsp;@Repository
+&nbsp;public interface TicketInventoryRepository extends JpaRepository&lt;TicketInventory, Long&gt; {
+&nbsp;    
+&nbsp;    @Lock(LockModeType.PESSIMISTIC_WRITE)
+&nbsp;    @Query(&quot;SELECT ti FROM TicketInventory ti WHERE ti.trainId = :trainId AND ti.departureStopId = :departureStopId AND ti.arrivalStopId = :arrivalStopId AND ti.travelDate = :travelDate AND ti.carriageTypeId = :carriageTypeId&quot;)
+&nbsp;    Optional&lt;TicketInventory&gt; findByKeyWithLock(@Param(&quot;trainId&quot;) Integer trainId, 
+&nbsp;                                               @Param(&quot;departureStopId&quot;) Long departureStopId,
+&nbsp;                                               @Param(&quot;arrivalStopId&quot;) Long arrivalStopId,
+&nbsp;                                               @Param(&quot;travelDate&quot;) LocalDate travelDate,
+&nbsp;                                               @Param(&quot;carriageTypeId&quot;) Integer carriageTypeId);
+&nbsp;    
+&nbsp;    @Query(&quot;SELECT ti FROM TicketInventory ti WHERE ti.trainId = :trainId AND ti.travelDate = :travelDate AND ti.carriageTypeId = :carriageTypeId&quot;)
+&nbsp;    List&lt;TicketInventory&gt; findByTrainAndDateAndType(@Param(&quot;trainId&quot;) Integer trainId,
+&nbsp;                                                   @Param(&quot;travelDate&quot;) LocalDate travelDate,
+&nbsp;                                                   @Param(&quot;carriageTypeId&quot;) Integer carriageTypeId);
+&nbsp;    
+&nbsp;    @Query(&quot;SELECT ti FROM TicketInventory ti WHERE ti.trainId = :trainId AND ti.travelDate = :travelDate&quot;)
+&nbsp;    List&lt;TicketInventory&gt; findByTrainAndDate(@Param(&quot;trainId&quot;) Integer trainId,
+&nbsp;                                            @Param(&quot;travelDate&quot;) LocalDate travelDate);
+&nbsp;} 
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

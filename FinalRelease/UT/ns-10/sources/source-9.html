@@ -1,0 +1,176 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TicketRepository</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Repository</a>
+</div>
+
+<h1>Coverage Summary for Class: TicketRepository (com.example.techprototype.Repository)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+</tr>
+  <tr>
+    <td class="name">TicketRepository$MockitoMock$jexIjfSu</td>
+  </tr>
+  <tr>
+    <td class="name">TicketRepository$MockitoMock$jexIjfSu$auxiliary$bQROMoGS</td>
+  </tr>
+  <tr>
+    <td class="name">TicketRepository$MockitoMock$jexIjfSu$auxiliary$K5yVuOHY</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Repository;
+&nbsp;
+&nbsp;import com.example.techprototype.Entity.Ticket;
+&nbsp;import org.springframework.data.jpa.repository.JpaRepository;
+&nbsp;import org.springframework.data.jpa.repository.Query;
+&nbsp;import org.springframework.data.repository.query.Param;
+&nbsp;import org.springframework.stereotype.Repository;
+&nbsp;import java.time.LocalDate;
+&nbsp;import java.time.LocalTime;
+&nbsp;import java.util.List;
+&nbsp;
+&nbsp;@Repository
+&nbsp;public interface TicketRepository extends JpaRepository&lt;Ticket, Long&gt; {
+&nbsp;    
+&nbsp;    List&lt;Ticket&gt; findByOrderId(Long orderId);
+&nbsp;    
+&nbsp;    List&lt;Ticket&gt; findByOrderIdAndTicketIdIn(Long orderId, List&lt;Long&gt; ticketIds);
+&nbsp;    
+&nbsp;    @Query(&quot;SELECT t FROM Ticket t WHERE t.orderId = :orderId AND t.ticketStatus = 1&quot;)
+&nbsp;    List&lt;Ticket&gt; findValidTicketsByOrderId(@Param(&quot;orderId&quot;) Long orderId);
+&nbsp;    
+&nbsp;    @Query(&quot;SELECT t FROM Ticket t WHERE t.orderId != :orderId AND t.ticketStatus = :ticketStatus&quot;)
+&nbsp;    List&lt;Ticket&gt; findByOrderIdNotAndTicketStatus(@Param(&quot;orderId&quot;) Long orderId, @Param(&quot;ticketStatus&quot;) byte ticketStatus);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 查询乘客在指定日期和时间段内的有效车票
+&nbsp;     * 排除已退票和已改签的车票
+&nbsp;     */
+&nbsp;    @Query(&quot;SELECT t FROM Ticket t WHERE t.passengerId = :passengerId &quot; +
+&nbsp;           &quot;AND t.travelDate = :travelDate &quot; +
+&nbsp;           &quot;AND t.ticketStatus IN (0, 1, 2) &quot; + // 0-待支付, 1-未使用, 2-已使用
+&nbsp;           &quot;AND t.ticketId != :excludeTicketId&quot;)
+&nbsp;    List&lt;Ticket&gt; findValidTicketsByPassengerAndDate(
+&nbsp;            @Param(&quot;passengerId&quot;) Long passengerId,
+&nbsp;            @Param(&quot;travelDate&quot;) LocalDate travelDate,
+&nbsp;            @Param(&quot;excludeTicketId&quot;) Long excludeTicketId);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 查询乘客在指定日期和时间段内的有效车票（不排除任何车票）
+&nbsp;     */
+&nbsp;    @Query(&quot;SELECT t FROM Ticket t WHERE t.passengerId = :passengerId &quot; +
+&nbsp;           &quot;AND t.travelDate = :travelDate &quot; +
+&nbsp;           &quot;AND t.ticketStatus IN (0, 1, 2)&quot;) // 0-待支付, 1-未使用, 2-已使用
+&nbsp;    List&lt;Ticket&gt; findValidTicketsByPassengerAndDate(
+&nbsp;            @Param(&quot;passengerId&quot;) Long passengerId,
+&nbsp;            @Param(&quot;travelDate&quot;) LocalDate travelDate);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 根据乘客ID和车票状态查询车票
+&nbsp;     */
+&nbsp;    List&lt;Ticket&gt; findByPassengerIdAndTicketStatus(Long passengerId, byte ticketStatus);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 根据乘客ID查询所有车票（按创建时间倒序）
+&nbsp;     */
+&nbsp;    @Query(&quot;SELECT t FROM Ticket t WHERE t.passengerId = :passengerId ORDER BY t.createdTime DESC&quot;)
+&nbsp;    List&lt;Ticket&gt; findByPassengerIdOrderByCreatedTimeDesc(@Param(&quot;passengerId&quot;) Long passengerId);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 根据乘客ID查询所有车票（包括所有状态）
+&nbsp;     */
+&nbsp;    @Query(&quot;SELECT t FROM Ticket t WHERE t.passengerId = :passengerId ORDER BY t.createdTime DESC&quot;)
+&nbsp;    List&lt;Ticket&gt; findValidTicketsByPassengerId(@Param(&quot;passengerId&quot;) Long passengerId);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 根据乘客ID和车票状态查询车票（按创建时间倒序）
+&nbsp;     */
+&nbsp;    @Query(&quot;SELECT t FROM Ticket t WHERE t.passengerId = :passengerId AND t.ticketStatus = :ticketStatus ORDER BY t.createdTime DESC&quot;)
+&nbsp;    List&lt;Ticket&gt; findByPassengerIdAndTicketStatusOrderByCreatedTimeDesc(
+&nbsp;            @Param(&quot;passengerId&quot;) Long passengerId, 
+&nbsp;            @Param(&quot;ticketStatus&quot;) byte ticketStatus);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 根据乘客ID和出发日期范围查询有效车票（按创建时间倒序）
+&nbsp;     */
+&nbsp;    @Query(&quot;SELECT t FROM Ticket t WHERE t.passengerId = :passengerId &quot; +
+&nbsp;           &quot;AND t.ticketStatus IN (0, 1, 2) &quot; + // 0-待支付, 1-未使用, 2-已使用
+&nbsp;           &quot;AND t.travelDate &gt;= :startDate &quot; +
+&nbsp;           &quot;AND t.travelDate &lt;= :endDate &quot; +
+&nbsp;           &quot;ORDER BY t.createdTime DESC&quot;)
+&nbsp;    List&lt;Ticket&gt; findValidTicketsByPassengerAndDateRange(
+&nbsp;            @Param(&quot;passengerId&quot;) Long passengerId,
+&nbsp;            @Param(&quot;startDate&quot;) LocalDate startDate,
+&nbsp;            @Param(&quot;endDate&quot;) LocalDate endDate);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 根据乘客ID、车票状态和出发日期范围查询车票（按创建时间倒序）
+&nbsp;     */
+&nbsp;    @Query(&quot;SELECT t FROM Ticket t WHERE t.passengerId = :passengerId &quot; +
+&nbsp;           &quot;AND t.ticketStatus = :ticketStatus &quot; +
+&nbsp;           &quot;AND t.travelDate &gt;= :startDate &quot; +
+&nbsp;           &quot;AND t.travelDate &lt;= :endDate &quot; +
+&nbsp;           &quot;ORDER BY t.createdTime DESC&quot;)
+&nbsp;    List&lt;Ticket&gt; findByPassengerIdAndStatusAndDateRange(
+&nbsp;            @Param(&quot;passengerId&quot;) Long passengerId,
+&nbsp;            @Param(&quot;ticketStatus&quot;) byte ticketStatus,
+&nbsp;            @Param(&quot;startDate&quot;) LocalDate startDate,
+&nbsp;            @Param(&quot;endDate&quot;) LocalDate endDate);
+&nbsp;} 
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

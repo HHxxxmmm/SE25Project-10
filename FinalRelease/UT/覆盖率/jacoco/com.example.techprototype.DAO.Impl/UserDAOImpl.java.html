@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserDAOImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">TechPrototype</a> &gt; <a href="index.source.html" class="el_package">com.example.techprototype.DAO.Impl</a> &gt; <span class="el_source">UserDAOImpl.java</span></div><h1>UserDAOImpl.java</h1><pre class="source lang-java linenums">package com.example.techprototype.DAO.Impl;
+
+import com.example.techprototype.DAO.UserDAO;
+import com.example.techprototype.Entity.User;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.TypedQuery;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.util.Optional;
+
+@Repository
+<span class="fc" id="L16">public class UserDAOImpl implements UserDAO {</span>
+
+<span class="fc" id="L18">    private static final Logger logger = LoggerFactory.getLogger(UserDAOImpl.class);</span>
+    
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    @Override
+    public Optional&lt;User&gt; findByPhoneNumber(String phoneNumber) {
+<span class="fc" id="L25">        logger.info(&quot;查询手机号为: {} 的用户&quot;, phoneNumber);</span>
+        try {
+<span class="fc" id="L27">            TypedQuery&lt;User&gt; query = entityManager.createQuery(</span>
+                    &quot;SELECT u FROM User u WHERE u.phoneNumber = :phoneNumber&quot;, User.class);
+<span class="fc" id="L29">            query.setParameter(&quot;phoneNumber&quot;, phoneNumber);</span>
+<span class="fc" id="L30">            return Optional.ofNullable(query.getSingleResult());</span>
+<span class="fc" id="L31">        } catch (NoResultException e) {</span>
+<span class="fc" id="L32">            logger.warn(&quot;未找到手机号为 {} 的用户&quot;, phoneNumber);</span>
+<span class="fc" id="L33">            return Optional.empty();</span>
+<span class="fc" id="L34">        } catch (Exception e) {</span>
+<span class="fc" id="L35">            logger.error(&quot;查询手机号为 {} 的用户时发生错误: {}&quot;, phoneNumber, e.getMessage());</span>
+<span class="fc" id="L36">            throw e;</span>
+        }
+    }
+
+    @Override
+    @Transactional
+    public User save(User user) {
+<span class="fc" id="L43">        logger.info(&quot;保存用户信息: {}&quot;, user.getPhoneNumber());</span>
+        try {
+<span class="fc" id="L45">            entityManager.persist(user);</span>
+<span class="fc" id="L46">            entityManager.flush();</span>
+<span class="fc" id="L47">            logger.info(&quot;用户保存成功，ID: {}&quot;, user.getUserId());</span>
+<span class="fc" id="L48">            return user;</span>
+<span class="fc" id="L49">        } catch (Exception e) {</span>
+<span class="fc" id="L50">            logger.error(&quot;保存用户信息时发生错误: {}&quot;, e.getMessage());</span>
+<span class="fc" id="L51">            throw e;</span>
+        }
+    }
+
+    @Override
+    public Optional&lt;User&gt; findById(Long userId) {
+<span class="fc" id="L57">        logger.info(&quot;查询ID为: {} 的用户&quot;, userId);</span>
+        try {
+<span class="fc" id="L59">            return Optional.ofNullable(entityManager.find(User.class, userId));</span>
+<span class="fc" id="L60">        } catch (Exception e) {</span>
+<span class="fc" id="L61">            logger.error(&quot;查询ID为 {} 的用户时发生错误: {}&quot;, userId, e.getMessage());</span>
+<span class="fc" id="L62">            throw e;</span>
+        }
+    }
+
+    @Override
+    public Optional&lt;User&gt; findByEmail(String email) {
+<span class="fc" id="L68">        logger.info(&quot;查询邮箱为: {} 的用户&quot;, email);</span>
+<span class="fc bfc" id="L69" title="All 4 branches covered.">        if (email == null || email.trim().isEmpty()) {</span>
+<span class="fc" id="L70">            return Optional.empty();</span>
+        }
+        
+        try {
+<span class="fc" id="L74">            TypedQuery&lt;User&gt; query = entityManager.createQuery(</span>
+                    &quot;SELECT u FROM User u WHERE u.email = :email&quot;, User.class);
+<span class="fc" id="L76">            query.setParameter(&quot;email&quot;, email);</span>
+<span class="fc" id="L77">            return Optional.ofNullable(query.getSingleResult());</span>
+<span class="fc" id="L78">        } catch (NoResultException e) {</span>
+<span class="fc" id="L79">            logger.warn(&quot;未找到邮箱为 {} 的用户&quot;, email);</span>
+<span class="fc" id="L80">            return Optional.empty();</span>
+<span class="fc" id="L81">        } catch (Exception e) {</span>
+<span class="fc" id="L82">            logger.error(&quot;查询邮箱为 {} 的用户时发生错误: {}&quot;, email, e.getMessage());</span>
+<span class="fc" id="L83">            throw e;</span>
+        }
+    }
+
+    @Override
+    @Transactional
+    public void update(User user) {
+<span class="fc" id="L90">        logger.info(&quot;更新用户信息: {}&quot;, user.getUserId());</span>
+        try {
+<span class="fc" id="L92">            entityManager.merge(user);</span>
+<span class="fc" id="L93">            entityManager.flush();</span>
+<span class="fc" id="L94">            logger.info(&quot;用户信息更新成功，ID: {}&quot;, user.getUserId());</span>
+<span class="fc" id="L95">        } catch (Exception e) {</span>
+<span class="fc" id="L96">            logger.error(&quot;更新用户信息时发生错误: {}&quot;, e.getMessage());</span>
+<span class="fc" id="L97">            throw e;</span>
+<span class="fc" id="L98">        }</span>
+<span class="fc" id="L99">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

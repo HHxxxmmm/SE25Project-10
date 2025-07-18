@@ -1,0 +1,150 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > WaitlistItemStatus</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Enums</a>
+</div>
+
+<h1>Coverage Summary for Class: WaitlistItemStatus (com.example.techprototype.Enums)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">WaitlistItemStatus</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (6/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    50%
+  </span>
+  <span class="absValue">
+    (2/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    92.9%
+  </span>
+  <span class="absValue">
+    (13/14)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Enums;
+&nbsp;
+<b class="fc">&nbsp;public enum WaitlistItemStatus {</b>
+<b class="fc">&nbsp;    PENDING_PAYMENT(0, &quot;待支付&quot;),</b>
+<b class="fc">&nbsp;    PENDING_FULFILLMENT(1, &quot;待兑现&quot;),</b>
+<b class="fc">&nbsp;    FULFILLED(2, &quot;已兑现&quot;),</b>
+<b class="fc">&nbsp;    CANCELLED(3, &quot;已取消&quot;);</b>
+&nbsp;    
+&nbsp;    private final int code;
+&nbsp;    private final String description;
+&nbsp;    
+<b class="fc">&nbsp;    WaitlistItemStatus(int code, String description) {</b>
+<b class="fc">&nbsp;        this.code = code;</b>
+<b class="fc">&nbsp;        this.description = description;</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    public int getCode() {
+<b class="fc">&nbsp;        return code;</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    public String getDescription() {
+<b class="fc">&nbsp;        return description;</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    public static WaitlistItemStatus fromCode(int code) {
+<b class="pc">&nbsp;        for (WaitlistItemStatus status : values()) {</b>
+<b class="pc">&nbsp;            if (status.code == code) {</b>
+<b class="fc">&nbsp;                return status;</b>
+&nbsp;            }
+&nbsp;        }
+<b class="nc">&nbsp;        throw new IllegalArgumentException(&quot;Invalid waitlist item status code: &quot; + code);</b>
+&nbsp;    }
+&nbsp;} 
+&nbsp; 
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

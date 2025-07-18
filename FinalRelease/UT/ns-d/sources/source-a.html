@@ -1,0 +1,457 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TrainServiceImpl</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Service.Impl</a>
+</div>
+
+<h1>Coverage Summary for Class: TrainServiceImpl (com.example.techprototype.Service.Impl)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TrainServiceImpl</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (9/9)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    92.9%
+  </span>
+  <span class="absValue">
+    (65/70)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    98.2%
+  </span>
+  <span class="absValue">
+    (167/170)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Service.Impl;
+&nbsp;
+&nbsp;import com.example.techprototype.DAO.TrainDAO;
+&nbsp;import com.example.techprototype.DTO.TrainListDTO;
+&nbsp;import com.example.techprototype.Entity.Train;
+&nbsp;import com.example.techprototype.Entity.TrainStop;
+&nbsp;import com.example.techprototype.Entity.Station;
+&nbsp;import com.example.techprototype.Entity.TicketInventory;
+&nbsp;import com.example.techprototype.Repository.TrainRepository;
+&nbsp;import com.example.techprototype.Repository.TrainStopRepository;
+&nbsp;import com.example.techprototype.Repository.StationRepository;
+&nbsp;import com.example.techprototype.Repository.TicketInventoryRepository;
+&nbsp;import com.example.techprototype.Service.TrainService;
+&nbsp;import com.example.techprototype.Service.RedisService;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;
+&nbsp;import java.time.LocalTime;
+&nbsp;import java.time.LocalDate;
+&nbsp;import java.time.format.DateTimeFormatter;
+&nbsp;import java.math.BigDecimal;
+&nbsp;import java.util.*;
+&nbsp;import java.util.stream.Collectors;
+&nbsp;
+&nbsp;@Service
+<b class="fc">&nbsp;public class TrainServiceImpl implements TrainService {</b>
+&nbsp;    @Autowired
+&nbsp;    private TrainDAO trainDAO;
+&nbsp;    @Autowired
+&nbsp;    private TrainRepository trainRepository;
+&nbsp;    @Autowired
+&nbsp;    private TrainStopRepository trainStopRepository;
+&nbsp;    @Autowired
+&nbsp;    private StationRepository stationRepository;
+&nbsp;    @Autowired
+&nbsp;    private TicketInventoryRepository ticketInventoryRepository;
+&nbsp;    @Autowired
+&nbsp;    private RedisService redisService;
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public List&lt;Train&gt; findDirectTrains(Integer startStationId, Integer endStationId) {
+<b class="fc">&nbsp;        return trainDAO.findDirectTrains(startStationId, endStationId);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public List&lt;Train&gt; findTrainsByDepartureTime(LocalTime start, LocalTime end) {
+<b class="fc">&nbsp;        return trainDAO.findByDepartureTimeBetween(start, end);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public List&lt;Map&lt;String, Object&gt;&gt; findTransferTrains(Integer startStationId, Integer endStationId) {
+&nbsp;        // 使用DAO层查询中转站
+<b class="fc">&nbsp;        List&lt;Integer&gt; transferStations = trainDAO.findAllTransferStations(startStationId, endStationId);</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Map&lt;String, Object&gt;&gt; result = new ArrayList&lt;&gt;();</b>
+&nbsp;        // 性能优化：限制最大中转站数量
+<b class="fc">&nbsp;        int maxTransferStations = Math.min(transferStations.size(), 10);</b>
+&nbsp;
+<b class="fc">&nbsp;        for (int i = 0; i &lt; maxTransferStations; i++) {</b>
+<b class="fc">&nbsp;            Integer transferStationId = transferStations.get(i);</b>
+<b class="fc">&nbsp;            result.addAll(trainDAO.findTransferTrains(startStationId, transferStationId, endStationId));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        return result;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public List&lt;TrainListDTO&gt; getAllTrainListDTO() {
+<b class="fc">&nbsp;        List&lt;Train&gt; trains = trainRepository.findAll();</b>
+<b class="fc">&nbsp;        List&lt;TrainListDTO&gt; result = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        DateTimeFormatter dtf = DateTimeFormatter.ofPattern(&quot;yyyy-MM-dd HH:mm:ss&quot;);</b>
+&nbsp;        // 强制以2025-07-01为标准日期
+<b class="fc">&nbsp;        LocalDate today = LocalDate.of(2025, 7, 1);</b>
+&nbsp;        
+<b class="fc">&nbsp;        for (Train train : trains) {</b>
+<b class="fc">&nbsp;            TrainListDTO dto = new TrainListDTO();</b>
+<b class="fc">&nbsp;            dto.setTrain_id(train.getTrainNumber());</b>
+&nbsp;            
+&nbsp;            // 查询所有停靠站
+<b class="fc">&nbsp;            List&lt;TrainStop&gt; stops = trainStopRepository.findByTrainIdOrderBySequenceNumberAsc(train.getTrainId());</b>
+<b class="fc">&nbsp;            List&lt;String&gt; path = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;            for (TrainStop stop : stops) {</b>
+<b class="fc">&nbsp;                stationRepository.findById(stop.getStationId()).ifPresent(station -&gt; path.add(station.getStationName()));</b>
+&nbsp;            }
+<b class="fc">&nbsp;            dto.setT_path(path);</b>
+&nbsp;            
+<b class="fc">&nbsp;            if (!path.isEmpty()) {</b>
+<b class="fc">&nbsp;                dto.setT_from(path.get(0));</b>
+<b class="fc">&nbsp;                dto.setT_to(path.get(path.size() - 1));</b>
+&nbsp;                
+&nbsp;                // 计算当前区间的站数（从首站到末站）
+<b class="fc">&nbsp;                if (stops.size() &gt;= 2) {</b>
+<b class="fc">&nbsp;                    TrainStop firstStop = stops.get(0);</b>
+<b class="fc">&nbsp;                    TrainStop lastStop = stops.get(stops.size() - 1);</b>
+<b class="fc">&nbsp;                    int stationCount = lastStop.getSequenceNumber() - firstStop.getSequenceNumber() + 1;</b>
+<b class="fc">&nbsp;                    dto.setT_station_number(stationCount);</b>
+&nbsp;                } else {
+<b class="fc">&nbsp;                    dto.setT_station_number(path.size());</b>
+&nbsp;                }
+&nbsp;            } else {
+<b class="fc">&nbsp;                dto.setT_station_number(0);</b>
+&nbsp;            }
+&nbsp;            
+<b class="fc">&nbsp;            dto.setT_start_time(train.getDepartureTime().atDate(today).format(dtf));</b>
+<b class="fc">&nbsp;            dto.setT_end_time(train.getArrivalTime().atDate(today).format(dtf));</b>
+&nbsp;            
+&nbsp;            // 获取真实的座位信息（使用首站到末站作为代表性路线）
+<b class="fc">&nbsp;            List&lt;Integer&gt; seatTypes = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;            List&lt;Integer&gt; seatNumbers = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;            List&lt;Integer&gt; seatPrices = new ArrayList&lt;&gt;();</b>
+&nbsp;            
+<b class="fc">&nbsp;            if (stops.size() &gt;= 2) {</b>
+<b class="fc">&nbsp;                TrainStop firstStop = stops.get(0);</b>
+<b class="fc">&nbsp;                TrainStop lastStop = stops.get(stops.size() - 1);</b>
+&nbsp;                
+<b class="fc">&nbsp;                List&lt;Map&lt;String, Object&gt;&gt; seatInfo = getRealSeatInfo(train.getTrainId(), firstStop.getStopId(), lastStop.getStopId(), today);</b>
+&nbsp;                
+<b class="fc">&nbsp;                for (Map&lt;String, Object&gt; seat : seatInfo) {</b>
+<b class="fc">&nbsp;                    seatTypes.add((Integer) seat.get(&quot;type&quot;));</b>
+<b class="fc">&nbsp;                    seatNumbers.add((Integer) seat.get(&quot;available&quot;));</b>
+&nbsp;                    // 正确处理BigDecimal价格，转换为Integer（价格以分为单位）
+<b class="fc">&nbsp;                    Object priceObj = seat.get(&quot;price&quot;);</b>
+&nbsp;                    Integer price;
+<b class="fc">&nbsp;                    if (priceObj instanceof BigDecimal) {</b>
+<b class="fc">&nbsp;                        price = ((BigDecimal) priceObj).intValue();</b>
+<b class="pc">&nbsp;                    } else if (priceObj instanceof Double) {</b>
+<b class="fc">&nbsp;                        price = ((Double) priceObj).intValue();</b>
+<b class="nc">&nbsp;                    } else if (priceObj instanceof Integer) {</b>
+<b class="nc">&nbsp;                        price = (Integer) priceObj;</b>
+&nbsp;                    } else {
+<b class="nc">&nbsp;                        price = 150; // 默认价格</b>
+&nbsp;                    }
+<b class="fc">&nbsp;                    seatPrices.add(price);</b>
+&nbsp;                }
+&nbsp;            }
+&nbsp;            
+&nbsp;            // 如果没有找到真实数据，或者只找到了默认数据（只有一个类型为3的座位），使用完整的默认数据
+<b class="pc">&nbsp;            if (seatTypes.isEmpty() || (seatTypes.size() == 1 &amp;&amp; seatTypes.get(0) == 3 &amp;&amp; seatNumbers.get(0) == 0)) {</b>
+<b class="fc">&nbsp;                seatTypes = Arrays.asList(1, 3, 4);</b>
+<b class="fc">&nbsp;                seatNumbers = Arrays.asList(100, 200, 50);</b>
+<b class="fc">&nbsp;                seatPrices = Arrays.asList(200, 150, 80);</b>
+&nbsp;            }
+&nbsp;            
+<b class="fc">&nbsp;            dto.setSeat(seatTypes);</b>
+<b class="fc">&nbsp;            dto.setSeat_number(seatNumbers);</b>
+<b class="fc">&nbsp;            dto.setSeat_price(seatPrices);</b>
+&nbsp;            
+<b class="fc">&nbsp;            result.add(dto);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        return result;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public List&lt;Map&lt;String, Object&gt;&gt; searchTrainsByStations(String fromStation, String toStation, String travelDate) {
+<b class="fc">&nbsp;        List&lt;Map&lt;String, Object&gt;&gt; result = new ArrayList&lt;&gt;();</b>
+&nbsp;        
+<b class="fc">&nbsp;        System.out.println(&quot;搜索车次 - 出发站: &quot; + fromStation + &quot;, 到达站: &quot; + toStation + &quot;, 日期: &quot; + travelDate);</b>
+&nbsp;        
+&nbsp;        try {
+&nbsp;            // 1. 根据站点名称查找站点ID
+<b class="fc">&nbsp;            List&lt;Station&gt; fromStations = stationRepository.findByStationNameContainingOrCityContaining(fromStation, fromStation);</b>
+<b class="fc">&nbsp;            List&lt;Station&gt; toStations = stationRepository.findByStationNameContainingOrCityContaining(toStation, toStation);</b>
+&nbsp;            
+<b class="fc">&nbsp;            System.out.println(&quot;找到出发站: &quot; + fromStations.size() + &quot; 个&quot;);</b>
+<b class="fc">&nbsp;            System.out.println(&quot;找到到达站: &quot; + toStations.size() + &quot; 个&quot;);</b>
+&nbsp;            
+<b class="fc">&nbsp;            if (fromStations.isEmpty() || toStations.isEmpty()) {</b>
+<b class="fc">&nbsp;                System.out.println(&quot;未找到匹配的站点，返回空结果&quot;);</b>
+<b class="fc">&nbsp;                return result;</b>
+&nbsp;            }
+&nbsp;            
+<b class="fc">&nbsp;            LocalDate travelDateObj = LocalDate.parse(travelDate);</b>
+&nbsp;            
+&nbsp;            // 2. 查找包含这些站点的车次
+<b class="fc">&nbsp;            for (Station fromStationObj : fromStations) {</b>
+<b class="fc">&nbsp;                for (Station toStationObj : toStations) {</b>
+<b class="fc">&nbsp;                    System.out.println(&quot;检查路线: &quot; + fromStationObj.getStationName() + &quot; -&gt; &quot; + toStationObj.getStationName());</b>
+&nbsp;                    
+&nbsp;                    // 查找从fromStation到toStation的车次
+<b class="fc">&nbsp;                    List&lt;TrainStop&gt; fromStops = trainStopRepository.findByStationId(fromStationObj.getStationId());</b>
+<b class="fc">&nbsp;                    List&lt;TrainStop&gt; toStops = trainStopRepository.findByStationId(toStationObj.getStationId());</b>
+&nbsp;                    
+<b class="fc">&nbsp;                    System.out.println(&quot;出发站停靠车次: &quot; + fromStops.size() + &quot; 个&quot;);</b>
+<b class="fc">&nbsp;                    System.out.println(&quot;到达站停靠车次: &quot; + toStops.size() + &quot; 个&quot;);</b>
+&nbsp;                    
+&nbsp;                    // 找到同时包含两个站点的车次
+<b class="fc">&nbsp;                    Set&lt;Integer&gt; commonTrainIds = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;                    for (TrainStop fromStop : fromStops) {</b>
+<b class="fc">&nbsp;                        for (TrainStop toStop : toStops) {</b>
+<b class="fc">&nbsp;                            if (fromStop.getTrainId().equals(toStop.getTrainId()) &amp;&amp; </b>
+<b class="fc">&nbsp;                                fromStop.getSequenceNumber() &lt; toStop.getSequenceNumber()) {</b>
+<b class="fc">&nbsp;                                commonTrainIds.add(fromStop.getTrainId());</b>
+&nbsp;                            }
+&nbsp;                        }
+&nbsp;                    }
+&nbsp;                    
+<b class="fc">&nbsp;                    System.out.println(&quot;找到符合条件的车次: &quot; + commonTrainIds.size() + &quot; 个&quot;);</b>
+&nbsp;                    
+&nbsp;                    // 3. 为每个车次构建详细信息
+<b class="fc">&nbsp;                    for (Integer trainId : commonTrainIds) {</b>
+<b class="fc">&nbsp;                        Train train = trainRepository.findById(trainId).orElse(null);</b>
+<b class="fc">&nbsp;                        if (train == null) continue;</b>
+&nbsp;                        
+<b class="fc">&nbsp;                        TrainStop fromStop = trainStopRepository.findByTrainIdAndStationId(trainId, fromStationObj.getStationId());</b>
+<b class="fc">&nbsp;                        TrainStop toStop = trainStopRepository.findByTrainIdAndStationId(trainId, toStationObj.getStationId());</b>
+&nbsp;                        
+<b class="fc">&nbsp;                        if (fromStop == null || toStop == null) continue;</b>
+&nbsp;                        
+<b class="fc">&nbsp;                        System.out.println(&quot;构建车次信息: &quot; + train.getTrainNumber());</b>
+&nbsp;                        
+&nbsp;                        // 构建与TrainListDTO格式一致的数据
+<b class="fc">&nbsp;                        Map&lt;String, Object&gt; trainInfo = new HashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;                        trainInfo.put(&quot;train_id&quot;, train.getTrainNumber());</b>
+<b class="fc">&nbsp;                        trainInfo.put(&quot;trainId&quot;, train.getTrainId());</b>
+<b class="fc">&nbsp;                        trainInfo.put(&quot;t_from&quot;, fromStationObj.getStationName());</b>
+<b class="fc">&nbsp;                        trainInfo.put(&quot;t_to&quot;, toStationObj.getStationName());</b>
+<b class="fc">&nbsp;                        trainInfo.put(&quot;t_start_time&quot;, fromStop.getDepartureTime().atDate(travelDateObj).format(DateTimeFormatter.ofPattern(&quot;yyyy-MM-dd HH:mm:ss&quot;)));</b>
+<b class="fc">&nbsp;                        trainInfo.put(&quot;t_end_time&quot;, toStop.getArrivalTime().atDate(travelDateObj).format(DateTimeFormatter.ofPattern(&quot;yyyy-MM-dd HH:mm:ss&quot;)));</b>
+<b class="fc">&nbsp;                        trainInfo.put(&quot;travelDate&quot;, travelDate);</b>
+&nbsp;                        
+&nbsp;                        // 构建途经站点信息
+<b class="fc">&nbsp;                        List&lt;TrainStop&gt; allStops = trainStopRepository.findByTrainIdOrderBySequenceNumberAsc(trainId);</b>
+<b class="fc">&nbsp;                        List&lt;String&gt; path = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;                        for (TrainStop stop : allStops) {</b>
+<b class="fc">&nbsp;                            stationRepository.findById(stop.getStationId()).ifPresent(station -&gt; path.add(station.getStationName()));</b>
+&nbsp;                        }
+<b class="fc">&nbsp;                        trainInfo.put(&quot;t_path&quot;, path);</b>
+&nbsp;                        
+&nbsp;                        // 计算当前区间的站数（从出发站到到达站）
+<b class="fc">&nbsp;                        int stationCount = toStop.getSequenceNumber() - fromStop.getSequenceNumber() + 1;</b>
+<b class="fc">&nbsp;                        trainInfo.put(&quot;t_station_number&quot;, stationCount);</b>
+&nbsp;                        
+&nbsp;                        // 从ticket_inventory获取真实票价和从Redis获取库存
+<b class="fc">&nbsp;                        List&lt;Map&lt;String, Object&gt;&gt; seatInfo = getRealSeatInfo(trainId, fromStop.getStopId(), toStop.getStopId(), travelDateObj);</b>
+<b class="fc">&nbsp;                        trainInfo.put(&quot;seat&quot;, seatInfo.stream().map(seat -&gt; seat.get(&quot;type&quot;)).collect(Collectors.toList()));</b>
+<b class="fc">&nbsp;                        trainInfo.put(&quot;seat_number&quot;, seatInfo.stream().map(seat -&gt; seat.get(&quot;available&quot;)).collect(Collectors.toList()));</b>
+<b class="fc">&nbsp;                        trainInfo.put(&quot;seat_price&quot;, seatInfo.stream().map(seat -&gt; seat.get(&quot;price&quot;)).collect(Collectors.toList()));</b>
+&nbsp;                        
+&nbsp;                        // 添加库存ID列表
+<b class="fc">&nbsp;                        List&lt;Long&gt; inventoryIds = seatInfo.stream()</b>
+<b class="fc">&nbsp;                            .map(seat -&gt; (Long) seat.get(&quot;inventoryId&quot;))</b>
+<b class="fc">&nbsp;                            .filter(id -&gt; id != null)</b>
+<b class="fc">&nbsp;                            .collect(Collectors.toList());</b>
+<b class="fc">&nbsp;                        trainInfo.put(&quot;inventory_ids&quot;, inventoryIds);</b>
+&nbsp;                        
+<b class="fc">&nbsp;                        result.add(trainInfo);</b>
+&nbsp;                    }
+&nbsp;                }
+&nbsp;            }
+&nbsp;            
+&nbsp;            // 按车次号排序
+<b class="fc">&nbsp;            result.sort((a, b) -&gt; {</b>
+<b class="fc">&nbsp;                String trainA = (String) a.get(&quot;train_id&quot;);</b>
+<b class="fc">&nbsp;                String trainB = (String) b.get(&quot;train_id&quot;);</b>
+<b class="fc">&nbsp;                return trainA.compareTo(trainB);</b>
+&nbsp;            });
+&nbsp;            
+<b class="fc">&nbsp;            System.out.println(&quot;最终搜索结果: &quot; + result.size() + &quot; 个车次&quot;);</b>
+&nbsp;            
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            System.out.println(&quot;搜索车次时发生错误: &quot; + e.getMessage());</b>
+<b class="fc">&nbsp;            e.printStackTrace();</b>
+&nbsp;        }
+&nbsp;        
+<b class="fc">&nbsp;        return result;</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    private List&lt;Map&lt;String, Object&gt;&gt; getRealSeatInfo(Integer trainId, Long fromStopId, Long toStopId, LocalDate travelDate) {
+<b class="fc">&nbsp;        List&lt;Map&lt;String, Object&gt;&gt; seatInfo = new ArrayList&lt;&gt;();</b>
+&nbsp;        
+&nbsp;        try {
+<b class="fc">&nbsp;            System.out.println(&quot;查询座位信息 - 车次ID: &quot; + trainId + &quot;, 出发站ID: &quot; + fromStopId + &quot;, 到达站ID: &quot; + toStopId + &quot;, 日期: &quot; + travelDate);</b>
+&nbsp;            
+&nbsp;            // 查询ticket_inventory表获取票价信息
+<b class="fc">&nbsp;            List&lt;TicketInventory&gt; inventories = ticketInventoryRepository.findByTrainAndDate(trainId, travelDate);</b>
+&nbsp;            
+<b class="fc">&nbsp;            System.out.println(&quot;找到库存记录: &quot; + inventories.size() + &quot; 条&quot;);</b>
+&nbsp;            
+<b class="fc">&nbsp;            for (TicketInventory inventory : inventories) {</b>
+<b class="fc">&nbsp;                System.out.println(&quot;检查库存记录 - 出发站ID: &quot; + inventory.getDepartureStopId() + &quot;, 到达站ID: &quot; + inventory.getArrivalStopId() + </b>
+<b class="fc">&nbsp;                                 &quot;, 车厢类型: &quot; + inventory.getCarriageTypeId() + &quot;, 票价: &quot; + inventory.getPrice());</b>
+&nbsp;                
+&nbsp;                // 只处理匹配的出发站和到达站
+<b class="fc">&nbsp;                if (inventory.getDepartureStopId().equals(fromStopId) &amp;&amp; inventory.getArrivalStopId().equals(toStopId)) {</b>
+<b class="fc">&nbsp;                    Map&lt;String, Object&gt; seat = new HashMap&lt;&gt;();</b>
+&nbsp;                    
+&nbsp;                    // 获取席别类型名称
+<b class="fc">&nbsp;                    String seatTypeName = getSeatTypeName(inventory.getCarriageTypeId());</b>
+<b class="fc">&nbsp;                    seat.put(&quot;type&quot;, inventory.getCarriageTypeId());</b>
+<b class="fc">&nbsp;                    seat.put(&quot;typeName&quot;, seatTypeName);</b>
+<b class="fc">&nbsp;                    seat.put(&quot;price&quot;, inventory.getPrice());</b>
+<b class="fc">&nbsp;                    seat.put(&quot;inventoryId&quot;, inventory.getInventoryId()); // 添加库存ID</b>
+&nbsp;                    
+&nbsp;                    // 从Redis获取库存
+<b class="fc">&nbsp;                    Optional&lt;Integer&gt; available = redisService.getStock(trainId, fromStopId, toStopId, travelDate, inventory.getCarriageTypeId());</b>
+<b class="fc">&nbsp;                    int stockCount = available.orElse(inventory.getAvailableSeats()); // 如果Redis没有，使用数据库中的值</b>
+<b class="fc">&nbsp;                    seat.put(&quot;available&quot;, stockCount);</b>
+&nbsp;                    
+<b class="fc">&nbsp;                    System.out.println(&quot;添加座位信息 - 类型: &quot; + seatTypeName + &quot;, 票价: &quot; + inventory.getPrice() + &quot;, 库存: &quot; + stockCount);</b>
+<b class="fc">&nbsp;                    seatInfo.add(seat);</b>
+&nbsp;                }
+&nbsp;            }
+&nbsp;            
+<b class="fc">&nbsp;            if (seatInfo.isEmpty()) {</b>
+<b class="fc">&nbsp;                System.out.println(&quot;未找到匹配的座位信息，返回默认数据&quot;);</b>
+&nbsp;                // 如果没找到匹配的记录，返回默认数据
+<b class="fc">&nbsp;                Map&lt;String, Object&gt; defaultSeat = new HashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;                defaultSeat.put(&quot;type&quot;, 3);</b>
+<b class="fc">&nbsp;                defaultSeat.put(&quot;typeName&quot;, &quot;二等座&quot;);</b>
+<b class="fc">&nbsp;                defaultSeat.put(&quot;price&quot;, 150.0);</b>
+<b class="fc">&nbsp;                defaultSeat.put(&quot;available&quot;, 0);</b>
+<b class="fc">&nbsp;                seatInfo.add(defaultSeat);</b>
+&nbsp;            }
+&nbsp;            
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            System.out.println(&quot;获取座位信息时发生错误: &quot; + e.getMessage());</b>
+<b class="fc">&nbsp;            e.printStackTrace();</b>
+&nbsp;            // 如果出错，返回默认数据
+<b class="fc">&nbsp;            Map&lt;String, Object&gt; defaultSeat = new HashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;            defaultSeat.put(&quot;type&quot;, 3);</b>
+<b class="fc">&nbsp;            defaultSeat.put(&quot;typeName&quot;, &quot;二等座&quot;);</b>
+<b class="fc">&nbsp;            defaultSeat.put(&quot;price&quot;, 150.0);</b>
+<b class="fc">&nbsp;            defaultSeat.put(&quot;available&quot;, 0);</b>
+<b class="fc">&nbsp;            seatInfo.add(defaultSeat);</b>
+&nbsp;        }
+&nbsp;        
+<b class="fc">&nbsp;        return seatInfo;</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    private String getSeatTypeName(Integer carriageTypeId) {
+<b class="fc">&nbsp;        switch (carriageTypeId) {</b>
+<b class="fc">&nbsp;            case 1: return &quot;商务座&quot;;</b>
+<b class="fc">&nbsp;            case 2: return &quot;一等座&quot;;</b>
+<b class="fc">&nbsp;            case 3: return &quot;二等座&quot;;</b>
+<b class="fc">&nbsp;            case 4: return &quot;硬座&quot;;</b>
+<b class="fc">&nbsp;            case 5: return &quot;硬卧&quot;;</b>
+<b class="fc">&nbsp;            case 6: return &quot;无座&quot;;</b>
+<b class="fc">&nbsp;            default: return &quot;未知&quot;;</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;}
+&nbsp;
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

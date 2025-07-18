@@ -1,0 +1,108 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > Passenger</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Entity</a>
+</div>
+
+<h1>Coverage Summary for Class: Passenger (com.example.techprototype.Entity)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+</tr>
+  <tr>
+    <td class="name">Passenger$HibernateInstantiator</td>
+  </tr>
+  <tr>
+    <td class="name">Passenger$HibernateProxy</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Entity;
+&nbsp;
+&nbsp;import jakarta.persistence.*;
+&nbsp;import lombok.Data;
+&nbsp;import lombok.NoArgsConstructor;
+&nbsp;import lombok.AllArgsConstructor;
+&nbsp;
+&nbsp;@Entity
+&nbsp;@Table(name = &quot;passengers&quot;)
+&nbsp;@Data
+&nbsp;@NoArgsConstructor
+&nbsp;@AllArgsConstructor
+&nbsp;public class Passenger {
+&nbsp;    
+&nbsp;    @Id
+&nbsp;    @GeneratedValue(strategy = GenerationType.IDENTITY)
+&nbsp;    @Column(name = &quot;passenger_id&quot;)
+&nbsp;    private Long passengerId;
+&nbsp;    
+&nbsp;    @Column(name = &quot;id_card_number&quot;, nullable = false, length = 20, unique = true)
+&nbsp;    private String idCardNumber;
+&nbsp;    
+&nbsp;    @Column(name = &quot;real_name&quot;, nullable = false, length = 50)
+&nbsp;    private String realName;
+&nbsp;    
+&nbsp;    @Column(name = &quot;passenger_type&quot;, nullable = false)
+&nbsp;    private Byte passengerType; // 1-成人, 2-儿童, 3-学生, 4-残疾, 5-军人
+&nbsp;    
+&nbsp;    @Column(name = &quot;phone_number&quot;, length = 20)
+&nbsp;    private String phoneNumber;
+&nbsp;    
+&nbsp;    @Column(name = &quot;student_type_left&quot;)
+&nbsp;    private Integer studentTypeLeft = 0; // 学生剩余次数，仅当passenger_type=3(学生)时设为4，其他设为0
+&nbsp;} 
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

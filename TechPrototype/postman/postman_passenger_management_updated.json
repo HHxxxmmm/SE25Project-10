@@ -1,0 +1,322 @@
+{
+  "info": {
+    "name": "乘客管理测试集（已更新）",
+    "description": "测试乘客管理功能，系统将直接使用数据库中乘客的真实类型",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    }
+  ],
+  "item": [
+    {
+      "name": "检查添加权限",
+      "item": [
+        {
+          "name": "检查用户1添加权限",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/passenger/check-add?userId=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "passenger", "check-add"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "检查用户1是否可以添加乘客"
+          },
+          "response": []
+        },
+        {
+          "name": "检查用户6添加权限（已满）",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/passenger/check-add?userId=6",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "passenger", "check-add"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "6"
+                }
+              ]
+            },
+            "description": "检查用户6是否可以添加乘客（该用户已有3个关联乘客）"
+          },
+          "response": []
+        },
+        {
+          "name": "检查用户10添加权限",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/passenger/check-add?userId=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "passenger", "check-add"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "检查用户10是否可以添加乘客"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "添加乘车人",
+      "item": [
+        {
+          "name": "添加成人乘客（用户2）",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 2,\n  \"realName\": \"郑永军\",\n  \"idCardNumber\": \"531318196507019109\",\n  \"phoneNumber\": \"17737104515\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/passenger/add",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "passenger", "add"]
+            },
+            "description": "为用户2添加成人乘客郑永军"
+          },
+          "response": []
+        },
+        {
+          "name": "添加学生乘客（用户3）",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 3,\n  \"realName\": \"舒明亮\",\n  \"idCardNumber\": \"230107200207012842\",\n  \"phoneNumber\": \"15283167110\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/passenger/add",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "passenger", "add"]
+            },
+            "description": "为用户3添加学生乘客舒明亮"
+          },
+          "response": []
+        },
+        {
+          "name": "添加儿童乘客（用户4）",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 4,\n  \"realName\": \"倪雪莲\",\n  \"idCardNumber\": \"341817201707016024\",\n  \"phoneNumber\": \"13834952101\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/passenger/add",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "passenger", "add"]
+            },
+            "description": "为用户4添加儿童乘客倪雪莲"
+          },
+          "response": []
+        },
+        {
+          "name": "添加军人乘客（用户5）",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 5,\n  \"realName\": \"庞宝林\",\n  \"idCardNumber\": \"221308199807018296\",\n  \"phoneNumber\": \"15113115462\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/passenger/add",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "passenger", "add"]
+            },
+            "description": "为用户5添加军人乘客庞宝林"
+          },
+          "response": []
+        },
+        {
+          "name": "添加残疾乘客（用户6）",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 6,\n  \"realName\": \"毛丽霞\",\n  \"idCardNumber\": \"612917199007019074\",\n  \"phoneNumber\": \"16991568950\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/passenger/add",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "passenger", "add"]
+            },
+            "description": "为用户6添加残疾乘客毛丽霞"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "错误测试用例",
+      "item": [
+        {
+          "name": "尝试为已满用户添加乘客（用户1）",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 1,\n  \"realName\": \"张三\",\n  \"idCardNumber\": \"110101199001011234\",\n  \"phoneNumber\": \"13800138000\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/passenger/add",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "passenger", "add"]
+            },
+            "description": "尝试为已满用户添加乘客，应该失败"
+          },
+          "response": []
+        },
+        {
+          "name": "添加不存在的乘客",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 2,\n  \"realName\": \"不存在的乘客\",\n  \"idCardNumber\": \"999999999999999999\",\n  \"phoneNumber\": \"13800000000\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/passenger/add",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "passenger", "add"]
+            },
+            "description": "尝试添加不存在的乘客，应该失败"
+          },
+          "response": []
+        },
+        {
+          "name": "添加已关联的乘客",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 2,\n  \"realName\": \"郑永军\",\n  \"idCardNumber\": \"531318196507019109\",\n  \"phoneNumber\": \"17737104515\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/passenger/add",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "passenger", "add"]
+            },
+            "description": "尝试添加已关联的乘客，应该失败"
+          },
+          "response": []
+        },
+        {
+          "name": "信息不匹配的乘客",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 2,\n  \"realName\": \"郑永军\",\n  \"idCardNumber\": \"531318196507019109\",\n  \"phoneNumber\": \"13834952101\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/passenger/add",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "passenger", "add"]
+            },
+            "description": "尝试添加信息不匹配的乘客，应该失败"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "刷新用户状态",
+      "item": [
+        {
+          "name": "刷新用户10状态",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/passenger/refresh-status?userId=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "passenger", "refresh-status"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "刷新用户10的状态，重新计算关联乘客数量"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+} 

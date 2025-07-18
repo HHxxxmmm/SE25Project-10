@@ -1,0 +1,164 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > CorsConfig</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Config</a>
+</div>
+
+<h1>Coverage Summary for Class: CorsConfig (com.example.techprototype.Config)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">CorsConfig</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (15/15)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">CorsConfig$$SpringCGLIB$$0</td>
+  </tr>
+  <tr>
+    <td class="name">CorsConfig$$SpringCGLIB$$FastClass$$0</td>
+  </tr>
+  <tr>
+    <td class="name">CorsConfig$$SpringCGLIB$$FastClass$$1</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (15/15)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Config;
+&nbsp;
+&nbsp;import org.springframework.context.annotation.Bean;
+&nbsp;import org.springframework.context.annotation.Configuration;
+&nbsp;import org.springframework.web.cors.CorsConfiguration;
+&nbsp;import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+&nbsp;import org.springframework.web.filter.CorsFilter;
+&nbsp;
+&nbsp;@Configuration
+<b class="fc">&nbsp;public class CorsConfig {</b>
+&nbsp;
+&nbsp;    @Bean
+&nbsp;    public CorsFilter corsFilter() {
+<b class="fc">&nbsp;        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();</b>
+<b class="fc">&nbsp;        CorsConfiguration config = new CorsConfiguration();</b>
+&nbsp;        
+&nbsp;        // 允许cookies跨域
+<b class="fc">&nbsp;        config.setAllowCredentials(true);</b>
+&nbsp;        
+&nbsp;        // 允许的源（更全面的配置）
+<b class="fc">&nbsp;        config.addAllowedOrigin(&quot;http://localhost:3000&quot;); // 标准前端开发端口</b>
+<b class="fc">&nbsp;        config.addAllowedOrigin(&quot;http://127.0.0.1:3000&quot;); // 使用IP时的前端地址</b>
+<b class="fc">&nbsp;        config.addAllowedOrigin(&quot;http://localhost:3001&quot;); // 备用端口</b>
+<b class="fc">&nbsp;        config.addAllowedOrigin(&quot;http://127.0.0.1:3001&quot;); // 备用端口</b>
+&nbsp;        
+&nbsp;        // 允许的头信息
+<b class="fc">&nbsp;        config.addAllowedHeader(&quot;*&quot;);</b>
+&nbsp;        
+&nbsp;        // 允许的HTTP方法
+<b class="fc">&nbsp;        config.addAllowedMethod(&quot;*&quot;);</b>
+&nbsp;        
+&nbsp;        // 暴露的响应头
+<b class="fc">&nbsp;        config.addExposedHeader(&quot;Authorization&quot;);</b>
+<b class="fc">&nbsp;        config.addExposedHeader(&quot;Set-Cookie&quot;);</b>
+&nbsp;        
+&nbsp;        // 预检请求的有效期，单位：秒
+<b class="fc">&nbsp;        config.setMaxAge(3600L);</b>
+&nbsp;        
+&nbsp;        // 注册配置
+<b class="fc">&nbsp;        source.registerCorsConfiguration(&quot;/**&quot;, config);</b>
+&nbsp;        
+<b class="fc">&nbsp;        return new CorsFilter(source);</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,841 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > WaitlistOrderServiceImpl</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Service.Impl</a>
+</div>
+
+<h1>Coverage Summary for Class: WaitlistOrderServiceImpl (com.example.techprototype.Service.Impl)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">WaitlistOrderServiceImpl</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (20/20)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    98.5%
+  </span>
+  <span class="absValue">
+    (134/136)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (324/324)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">WaitlistOrderServiceImpl$$SpringCGLIB$$0</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (20/20)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    98.5%
+  </span>
+  <span class="absValue">
+    (134/136)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (324/324)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Service.Impl;
+&nbsp;
+&nbsp;import com.example.techprototype.DTO.*;
+&nbsp;import com.example.techprototype.Entity.*;
+&nbsp;import com.example.techprototype.Enums.WaitlistOrderStatus;
+&nbsp;import com.example.techprototype.Enums.WaitlistItemStatus;
+&nbsp;import com.example.techprototype.Repository.*;
+&nbsp;import com.example.techprototype.Service.WaitlistOrderService;
+&nbsp;import com.example.techprototype.Service.RedisService;
+&nbsp;import com.example.techprototype.Util.TicketNumberGenerator;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;import org.springframework.transaction.annotation.Transactional;
+&nbsp;
+&nbsp;import java.math.BigDecimal;
+&nbsp;import java.time.LocalDate;
+&nbsp;import java.time.LocalDateTime;
+&nbsp;import java.time.LocalTime;
+&nbsp;import java.util.ArrayList;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Optional;
+&nbsp;import java.util.stream.Collectors;
+&nbsp;
+&nbsp;@Service
+<b class="fc">&nbsp;public class WaitlistOrderServiceImpl implements WaitlistOrderService {</b>
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private WaitlistOrderRepository waitlistOrderRepository;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private WaitlistItemRepository waitlistItemRepository;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private UserRepository userRepository;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private PassengerRepository passengerRepository;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private TrainRepository trainRepository;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private TrainStopRepository trainStopRepository;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private StationRepository stationRepository;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private CarriageTypeRepository carriageTypeRepository;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private OrderRepository orderRepository;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private TicketRepository ticketRepository;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private TicketInventoryRepository ticketInventoryRepository;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private RedisService redisService;
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    @Transactional
+&nbsp;    public BookingResponse createWaitlistOrder(BookingRequest request) {
+&nbsp;        try {
+&nbsp;            // 验证用户
+<b class="fc">&nbsp;            Optional&lt;User&gt; userOpt = userRepository.findById(request.getUserId());</b>
+<b class="fc">&nbsp;            if (userOpt.isEmpty()) {</b>
+<b class="fc">&nbsp;                return BookingResponse.failure(&quot;用户不存在&quot;);</b>
+&nbsp;            }
+&nbsp;            
+&nbsp;            // 生成候补订单号
+<b class="fc">&nbsp;            String orderNumber = generateWaitlistOrderNumber();</b>
+&nbsp;            
+&nbsp;            // 计算总金额
+<b class="fc">&nbsp;            BigDecimal totalAmount = calculateTotalAmount(request);</b>
+&nbsp;            
+&nbsp;            // 计算过期时间（发车前2小时）
+<b class="fc">&nbsp;            LocalDateTime expireTime = calculateExpireTime(request.getTravelDate(), request.getTrainId());</b>
+&nbsp;            
+&nbsp;            // 创建候补订单
+<b class="fc">&nbsp;            WaitlistOrder waitlistOrder = new WaitlistOrder();</b>
+<b class="fc">&nbsp;            waitlistOrder.setOrderNumber(orderNumber);</b>
+<b class="fc">&nbsp;            waitlistOrder.setUserId(request.getUserId());</b>
+<b class="fc">&nbsp;            waitlistOrder.setOrderTime(LocalDateTime.now());</b>
+<b class="fc">&nbsp;            waitlistOrder.setTotalAmount(totalAmount);</b>
+<b class="fc">&nbsp;            waitlistOrder.setExpireTime(expireTime);</b>
+<b class="fc">&nbsp;            waitlistOrder.setOrderStatus((byte) WaitlistOrderStatus.PENDING_PAYMENT.getCode());</b>
+<b class="fc">&nbsp;            waitlistOrder.setItemCount(request.getPassengers().size()); // 设置候补订单项数量</b>
+&nbsp;            
+<b class="fc">&nbsp;            waitlistOrderRepository.save(waitlistOrder);</b>
+&nbsp;            
+&nbsp;            // 创建候补订单项
+<b class="fc">&nbsp;            List&lt;WaitlistItem&gt; items = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;            for (BookingRequest.PassengerInfo passengerInfo : request.getPassengers()) {</b>
+<b class="fc">&nbsp;                WaitlistItem item = new WaitlistItem();</b>
+<b class="fc">&nbsp;                item.setWaitlistId(waitlistOrder.getWaitlistId());</b>
+<b class="fc">&nbsp;                item.setPassengerId(passengerInfo.getPassengerId());</b>
+<b class="fc">&nbsp;                item.setTrainId(request.getTrainId());</b>
+<b class="fc">&nbsp;                item.setDepartureStopId(request.getDepartureStopId());</b>
+<b class="fc">&nbsp;                item.setArrivalStopId(request.getArrivalStopId());</b>
+<b class="fc">&nbsp;                item.setTravelDate(request.getTravelDate());</b>
+<b class="fc">&nbsp;                item.setCarriageTypeId(passengerInfo.getCarriageTypeId());</b>
+<b class="fc">&nbsp;                item.setTicketType(passengerInfo.getTicketType());</b>
+<b class="fc">&nbsp;                item.setItemStatus((byte) WaitlistItemStatus.PENDING_PAYMENT.getCode());</b>
+<b class="fc">&nbsp;                item.setCreatedTime(LocalDateTime.now());</b>
+&nbsp;                
+&nbsp;                // 计算并设置价格
+<b class="fc">&nbsp;                BigDecimal itemPrice = calculateTicketPrice(</b>
+<b class="fc">&nbsp;                    request.getTrainId(),</b>
+<b class="fc">&nbsp;                    request.getDepartureStopId(),</b>
+<b class="fc">&nbsp;                    request.getArrivalStopId(),</b>
+<b class="fc">&nbsp;                    request.getTravelDate(),</b>
+<b class="fc">&nbsp;                    passengerInfo.getCarriageTypeId(),</b>
+<b class="fc">&nbsp;                    passengerInfo.getTicketType()</b>
+&nbsp;                );
+<b class="fc">&nbsp;                item.setPrice(itemPrice);</b>
+&nbsp;                
+<b class="fc">&nbsp;                items.add(item);</b>
+&nbsp;            }
+&nbsp;            
+<b class="fc">&nbsp;            waitlistItemRepository.saveAll(items);</b>
+&nbsp;            
+<b class="fc">&nbsp;            return BookingResponse.successWithMessage(&quot;候补订单创建成功&quot;, orderNumber, waitlistOrder.getWaitlistId(), totalAmount, LocalDateTime.now());</b>
+&nbsp;            
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            System.err.println(&quot;创建候补订单失败: &quot; + e.getMessage());</b>
+<b class="fc">&nbsp;            return BookingResponse.failure(&quot;创建候补订单失败: &quot; + e.getMessage());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public WaitlistOrderResponse getMyWaitlistOrders(Long userId) {
+&nbsp;        try {
+<b class="fc">&nbsp;            List&lt;WaitlistOrder&gt; waitlistOrders = waitlistOrderRepository.findByUserIdOrderByOrderTimeDesc(userId);</b>
+<b class="fc">&nbsp;            List&lt;WaitlistOrderResponse.WaitlistOrderInfo&gt; orderInfos = convertToWaitlistOrderInfo(waitlistOrders);</b>
+<b class="fc">&nbsp;            return WaitlistOrderResponse.success(orderInfos);</b>
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            System.err.println(&quot;获取候补订单失败: &quot; + e.getMessage());</b>
+<b class="fc">&nbsp;            return WaitlistOrderResponse.failure(&quot;获取候补订单失败: &quot; + e.getMessage());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public WaitlistOrderDetailResponse getWaitlistOrderDetail(Long userId, Long waitlistId) {
+&nbsp;        try {
+<b class="fc">&nbsp;            Optional&lt;WaitlistOrder&gt; orderOpt = waitlistOrderRepository.findById(waitlistId);</b>
+<b class="fc">&nbsp;            if (orderOpt.isEmpty()) {</b>
+<b class="fc">&nbsp;                return WaitlistOrderDetailResponse.failure(&quot;候补订单不存在&quot;);</b>
+&nbsp;            }
+&nbsp;            
+<b class="fc">&nbsp;            WaitlistOrder order = orderOpt.get();</b>
+<b class="fc">&nbsp;            if (!order.getUserId().equals(userId)) {</b>
+<b class="fc">&nbsp;                return WaitlistOrderDetailResponse.failure(&quot;无权访问此候补订单&quot;);</b>
+&nbsp;            }
+&nbsp;            
+<b class="fc">&nbsp;            List&lt;WaitlistItem&gt; items = waitlistItemRepository.findByWaitlistId(waitlistId);</b>
+<b class="fc">&nbsp;            WaitlistOrderDetailResponse.WaitlistOrderDetail detail = convertToWaitlistOrderDetail(order, items);</b>
+&nbsp;            
+<b class="fc">&nbsp;            return WaitlistOrderDetailResponse.success(detail);</b>
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            System.err.println(&quot;获取候补订单详情失败: &quot; + e.getMessage());</b>
+<b class="fc">&nbsp;            return WaitlistOrderDetailResponse.failure(&quot;获取候补订单详情失败: &quot; + e.getMessage());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    @Transactional
+&nbsp;    public BookingResponse payWaitlistOrder(Long waitlistId, Long userId) {
+&nbsp;        try {
+<b class="fc">&nbsp;            Optional&lt;WaitlistOrder&gt; orderOpt = waitlistOrderRepository.findById(waitlistId);</b>
+<b class="fc">&nbsp;            if (orderOpt.isEmpty()) {</b>
+<b class="fc">&nbsp;                return BookingResponse.failure(&quot;候补订单不存在&quot;);</b>
+&nbsp;            }
+&nbsp;            
+<b class="fc">&nbsp;            WaitlistOrder order = orderOpt.get();</b>
+<b class="fc">&nbsp;            if (!order.getUserId().equals(userId)) {</b>
+<b class="fc">&nbsp;                return BookingResponse.failure(&quot;无权操作此候补订单&quot;);</b>
+&nbsp;            }
+&nbsp;            
+<b class="fc">&nbsp;            if (order.getOrderStatus() != WaitlistOrderStatus.PENDING_PAYMENT.getCode()) {</b>
+<b class="fc">&nbsp;                return BookingResponse.failure(&quot;候补订单状态不正确&quot;);</b>
+&nbsp;            }
+&nbsp;            
+&nbsp;            // 更新候补订单状态为待兑现
+<b class="fc">&nbsp;            order.setOrderStatus((byte) WaitlistOrderStatus.PENDING_FULFILLMENT.getCode());</b>
+<b class="fc">&nbsp;            waitlistOrderRepository.save(order);</b>
+&nbsp;            
+&nbsp;            // 更新候补订单项状态为待兑现
+<b class="fc">&nbsp;            List&lt;WaitlistItem&gt; items = waitlistItemRepository.findByWaitlistId(waitlistId);</b>
+<b class="fc">&nbsp;            for (WaitlistItem item : items) {</b>
+<b class="fc">&nbsp;                item.setItemStatus((byte) WaitlistItemStatus.PENDING_FULFILLMENT.getCode());</b>
+&nbsp;            }
+<b class="fc">&nbsp;            waitlistItemRepository.saveAll(items);</b>
+&nbsp;            
+<b class="fc">&nbsp;            return BookingResponse.successWithMessage(&quot;候补订单支付成功&quot;, order.getOrderNumber(), waitlistId, order.getTotalAmount(), LocalDateTime.now());</b>
+&nbsp;            
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            System.err.println(&quot;支付候补订单失败: &quot; + e.getMessage());</b>
+<b class="fc">&nbsp;            return BookingResponse.failure(&quot;支付候补订单失败: &quot; + e.getMessage());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    @Transactional
+&nbsp;    public BookingResponse cancelWaitlistOrder(Long waitlistId, Long userId) {
+&nbsp;        try {
+<b class="fc">&nbsp;            Optional&lt;WaitlistOrder&gt; orderOpt = waitlistOrderRepository.findById(waitlistId);</b>
+<b class="fc">&nbsp;            if (orderOpt.isEmpty()) {</b>
+<b class="fc">&nbsp;                return BookingResponse.failure(&quot;候补订单不存在&quot;);</b>
+&nbsp;            }
+&nbsp;            
+<b class="fc">&nbsp;            WaitlistOrder order = orderOpt.get();</b>
+<b class="fc">&nbsp;            if (!order.getUserId().equals(userId)) {</b>
+<b class="fc">&nbsp;                return BookingResponse.failure(&quot;无权操作此候补订单&quot;);</b>
+&nbsp;            }
+&nbsp;            
+&nbsp;            // 更新候补订单状态为已取消
+<b class="fc">&nbsp;            order.setOrderStatus((byte) WaitlistOrderStatus.CANCELLED.getCode());</b>
+<b class="fc">&nbsp;            waitlistOrderRepository.save(order);</b>
+&nbsp;            
+&nbsp;            // 更新候补订单项状态为已取消
+<b class="fc">&nbsp;            List&lt;WaitlistItem&gt; items = waitlistItemRepository.findByWaitlistId(waitlistId);</b>
+<b class="fc">&nbsp;            for (WaitlistItem item : items) {</b>
+<b class="fc">&nbsp;                item.setItemStatus((byte) WaitlistItemStatus.CANCELLED.getCode());</b>
+&nbsp;            }
+<b class="fc">&nbsp;            waitlistItemRepository.saveAll(items);</b>
+&nbsp;            
+<b class="fc">&nbsp;            return BookingResponse.successWithMessage(&quot;候补订单取消成功&quot;, order.getOrderNumber(), waitlistId, BigDecimal.ZERO, LocalDateTime.now());</b>
+&nbsp;            
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            System.err.println(&quot;取消候补订单失败: &quot; + e.getMessage());</b>
+<b class="fc">&nbsp;            return BookingResponse.failure(&quot;取消候补订单失败: &quot; + e.getMessage());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    @Transactional
+&nbsp;    public void processWaitlistFulfillment() {
+&nbsp;        try {
+&nbsp;            // 查询待兑现的候补订单
+<b class="fc">&nbsp;            List&lt;WaitlistOrder&gt; pendingOrders = waitlistOrderRepository.findPendingFulfillmentOrders(LocalDateTime.now());</b>
+&nbsp;            
+<b class="fc">&nbsp;            for (WaitlistOrder order : pendingOrders) {</b>
+<b class="fc">&nbsp;                List&lt;WaitlistItem&gt; pendingItems = waitlistItemRepository.findPendingItemsByWaitlistId(order.getWaitlistId());</b>
+&nbsp;                
+<b class="fc">&nbsp;                for (WaitlistItem item : pendingItems) {</b>
+&nbsp;                    // 检查是否有可用库存
+<b class="fc">&nbsp;                    Optional&lt;TicketInventory&gt; inventory = ticketInventoryRepository.findByKeyWithLock(</b>
+<b class="fc">&nbsp;                            item.getTrainId(), item.getDepartureStopId(), </b>
+<b class="fc">&nbsp;                            item.getArrivalStopId(), item.getTravelDate(), item.getCarriageTypeId());</b>
+&nbsp;                    
+<b class="fc">&nbsp;                    if (inventory.isPresent() &amp;&amp; inventory.get().getAvailableSeats() &gt; 0) {</b>
+&nbsp;                        // 尝试兑现候补订单项
+<b class="fc">&nbsp;                        if (fulfillWaitlistItem(item)) {</b>
+<b class="fc">&nbsp;                            System.out.println(&quot;候补订单项兑现成功: &quot; + item.getItemId());</b>
+&nbsp;                        }
+&nbsp;                    }
+&nbsp;                }
+&nbsp;            }
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            System.err.println(&quot;处理候补订单兑现失败: &quot; + e.getMessage());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    @Transactional
+&nbsp;    public BookingResponse refundWaitlistOrder(Long waitlistId, Long userId) {
+&nbsp;        try {
+<b class="fc">&nbsp;            Optional&lt;WaitlistOrder&gt; orderOpt = waitlistOrderRepository.findById(waitlistId);</b>
+<b class="fc">&nbsp;            if (orderOpt.isEmpty()) {</b>
+<b class="fc">&nbsp;                return BookingResponse.failure(&quot;候补订单不存在&quot;);</b>
+&nbsp;            }
+&nbsp;            
+<b class="fc">&nbsp;            WaitlistOrder order = orderOpt.get();</b>
+<b class="fc">&nbsp;            if (!order.getUserId().equals(userId)) {</b>
+<b class="fc">&nbsp;                return BookingResponse.failure(&quot;无权操作此候补订单&quot;);</b>
+&nbsp;            }
+&nbsp;            
+&nbsp;            // 只有待兑现或已兑现的候补订单才能退款
+<b class="fc">&nbsp;            if (order.getOrderStatus() != WaitlistOrderStatus.PENDING_FULFILLMENT.getCode() &amp;&amp; </b>
+<b class="fc">&nbsp;                order.getOrderStatus() != WaitlistOrderStatus.FULFILLED.getCode()) {</b>
+<b class="fc">&nbsp;                return BookingResponse.failure(&quot;候补订单状态不允许退款&quot;);</b>
+&nbsp;            }
+&nbsp;            
+&nbsp;            // 获取所有候补订单项
+<b class="fc">&nbsp;            List&lt;WaitlistItem&gt; allItems = waitlistItemRepository.findByWaitlistId(waitlistId);</b>
+&nbsp;            
+<b class="fc">&nbsp;            if (order.getOrderStatus() == WaitlistOrderStatus.FULFILLED.getCode()) {</b>
+&nbsp;                // 已兑现的候补订单退款逻辑
+<b class="fc">&nbsp;                List&lt;WaitlistItem&gt; fulfilledItems = allItems.stream()</b>
+<b class="fc">&nbsp;                    .filter(item -&gt; item.getItemStatus() == (byte) WaitlistItemStatus.FULFILLED.getCode())</b>
+<b class="fc">&nbsp;                    .collect(Collectors.toList());</b>
+&nbsp;                
+<b class="fc">&nbsp;                if (fulfilledItems.isEmpty()) {</b>
+<b class="fc">&nbsp;                    return BookingResponse.failure(&quot;未找到已兑现的候补订单项&quot;);</b>
+&nbsp;                }
+&nbsp;                
+&nbsp;                // 查找对应的正式订单（通过候补订单号关联）
+<b class="fc">&nbsp;                Optional&lt;Order&gt; formalOrderOpt = orderRepository.findByOrderNumber(order.getOrderNumber());</b>
+<b class="fc">&nbsp;                if (formalOrderOpt.isEmpty()) {</b>
+<b class="fc">&nbsp;                    return BookingResponse.failure(&quot;未找到对应的正式订单&quot;);</b>
+&nbsp;                }
+&nbsp;                
+<b class="fc">&nbsp;                Order formalOrder = formalOrderOpt.get();</b>
+&nbsp;                
+&nbsp;                // 获取正式订单下的车票
+<b class="fc">&nbsp;                List&lt;Ticket&gt; tickets = ticketRepository.findByOrderId(formalOrder.getOrderId());</b>
+&nbsp;                
+&nbsp;                // 执行退票操作
+<b class="fc">&nbsp;                for (Ticket ticket : tickets) {</b>
+&nbsp;                    // 更新车票状态为已退票
+<b class="fc">&nbsp;                    ticket.setTicketStatus((byte) 3); // 已退票</b>
+<b class="fc">&nbsp;                    ticketRepository.save(ticket);</b>
+&nbsp;                    
+&nbsp;                    // 回滚库存
+<b class="fc">&nbsp;                    redisService.incrStock(ticket.getTrainId(), ticket.getDepartureStopId(),</b>
+<b class="fc">&nbsp;                            ticket.getArrivalStopId(), ticket.getTravelDate(), </b>
+<b class="fc">&nbsp;                            ticket.getCarriageTypeId(), 1);</b>
+&nbsp;                    
+&nbsp;                    // 释放座位
+<b class="pc">&nbsp;                    if (ticket.getSeatNumber() != null &amp;&amp; ticket.getCarriageNumber() != null) {</b>
+&nbsp;                        // 这里需要调用座位服务释放座位
+&nbsp;                        // seatService.releaseSeat(ticket);
+&nbsp;                    }
+&nbsp;                }
+&nbsp;                
+&nbsp;                // 更新正式订单状态为已取消
+<b class="fc">&nbsp;                formalOrder.setOrderStatus((byte) 3); // 已取消</b>
+<b class="fc">&nbsp;                formalOrder.setTotalAmount(BigDecimal.ZERO);</b>
+<b class="fc">&nbsp;                orderRepository.save(formalOrder);</b>
+&nbsp;                
+&nbsp;                // 更新候补订单项状态为已取消
+<b class="fc">&nbsp;                for (WaitlistItem item : fulfilledItems) {</b>
+<b class="fc">&nbsp;                    item.setItemStatus((byte) 3); // 已取消</b>
+&nbsp;                }
+<b class="fc">&nbsp;                waitlistItemRepository.saveAll(fulfilledItems);</b>
+&nbsp;            } else {
+&nbsp;                // 待兑现的候补订单退款逻辑（更简单，因为没有创建正式订单和车票）
+&nbsp;                // 直接更新候补订单项状态为已取消
+<b class="fc">&nbsp;                for (WaitlistItem item : allItems) {</b>
+<b class="fc">&nbsp;                    item.setItemStatus((byte) 3); // 已取消</b>
+&nbsp;                }
+<b class="fc">&nbsp;                waitlistItemRepository.saveAll(allItems);</b>
+&nbsp;            }
+&nbsp;            
+&nbsp;            // 更新候补订单状态为已取消
+<b class="fc">&nbsp;            order.setOrderStatus((byte) 3); // 已取消</b>
+<b class="fc">&nbsp;            waitlistOrderRepository.save(order);</b>
+&nbsp;            
+<b class="fc">&nbsp;            return BookingResponse.successWithMessage(&quot;候补订单退款成功&quot;, order.getOrderNumber(), waitlistId, order.getTotalAmount(), order.getOrderTime());</b>
+&nbsp;            
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            System.err.println(&quot;退款候补订单失败: &quot; + e.getMessage());</b>
+<b class="fc">&nbsp;            return BookingResponse.failure(&quot;退款候补订单失败: &quot; + e.getMessage());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    @Transactional
+&nbsp;    public BookingResponse refundWaitlistOrderItems(Long waitlistId, Long userId, List&lt;Long&gt; itemIds) {
+&nbsp;        try {
+<b class="fc">&nbsp;            Optional&lt;WaitlistOrder&gt; orderOpt = waitlistOrderRepository.findById(waitlistId);</b>
+<b class="fc">&nbsp;            if (orderOpt.isEmpty()) {</b>
+<b class="fc">&nbsp;                return BookingResponse.failure(&quot;候补订单不存在&quot;);</b>
+&nbsp;            }
+&nbsp;            
+<b class="fc">&nbsp;            WaitlistOrder order = orderOpt.get();</b>
+<b class="fc">&nbsp;            if (!order.getUserId().equals(userId)) {</b>
+<b class="fc">&nbsp;                return BookingResponse.failure(&quot;无权操作此候补订单&quot;);</b>
+&nbsp;            }
+&nbsp;            
+&nbsp;            // 只有待兑现或已兑现的候补订单才能退款
+<b class="fc">&nbsp;            if (order.getOrderStatus() != WaitlistOrderStatus.PENDING_FULFILLMENT.getCode() &amp;&amp; </b>
+<b class="pc">&nbsp;                order.getOrderStatus() != WaitlistOrderStatus.FULFILLED.getCode()) {</b>
+<b class="fc">&nbsp;                return BookingResponse.failure(&quot;候补订单状态不允许退款&quot;);</b>
+&nbsp;            }
+&nbsp;            
+&nbsp;            // 获取指定的候补订单项
+<b class="fc">&nbsp;            List&lt;WaitlistItem&gt; selectedItems = waitlistItemRepository.findByItemIdIn(itemIds);</b>
+<b class="fc">&nbsp;            if (selectedItems.isEmpty()) {</b>
+<b class="fc">&nbsp;                return BookingResponse.failure(&quot;未找到指定的候补订单项&quot;);</b>
+&nbsp;            }
+&nbsp;            
+&nbsp;            // 验证所有选中的候补订单项都属于这个候补订单
+<b class="fc">&nbsp;            for (WaitlistItem item : selectedItems) {</b>
+<b class="fc">&nbsp;                if (!item.getWaitlistId().equals(waitlistId)) {</b>
+<b class="fc">&nbsp;                    return BookingResponse.failure(&quot;候补订单项不属于此候补订单&quot;);</b>
+&nbsp;                }
+&nbsp;                // 只有待兑现的候补订单项才能退款
+<b class="fc">&nbsp;                if (item.getItemStatus() != WaitlistItemStatus.PENDING_FULFILLMENT.getCode()) {</b>
+<b class="fc">&nbsp;                    return BookingResponse.failure(&quot;候补订单项状态不允许退款&quot;);</b>
+&nbsp;                }
+&nbsp;            }
+&nbsp;            
+<b class="fc">&nbsp;            BigDecimal refundAmount = BigDecimal.ZERO;</b>
+<b class="fc">&nbsp;            int refundedCount = 0;</b>
+&nbsp;            
+&nbsp;            // 更新候补订单项状态为已取消
+<b class="fc">&nbsp;            for (WaitlistItem item : selectedItems) {</b>
+<b class="fc">&nbsp;                item.setItemStatus((byte) WaitlistItemStatus.CANCELLED.getCode()); // 已取消</b>
+<b class="fc">&nbsp;                refundAmount = refundAmount.add(item.getPrice());</b>
+<b class="fc">&nbsp;                refundedCount++;</b>
+&nbsp;            }
+<b class="fc">&nbsp;            waitlistItemRepository.saveAll(selectedItems);</b>
+&nbsp;            
+&nbsp;            // 更新候补订单总金额和项数量
+<b class="fc">&nbsp;            order.setTotalAmount(order.getTotalAmount().subtract(refundAmount));</b>
+<b class="fc">&nbsp;            order.setItemCount(order.getItemCount() - refundedCount); // 减去退款的数量</b>
+&nbsp;            
+&nbsp;            // 检查是否所有候补订单项都退了
+<b class="fc">&nbsp;            List&lt;WaitlistItem&gt; allItems = waitlistItemRepository.findByWaitlistId(waitlistId);</b>
+<b class="fc">&nbsp;            boolean allCancelled = allItems.stream()</b>
+<b class="fc">&nbsp;                .allMatch(item -&gt; item.getItemStatus() == WaitlistItemStatus.CANCELLED.getCode());</b>
+&nbsp;            
+<b class="fc">&nbsp;            if (allCancelled) {</b>
+<b class="fc">&nbsp;                order.setOrderStatus((byte) 3); // 已取消</b>
+<b class="fc">&nbsp;                order.setItemCount(0); // 所有项都退了</b>
+&nbsp;            }
+&nbsp;            
+<b class="fc">&nbsp;            waitlistOrderRepository.save(order);</b>
+&nbsp;            
+<b class="fc">&nbsp;            return BookingResponse.successWithMessage(&quot;候补订单项退款成功&quot;, order.getOrderNumber(), waitlistId, refundAmount, order.getOrderTime());</b>
+&nbsp;            
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            System.err.println(&quot;退款候补订单项失败: &quot; + e.getMessage());</b>
+<b class="fc">&nbsp;            return BookingResponse.failure(&quot;退款候补订单项失败: &quot; + e.getMessage());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    // 私有辅助方法
+&nbsp;    private String generateWaitlistOrderNumber() {
+<b class="fc">&nbsp;        return &quot;WL&quot; + LocalDate.now().toString().replace(&quot;-&quot;, &quot;&quot;) + </b>
+<b class="fc">&nbsp;               String.format(&quot;%06d&quot;, (int)(Math.random() * 1000000));</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    private BigDecimal calculateTotalAmount(BookingRequest request) {
+<b class="fc">&nbsp;        BigDecimal total = BigDecimal.ZERO;</b>
+<b class="fc">&nbsp;        for (BookingRequest.PassengerInfo passengerInfo : request.getPassengers()) {</b>
+<b class="fc">&nbsp;            BigDecimal ticketPrice = calculateTicketPrice(</b>
+<b class="fc">&nbsp;                request.getTrainId(),</b>
+<b class="fc">&nbsp;                request.getDepartureStopId(),</b>
+<b class="fc">&nbsp;                request.getArrivalStopId(),</b>
+<b class="fc">&nbsp;                request.getTravelDate(),</b>
+<b class="fc">&nbsp;                passengerInfo.getCarriageTypeId(),</b>
+<b class="fc">&nbsp;                passengerInfo.getTicketType()</b>
+&nbsp;            );
+<b class="fc">&nbsp;            total = total.add(ticketPrice);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        return total;</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    private LocalDateTime calculateExpireTime(LocalDate travelDate, Integer trainId) {
+&nbsp;        // 获取发车时间，然后减去2小时
+<b class="fc">&nbsp;        Optional&lt;Train&gt; trainOpt = trainRepository.findById(trainId);</b>
+<b class="fc">&nbsp;        if (trainOpt.isPresent()) {</b>
+<b class="fc">&nbsp;            LocalTime departureTime = trainOpt.get().getDepartureTime();</b>
+<b class="fc">&nbsp;            return LocalDateTime.of(travelDate, departureTime).minusHours(2);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        return LocalDateTime.now().plusDays(1); // 默认1天后过期</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    private List&lt;WaitlistOrderResponse.WaitlistOrderInfo&gt; convertToWaitlistOrderInfo(List&lt;WaitlistOrder&gt; orders) {
+<b class="fc">&nbsp;        List&lt;WaitlistOrderResponse.WaitlistOrderInfo&gt; orderInfos = new ArrayList&lt;&gt;();</b>
+&nbsp;        
+<b class="fc">&nbsp;        for (WaitlistOrder order : orders) {</b>
+<b class="fc">&nbsp;            List&lt;WaitlistItem&gt; items = waitlistItemRepository.findByWaitlistId(order.getWaitlistId());</b>
+<b class="fc">&nbsp;            if (items.isEmpty()) continue;</b>
+&nbsp;            
+<b class="fc">&nbsp;            WaitlistItem representativeItem = items.get(0);</b>
+&nbsp;            
+<b class="fc">&nbsp;            WaitlistOrderResponse.WaitlistOrderInfo orderInfo = new WaitlistOrderResponse.WaitlistOrderInfo();</b>
+<b class="fc">&nbsp;            orderInfo.setWaitlistId(order.getWaitlistId());</b>
+<b class="fc">&nbsp;            orderInfo.setOrderNumber(order.getOrderNumber());</b>
+<b class="fc">&nbsp;            orderInfo.setOrderTime(order.getOrderTime());</b>
+<b class="fc">&nbsp;            orderInfo.setTotalAmount(order.getTotalAmount());</b>
+<b class="fc">&nbsp;            orderInfo.setExpireTime(order.getExpireTime());</b>
+<b class="fc">&nbsp;            orderInfo.setOrderStatus(order.getOrderStatus());</b>
+<b class="fc">&nbsp;            orderInfo.setOrderStatusText(WaitlistOrderStatus.fromCode(order.getOrderStatus()).getDescription());</b>
+<b class="fc">&nbsp;            orderInfo.setTrainId(representativeItem.getTrainId());</b>
+<b class="fc">&nbsp;            orderInfo.setTicketCount(order.getItemCount() != null ? order.getItemCount() : items.size());</b>
+&nbsp;            
+&nbsp;            // 获取车次信息
+<b class="fc">&nbsp;            Optional&lt;Train&gt; trainOpt = trainRepository.findById(representativeItem.getTrainId());</b>
+<b class="fc">&nbsp;            if (trainOpt.isPresent()) {</b>
+<b class="fc">&nbsp;                orderInfo.setTrainNumber(trainOpt.get().getTrainNumber());</b>
+&nbsp;            }
+&nbsp;            
+&nbsp;            // 获取车站信息
+<b class="fc">&nbsp;            orderInfo.setDepartureStationName(getStationName(representativeItem.getDepartureStopId()));</b>
+<b class="fc">&nbsp;            orderInfo.setArrivalStationName(getStationName(representativeItem.getArrivalStopId()));</b>
+&nbsp;            
+&nbsp;            // 设置发车日期
+<b class="fc">&nbsp;            orderInfo.setDepartureDate(LocalDateTime.of(representativeItem.getTravelDate(), LocalTime.of(0, 0)));</b>
+&nbsp;            
+&nbsp;            // 获取时间信息
+<b class="fc">&nbsp;            LocalTime departureTime = getDepartureTime(representativeItem.getTrainId(), representativeItem.getDepartureStopId());</b>
+<b class="fc">&nbsp;            LocalTime arrivalTime = getArrivalTime(representativeItem.getTrainId(), representativeItem.getArrivalStopId());</b>
+&nbsp;            
+<b class="fc">&nbsp;            if (departureTime != null) {</b>
+<b class="fc">&nbsp;                orderInfo.setDepartureTime(departureTime.toString());</b>
+&nbsp;            }
+<b class="fc">&nbsp;            if (arrivalTime != null) {</b>
+<b class="fc">&nbsp;                orderInfo.setArrivalTime(arrivalTime.toString());</b>
+&nbsp;            }
+&nbsp;            
+<b class="fc">&nbsp;            orderInfos.add(orderInfo);</b>
+&nbsp;        }
+&nbsp;        
+<b class="fc">&nbsp;        return orderInfos;</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    private WaitlistOrderDetailResponse.WaitlistOrderDetail convertToWaitlistOrderDetail(WaitlistOrder order, List&lt;WaitlistItem&gt; items) {
+<b class="fc">&nbsp;        WaitlistOrderDetailResponse.WaitlistOrderDetail detail = new WaitlistOrderDetailResponse.WaitlistOrderDetail();</b>
+<b class="fc">&nbsp;        detail.setWaitlistId(order.getWaitlistId());</b>
+<b class="fc">&nbsp;        detail.setOrderNumber(order.getOrderNumber());</b>
+<b class="fc">&nbsp;        detail.setOrderTime(order.getOrderTime());</b>
+<b class="fc">&nbsp;        detail.setTotalAmount(order.getTotalAmount());</b>
+<b class="fc">&nbsp;        detail.setExpireTime(order.getExpireTime());</b>
+<b class="fc">&nbsp;        detail.setOrderStatus(order.getOrderStatus());</b>
+<b class="fc">&nbsp;        detail.setOrderStatusText(WaitlistOrderStatus.fromCode(order.getOrderStatus()).getDescription());</b>
+<b class="fc">&nbsp;        detail.setTicketCount(order.getItemCount() != null ? order.getItemCount() : items.size());</b>
+&nbsp;        
+&nbsp;        // 获取第一个候补订单项的信息作为车次信息
+<b class="fc">&nbsp;        if (!items.isEmpty()) {</b>
+<b class="fc">&nbsp;            WaitlistItem representativeItem = items.get(0);</b>
+<b class="fc">&nbsp;            detail.setTrainId(representativeItem.getTrainId());</b>
+<b class="fc">&nbsp;            detail.setTravelDate(representativeItem.getTravelDate());</b>
+&nbsp;            
+&nbsp;            // 获取车次信息
+<b class="fc">&nbsp;            Optional&lt;Train&gt; trainOpt = trainRepository.findById(representativeItem.getTrainId());</b>
+<b class="fc">&nbsp;            if (trainOpt.isPresent()) {</b>
+<b class="fc">&nbsp;                detail.setTrainNumber(trainOpt.get().getTrainNumber());</b>
+&nbsp;            }
+&nbsp;            
+&nbsp;            // 获取车站信息
+<b class="fc">&nbsp;            detail.setDepartureStation(getStationName(representativeItem.getDepartureStopId()));</b>
+<b class="fc">&nbsp;            detail.setArrivalStation(getStationName(representativeItem.getArrivalStopId()));</b>
+&nbsp;            
+&nbsp;            // 获取时间信息
+<b class="fc">&nbsp;            LocalTime departureTime = getDepartureTime(representativeItem.getTrainId(), representativeItem.getDepartureStopId());</b>
+<b class="fc">&nbsp;            LocalTime arrivalTime = getArrivalTime(representativeItem.getTrainId(), representativeItem.getArrivalStopId());</b>
+&nbsp;            
+<b class="fc">&nbsp;            if (departureTime != null) {</b>
+<b class="fc">&nbsp;                detail.setDepartureTime(departureTime.toString());</b>
+&nbsp;            }
+<b class="fc">&nbsp;            if (arrivalTime != null) {</b>
+<b class="fc">&nbsp;                detail.setArrivalTime(arrivalTime.toString());</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;        
+<b class="fc">&nbsp;        List&lt;WaitlistOrderDetailResponse.WaitlistItemInfo&gt; itemInfos = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (WaitlistItem item : items) {</b>
+<b class="fc">&nbsp;            WaitlistOrderDetailResponse.WaitlistItemInfo itemInfo = new WaitlistOrderDetailResponse.WaitlistItemInfo();</b>
+<b class="fc">&nbsp;            itemInfo.setItemId(item.getItemId());</b>
+<b class="fc">&nbsp;            itemInfo.setPassengerId(item.getPassengerId());</b>
+<b class="fc">&nbsp;            itemInfo.setTrainId(item.getTrainId());</b>
+<b class="fc">&nbsp;            itemInfo.setDepartureStopId(item.getDepartureStopId());</b>
+<b class="fc">&nbsp;            itemInfo.setArrivalStopId(item.getArrivalStopId());</b>
+<b class="fc">&nbsp;            itemInfo.setTravelDate(item.getTravelDate());</b>
+<b class="fc">&nbsp;            itemInfo.setCarriageTypeId(item.getCarriageTypeId());</b>
+<b class="fc">&nbsp;            itemInfo.setTicketType(item.getTicketType());</b>
+<b class="fc">&nbsp;            itemInfo.setItemStatus(item.getItemStatus());</b>
+<b class="fc">&nbsp;            itemInfo.setCreatedTime(item.getCreatedTime());</b>
+&nbsp;            
+&nbsp;            // 获取乘客信息
+<b class="fc">&nbsp;            Optional&lt;Passenger&gt; passengerOpt = passengerRepository.findById(item.getPassengerId());</b>
+<b class="fc">&nbsp;            if (passengerOpt.isPresent()) {</b>
+<b class="fc">&nbsp;                Passenger passenger = passengerOpt.get();</b>
+<b class="fc">&nbsp;                itemInfo.setPassengerName(passenger.getRealName());</b>
+<b class="fc">&nbsp;                itemInfo.setIdCardNumber(passenger.getIdCardNumber());</b>
+<b class="fc">&nbsp;                itemInfo.setPassengerType(passenger.getPassengerType());</b>
+<b class="fc">&nbsp;                itemInfo.setPassengerTypeText(getPassengerTypeText(passenger.getPassengerType()));</b>
+&nbsp;            }
+&nbsp;            
+&nbsp;            // 获取车次信息
+<b class="fc">&nbsp;            Optional&lt;Train&gt; trainOpt = trainRepository.findById(item.getTrainId());</b>
+<b class="fc">&nbsp;            if (trainOpt.isPresent()) {</b>
+<b class="fc">&nbsp;                itemInfo.setTrainNumber(trainOpt.get().getTrainNumber());</b>
+&nbsp;            }
+&nbsp;            
+&nbsp;            // 获取车站信息
+<b class="fc">&nbsp;            itemInfo.setDepartureStationName(getStationName(item.getDepartureStopId()));</b>
+<b class="fc">&nbsp;            itemInfo.setArrivalStationName(getStationName(item.getArrivalStopId()));</b>
+&nbsp;            
+&nbsp;            // 获取车厢类型信息
+<b class="fc">&nbsp;            Optional&lt;CarriageType&gt; carriageTypeOpt = carriageTypeRepository.findById(item.getCarriageTypeId());</b>
+<b class="fc">&nbsp;            if (carriageTypeOpt.isPresent()) {</b>
+<b class="fc">&nbsp;                itemInfo.setCarriageTypeName(carriageTypeOpt.get().getTypeName());</b>
+&nbsp;            }
+&nbsp;            
+&nbsp;            // 设置状态文本
+<b class="fc">&nbsp;            itemInfo.setItemStatusText(WaitlistItemStatus.fromCode(item.getItemStatus()).getDescription());</b>
+&nbsp;            
+&nbsp;            // 设置票价（从候补订单项中获取实际价格）
+<b class="fc">&nbsp;            itemInfo.setPrice(item.getPrice());</b>
+&nbsp;            
+<b class="fc">&nbsp;            itemInfos.add(itemInfo);</b>
+&nbsp;        }
+&nbsp;        
+<b class="fc">&nbsp;        detail.setItems(itemInfos);</b>
+<b class="fc">&nbsp;        return detail;</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    private boolean fulfillWaitlistItem(WaitlistItem item) {
+&nbsp;        try {
+&nbsp;            // 这里实现具体的兑现逻辑
+&nbsp;            // 1. 创建正式订单和车票
+&nbsp;            // 2. 更新候补订单项状态
+&nbsp;            // 3. 检查候补订单是否全部兑现
+&nbsp;            
+&nbsp;            // 简化实现，实际需要完整的订单创建逻辑
+<b class="fc">&nbsp;            item.setItemStatus((byte) WaitlistItemStatus.FULFILLED.getCode());</b>
+<b class="fc">&nbsp;            waitlistItemRepository.save(item);</b>
+&nbsp;            
+<b class="fc">&nbsp;            return true;</b>
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            System.err.println(&quot;兑现候补订单项失败: &quot; + e.getMessage());</b>
+<b class="fc">&nbsp;            return false;</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    private String getStationName(Long stopId) {
+&nbsp;        try {
+<b class="fc">&nbsp;            Optional&lt;TrainStop&gt; trainStopOpt = trainStopRepository.findByStopId(stopId);</b>
+<b class="fc">&nbsp;            if (trainStopOpt.isPresent()) {</b>
+<b class="fc">&nbsp;                Optional&lt;Station&gt; stationOpt = stationRepository.findById(trainStopOpt.get().getStationId());</b>
+<b class="fc">&nbsp;                if (stationOpt.isPresent()) {</b>
+<b class="fc">&nbsp;                    return stationOpt.get().getStationName();</b>
+&nbsp;                }
+&nbsp;            }
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            System.err.println(&quot;获取车站名称失败: &quot; + e.getMessage());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        return &quot;&quot;;</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    private LocalTime getDepartureTime(Integer trainId, Long stopId) {
+&nbsp;        try {
+<b class="fc">&nbsp;            Optional&lt;TrainStop&gt; trainStopOpt = trainStopRepository.findByStopId(stopId);</b>
+<b class="fc">&nbsp;            if (trainStopOpt.isPresent()) {</b>
+<b class="fc">&nbsp;                return trainStopOpt.get().getDepartureTime();</b>
+&nbsp;            }
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            System.err.println(&quot;获取出发时间失败: &quot; + e.getMessage());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        return null;</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    private LocalTime getArrivalTime(Integer trainId, Long stopId) {
+&nbsp;        try {
+<b class="fc">&nbsp;            Optional&lt;TrainStop&gt; trainStopOpt = trainStopRepository.findByStopId(stopId);</b>
+<b class="fc">&nbsp;            if (trainStopOpt.isPresent()) {</b>
+<b class="fc">&nbsp;                return trainStopOpt.get().getArrivalTime();</b>
+&nbsp;            }
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            System.err.println(&quot;获取到达时间失败: &quot; + e.getMessage());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        return null;</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    private String getPassengerTypeText(Byte passengerType) {
+<b class="fc">&nbsp;        if (passengerType == null) return &quot;未知&quot;;</b>
+<b class="fc">&nbsp;        switch (passengerType) {</b>
+<b class="fc">&nbsp;            case 1: return &quot;成人&quot;;</b>
+<b class="fc">&nbsp;            case 2: return &quot;儿童&quot;;</b>
+<b class="fc">&nbsp;            case 3: return &quot;学生&quot;;</b>
+<b class="fc">&nbsp;            case 4: return &quot;残疾&quot;;</b>
+<b class="fc">&nbsp;            case 5: return &quot;军人&quot;;</b>
+<b class="fc">&nbsp;            default: return &quot;未知&quot;;</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 计算票价 - 从库存信息获取基础票价，然后根据票种计算优惠
+&nbsp;     */
+&nbsp;    private BigDecimal calculateTicketPrice(Integer trainId, Long departureStopId, Long arrivalStopId, 
+&nbsp;                                          LocalDate travelDate, Integer carriageTypeId, Byte ticketType) {
+&nbsp;        // 从库存信息获取基础票价
+<b class="fc">&nbsp;        Optional&lt;TicketInventory&gt; inventory = ticketInventoryRepository.findByKeyWithLock(</b>
+&nbsp;            trainId, departureStopId, arrivalStopId, travelDate, carriageTypeId);
+&nbsp;        
+<b class="fc">&nbsp;        if (inventory.isEmpty()) {</b>
+<b class="fc">&nbsp;            return BigDecimal.valueOf(100.0); // 默认票价</b>
+&nbsp;        }
+&nbsp;        
+<b class="fc">&nbsp;        BigDecimal basePrice = inventory.get().getPrice();</b>
+&nbsp;        
+&nbsp;        // 根据票种计算优惠
+<b class="fc">&nbsp;        switch (ticketType) {</b>
+&nbsp;            case 1: // 成人票 - 无优惠
+<b class="fc">&nbsp;                return basePrice;</b>
+&nbsp;            case 2: // 儿童票 - 5折
+<b class="fc">&nbsp;                return basePrice.multiply(BigDecimal.valueOf(0.5));</b>
+&nbsp;            case 3: // 学生票 - 8折
+<b class="fc">&nbsp;                return basePrice.multiply(BigDecimal.valueOf(0.8));</b>
+&nbsp;            case 4: // 残疾票 - 5折
+<b class="fc">&nbsp;                return basePrice.multiply(BigDecimal.valueOf(0.5));</b>
+&nbsp;            case 5: // 军人票 - 5折
+<b class="fc">&nbsp;                return basePrice.multiply(BigDecimal.valueOf(0.5));</b>
+&nbsp;            default:
+<b class="fc">&nbsp;                return basePrice;</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;} 
+&nbsp;
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,380 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > SeatServiceImpl</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Service.Impl</a>
+</div>
+
+<h1>Coverage Summary for Class: SeatServiceImpl (com.example.techprototype.Service.Impl)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">SeatServiceImpl</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (13/13)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    97.1%
+  </span>
+  <span class="absValue">
+    (33/34)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (87/87)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">SeatServiceImpl$$SpringCGLIB$$0</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (13/13)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    97.1%
+  </span>
+  <span class="absValue">
+    (33/34)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (87/87)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Service.Impl;
+&nbsp;
+&nbsp;import com.example.techprototype.Entity.Seat;
+&nbsp;import com.example.techprototype.Entity.Ticket;
+&nbsp;import com.example.techprototype.Entity.TrainCarriage;
+&nbsp;import com.example.techprototype.Entity.TrainStop;
+&nbsp;import com.example.techprototype.Repository.SeatRepository;
+&nbsp;import com.example.techprototype.Repository.TrainCarriageRepository;
+&nbsp;import com.example.techprototype.Repository.TrainStopRepository;
+&nbsp;import com.example.techprototype.Service.SeatService;
+&nbsp;import com.example.techprototype.Util.SeatBitmapUtil;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;import org.springframework.transaction.annotation.Transactional;
+&nbsp;
+&nbsp;import java.time.LocalDate;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Optional;
+&nbsp;
+&nbsp;@Service
+<b class="fc">&nbsp;public class SeatServiceImpl implements SeatService {</b>
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private SeatRepository seatRepository;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private TrainCarriageRepository trainCarriageRepository;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private TrainStopRepository trainStopRepository;
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    @Transactional
+&nbsp;    public void releaseSeat(Ticket ticket) {
+&nbsp;        try {
+&nbsp;            // 获取出发站和到达站的sequence_number
+<b class="fc">&nbsp;            Optional&lt;TrainStop&gt; departureStopOpt = trainStopRepository.findByTrainIdAndStopId(ticket.getTrainId(), ticket.getDepartureStopId());</b>
+<b class="fc">&nbsp;            Optional&lt;TrainStop&gt; arrivalStopOpt = trainStopRepository.findByTrainIdAndStopId(ticket.getTrainId(), ticket.getArrivalStopId());</b>
+&nbsp;            
+<b class="fc">&nbsp;            if (!departureStopOpt.isPresent() || !arrivalStopOpt.isPresent()) {</b>
+<b class="fc">&nbsp;                System.err.println(&quot;未找到站点信息: 车次&quot; + ticket.getTrainId() + &quot;, 出发站&quot; + ticket.getDepartureStopId() + &quot;, 到达站&quot; + ticket.getArrivalStopId());</b>
+&nbsp;                return;
+&nbsp;            }
+&nbsp;            
+<b class="fc">&nbsp;            int departureSequence = departureStopOpt.get().getSequenceNumber();</b>
+<b class="fc">&nbsp;            int arrivalSequence = arrivalStopOpt.get().getSequenceNumber();</b>
+&nbsp;            
+&nbsp;            // 查找车厢
+<b class="fc">&nbsp;            Optional&lt;TrainCarriage&gt; carriageOpt = trainCarriageRepository.findByTrainIdAndCarriageNumber(</b>
+<b class="fc">&nbsp;                    ticket.getTrainId(), ticket.getCarriageNumber());</b>
+&nbsp;            
+<b class="fc">&nbsp;            if (carriageOpt.isPresent()) {</b>
+<b class="fc">&nbsp;                TrainCarriage carriage = carriageOpt.get();</b>
+&nbsp;                
+&nbsp;                // 查找座位
+<b class="fc">&nbsp;                List&lt;Seat&gt; seats = seatRepository.findByCarriageIdAndSeatNumber(</b>
+<b class="fc">&nbsp;                        carriage.getCarriageId(), ticket.getSeatNumber());</b>
+&nbsp;                
+<b class="fc">&nbsp;                if (!seats.isEmpty()) {</b>
+<b class="fc">&nbsp;                    Seat seat = seats.get(0);</b>
+&nbsp;                    // 使用位图释放座位
+<b class="fc">&nbsp;                    releaseSeatBySequence(seat, ticket.getTravelDate(), departureSequence, arrivalSequence);</b>
+<b class="fc">&nbsp;                    seatRepository.save(seat);</b>
+<b class="fc">&nbsp;                    System.out.println(&quot;座位释放成功: 车次ID=&quot; + ticket.getTrainId() + </b>
+<b class="fc">&nbsp;                                     &quot;, 车厢号=&quot; + ticket.getCarriageNumber() + </b>
+<b class="fc">&nbsp;                                     &quot;, 座位号=&quot; + ticket.getSeatNumber() +</b>
+<b class="fc">&nbsp;                                     &quot;, 日期=&quot; + ticket.getTravelDate() +</b>
+&nbsp;                                     &quot;, 出发序号=&quot; + departureSequence + 
+&nbsp;                                     &quot;, 到达序号=&quot; + arrivalSequence);
+&nbsp;                }
+&nbsp;            }
+&nbsp;        } catch (Exception e) {
+<b class="fc">&nbsp;            System.err.println(&quot;释放座位失败: &quot; + e.getMessage());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    @Transactional
+&nbsp;    public void assignSeat(Ticket ticket) {
+&nbsp;        // 获取出发站和到达站的sequence_number
+<b class="fc">&nbsp;        Optional&lt;TrainStop&gt; departureStopOpt = trainStopRepository.findByTrainIdAndStopId(ticket.getTrainId(), ticket.getDepartureStopId());</b>
+<b class="fc">&nbsp;        Optional&lt;TrainStop&gt; arrivalStopOpt = trainStopRepository.findByTrainIdAndStopId(ticket.getTrainId(), ticket.getArrivalStopId());</b>
+&nbsp;        
+<b class="fc">&nbsp;        if (!departureStopOpt.isPresent() || !arrivalStopOpt.isPresent()) {</b>
+<b class="fc">&nbsp;            System.err.println(&quot;未找到站点信息: 车次&quot; + ticket.getTrainId() + &quot;, 出发站&quot; + ticket.getDepartureStopId() + &quot;, 到达站&quot; + ticket.getArrivalStopId());</b>
+&nbsp;            return;
+&nbsp;        }
+&nbsp;        
+<b class="fc">&nbsp;        int departureSequence = departureStopOpt.get().getSequenceNumber();</b>
+<b class="fc">&nbsp;        int arrivalSequence = arrivalStopOpt.get().getSequenceNumber();</b>
+&nbsp;        
+&nbsp;        // 查找可用座位
+<b class="fc">&nbsp;        Optional&lt;Seat&gt; availableSeat = findAvailableSeatBySequence(</b>
+<b class="fc">&nbsp;                ticket.getTrainId(), </b>
+<b class="fc">&nbsp;                ticket.getCarriageTypeId(), </b>
+<b class="fc">&nbsp;                ticket.getTravelDate(),</b>
+&nbsp;                departureSequence, 
+&nbsp;                arrivalSequence
+&nbsp;        );
+&nbsp;        
+<b class="fc">&nbsp;        if (availableSeat.isPresent()) {</b>
+<b class="fc">&nbsp;            Seat seat = availableSeat.get();</b>
+&nbsp;            // 锁定座位
+<b class="fc">&nbsp;            lockSeatBySequence(seat, ticket.getTravelDate(), departureSequence, arrivalSequence);</b>
+<b class="fc">&nbsp;            seatRepository.save(seat);</b>
+&nbsp;            
+&nbsp;            // 根据车厢ID查找车厢号
+<b class="fc">&nbsp;            ticket.setCarriageNumber(getCarriageNumber(seat.getCarriageId()));</b>
+<b class="fc">&nbsp;            ticket.setSeatNumber(seat.getSeatNumber());</b>
+&nbsp;            
+<b class="fc">&nbsp;            System.out.println(&quot;座位分配成功: 车次ID=&quot; + ticket.getTrainId() + </b>
+<b class="fc">&nbsp;                             &quot;, 车厢号=&quot; + ticket.getCarriageNumber() + </b>
+<b class="fc">&nbsp;                             &quot;, 座位号=&quot; + ticket.getSeatNumber() +</b>
+<b class="fc">&nbsp;                             &quot;, 日期=&quot; + ticket.getTravelDate() +</b>
+&nbsp;                             &quot;, 出发序号=&quot; + departureSequence + 
+&nbsp;                             &quot;, 到达序号=&quot; + arrivalSequence);
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    @Transactional
+&nbsp;    public Optional&lt;Seat&gt; findAvailableSeat(Integer trainId, Integer typeId, LocalDate travelDate, 
+&nbsp;                                          Long departureStopId, Long arrivalStopId) {
+&nbsp;        // 获取出发站和到达站的sequence_number
+<b class="fc">&nbsp;        Optional&lt;TrainStop&gt; departureStopOpt = trainStopRepository.findByTrainIdAndStopId(trainId, departureStopId);</b>
+<b class="fc">&nbsp;        Optional&lt;TrainStop&gt; arrivalStopOpt = trainStopRepository.findByTrainIdAndStopId(trainId, arrivalStopId);</b>
+&nbsp;        
+<b class="fc">&nbsp;        if (!departureStopOpt.isPresent() || !arrivalStopOpt.isPresent()) {</b>
+<b class="fc">&nbsp;            System.err.println(&quot;未找到站点信息: 车次&quot; + trainId + &quot;, 出发站&quot; + departureStopId + &quot;, 到达站&quot; + arrivalStopId);</b>
+<b class="fc">&nbsp;            return Optional.empty();</b>
+&nbsp;        }
+&nbsp;        
+<b class="fc">&nbsp;        int departureSequence = departureStopOpt.get().getSequenceNumber();</b>
+<b class="fc">&nbsp;        int arrivalSequence = arrivalStopOpt.get().getSequenceNumber();</b>
+&nbsp;        
+<b class="fc">&nbsp;        return findAvailableSeatBySequence(trainId, typeId, travelDate, departureSequence, arrivalSequence);</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public void lockSeat(Seat seat, LocalDate travelDate, Long departureStopId, Long arrivalStopId) {
+&nbsp;        // 这里需要根据trainId获取sequence_number，暂时简化处理
+&nbsp;        // 实际应该查询TrainStop表获取sequence_number
+<b class="fc">&nbsp;        System.err.println(&quot;lockSeat方法需要trainId参数，请使用lockSeatBySequence方法&quot;);</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public void releaseSeat(Seat seat, LocalDate travelDate, Long departureStopId, Long arrivalStopId) {
+&nbsp;        // 这里需要根据trainId获取sequence_number，暂时简化处理
+&nbsp;        // 实际应该查询TrainStop表获取sequence_number
+<b class="fc">&nbsp;        System.err.println(&quot;releaseSeat方法需要trainId参数，请使用releaseSeatBySequence方法&quot;);</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public boolean isSeatAvailable(Seat seat, LocalDate travelDate, Long departureStopId, Long arrivalStopId) {
+&nbsp;        // 这里需要根据trainId获取sequence_number，暂时简化处理
+&nbsp;        // 实际应该查询TrainStop表获取sequence_number
+<b class="fc">&nbsp;        System.err.println(&quot;isSeatAvailable方法需要trainId参数，请使用isSeatAvailableBySequence方法&quot;);</b>
+<b class="fc">&nbsp;        return false;</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    @Transactional
+&nbsp;    public Optional&lt;Seat&gt; findAvailableSeatBySequence(Integer trainId, Integer typeId, LocalDate travelDate, 
+&nbsp;                                                     int departureSequence, int arrivalSequence) {
+&nbsp;        // 生成区间掩码
+<b class="fc">&nbsp;        long intervalMask = SeatBitmapUtil.generateIntervalMask(departureSequence, arrivalSequence);</b>
+&nbsp;        
+<b class="fc">&nbsp;        System.out.println(&quot;查找可用座位 - 车次:&quot; + trainId + &quot;, 车厢类型:&quot; + typeId + </b>
+&nbsp;                          &quot;, 日期:&quot; + travelDate + &quot;, 出发序号:&quot; + departureSequence + 
+&nbsp;                          &quot;, 到达序号:&quot; + arrivalSequence + &quot;, 区间掩码:&quot; + intervalMask);
+&nbsp;        
+&nbsp;        // 查找指定车次和车厢类型的所有座位
+<b class="fc">&nbsp;        List&lt;Seat&gt; seats = seatRepository.findByTrainAndType(trainId, typeId);</b>
+&nbsp;        
+&nbsp;        // 遍历座位，找到第一个可用的
+<b class="fc">&nbsp;        for (Seat seat : seats) {</b>
+<b class="pc">&nbsp;            if (isSeatAvailableBySequence(seat, travelDate, departureSequence, arrivalSequence)) {</b>
+<b class="fc">&nbsp;                return Optional.of(seat);</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;        
+<b class="fc">&nbsp;        return Optional.empty();</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public void lockSeatBySequence(Seat seat, LocalDate travelDate, int departureSequence, int arrivalSequence) {
+<b class="fc">&nbsp;        long intervalMask = SeatBitmapUtil.generateIntervalMask(departureSequence, arrivalSequence);</b>
+<b class="fc">&nbsp;        SeatBitmapUtil.lockSeat(seat, travelDate, intervalMask);</b>
+&nbsp;        
+<b class="fc">&nbsp;        System.out.println(&quot;座位锁定: 座位ID=&quot; + seat.getSeatId() + </b>
+&nbsp;                         &quot;, 日期=&quot; + travelDate + 
+&nbsp;                         &quot;, 出发序号=&quot; + departureSequence + 
+&nbsp;                         &quot;, 到达序号=&quot; + arrivalSequence +
+&nbsp;                         &quot;, 区间掩码=&quot; + intervalMask + 
+<b class="fc">&nbsp;                         &quot;, 位图状态=&quot; + SeatBitmapUtil.bitmapToString(getDateBitmap(seat, SeatBitmapUtil.getDateIndex(travelDate))));</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public void releaseSeatBySequence(Seat seat, LocalDate travelDate, int departureSequence, int arrivalSequence) {
+<b class="fc">&nbsp;        long intervalMask = SeatBitmapUtil.generateIntervalMask(departureSequence, arrivalSequence);</b>
+<b class="fc">&nbsp;        SeatBitmapUtil.releaseSeat(seat, travelDate, intervalMask);</b>
+&nbsp;        
+<b class="fc">&nbsp;        System.out.println(&quot;座位释放: 座位ID=&quot; + seat.getSeatId() + </b>
+&nbsp;                         &quot;, 日期=&quot; + travelDate + 
+&nbsp;                         &quot;, 出发序号=&quot; + departureSequence + 
+&nbsp;                         &quot;, 到达序号=&quot; + arrivalSequence +
+&nbsp;                         &quot;, 区间掩码=&quot; + intervalMask + 
+<b class="fc">&nbsp;                         &quot;, 位图状态=&quot; + SeatBitmapUtil.bitmapToString(getDateBitmap(seat, SeatBitmapUtil.getDateIndex(travelDate))));</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Override
+&nbsp;    public boolean isSeatAvailableBySequence(Seat seat, LocalDate travelDate, int departureSequence, int arrivalSequence) {
+<b class="fc">&nbsp;        long intervalMask = SeatBitmapUtil.generateIntervalMask(departureSequence, arrivalSequence);</b>
+<b class="fc">&nbsp;        return SeatBitmapUtil.isSeatAvailable(seat, travelDate, intervalMask);</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 根据车厢ID获取车厢号
+&nbsp;     */
+&nbsp;    private String getCarriageNumber(Long carriageId) {
+<b class="fc">&nbsp;        Optional&lt;TrainCarriage&gt; carriageOpt = trainCarriageRepository.findByCarriageId(carriageId);</b>
+<b class="fc">&nbsp;        if (carriageOpt.isPresent()) {</b>
+<b class="fc">&nbsp;            return carriageOpt.get().getCarriageNumber();</b>
+&nbsp;        }
+<b class="fc">&nbsp;        return &quot;1&quot;; // 默认值</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 获取指定日期的位图值
+&nbsp;     */
+&nbsp;    private long getDateBitmap(Seat seat, int dateIndex) {
+<b class="fc">&nbsp;        switch (dateIndex) {</b>
+<b class="fc">&nbsp;            case 1: return seat.getDate1();</b>
+<b class="fc">&nbsp;            case 2: return seat.getDate2();</b>
+<b class="fc">&nbsp;            case 3: return seat.getDate3();</b>
+<b class="fc">&nbsp;            case 4: return seat.getDate4();</b>
+<b class="fc">&nbsp;            case 5: return seat.getDate5();</b>
+<b class="fc">&nbsp;            case 6: return seat.getDate6();</b>
+<b class="fc">&nbsp;            case 7: return seat.getDate7();</b>
+<b class="fc">&nbsp;            case 8: return seat.getDate8();</b>
+<b class="fc">&nbsp;            case 9: return seat.getDate9();</b>
+<b class="fc">&nbsp;            case 10: return seat.getDate10();</b>
+<b class="fc">&nbsp;            default: return 0L;</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;} 
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

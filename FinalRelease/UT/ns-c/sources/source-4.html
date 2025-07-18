@@ -1,0 +1,161 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > ScheduledTaskService</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Service</a>
+</div>
+
+<h1>Coverage Summary for Class: ScheduledTaskService (com.example.techprototype.Service)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">ScheduledTaskService</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (8/8)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Service;
+&nbsp;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.scheduling.annotation.Scheduled;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;
+&nbsp;@Service
+<b class="fc">&nbsp;public class ScheduledTaskService {</b>
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private InventorySyncService inventorySyncService;
+&nbsp;    
+&nbsp;    @Autowired
+&nbsp;    private OrderTimeoutService orderTimeoutService;
+&nbsp;    
+<b class="fc">&nbsp;    private volatile boolean tasksEnabled = false;</b>
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 启用定时任务
+&nbsp;     */
+&nbsp;    public void enableTasks() {
+<b class="fc">&nbsp;        this.tasksEnabled = true;</b>
+<b class="fc">&nbsp;        System.out.println(&quot;定时任务已启用&quot;);</b>
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 每30秒同步一次Redis库存到数据库
+&nbsp;     */
+&nbsp;    @Scheduled(fixedRate = 30000) // 30秒
+&nbsp;    public void scheduledInventorySync() {
+<b class="fc">&nbsp;        if (tasksEnabled) {</b>
+<b class="fc">&nbsp;            inventorySyncService.syncInventoryToDatabase();</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 每30秒检查一次超时订单
+&nbsp;     */
+&nbsp;    @Scheduled(fixedRate = 30000) // 30秒
+&nbsp;    public void scheduledOrderTimeoutCheck() {
+<b class="fc">&nbsp;        if (tasksEnabled) {</b>
+<b class="fc">&nbsp;            orderTimeoutService.handleTimeoutOrders();</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;} 
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

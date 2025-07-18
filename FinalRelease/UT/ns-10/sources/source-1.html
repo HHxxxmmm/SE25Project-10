@@ -1,0 +1,107 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > UserPassengerRelationRepository</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.techprototype.Repository</a>
+</div>
+
+<h1>Coverage Summary for Class: UserPassengerRelationRepository (com.example.techprototype.Repository)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+</tr>
+  <tr>
+    <td class="name">UserPassengerRelationRepository$MockitoMock$GqJL0MPR</td>
+  </tr>
+  <tr>
+    <td class="name">UserPassengerRelationRepository$MockitoMock$GqJL0MPR$auxiliary$hpTz9QBV</td>
+  </tr>
+  <tr>
+    <td class="name">UserPassengerRelationRepository$MockitoMock$GqJL0MPR$auxiliary$XHPSvhjK</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.techprototype.Repository;
+&nbsp;
+&nbsp;import com.example.techprototype.Entity.UserPassengerRelation;
+&nbsp;import org.springframework.data.jpa.repository.JpaRepository;
+&nbsp;import org.springframework.stereotype.Repository;
+&nbsp;import java.util.List;
+&nbsp;
+&nbsp;@Repository
+&nbsp;public interface UserPassengerRelationRepository extends JpaRepository&lt;UserPassengerRelation, Long&gt; {
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 根据用户ID查找所有乘客关系
+&nbsp;     */
+&nbsp;    List&lt;UserPassengerRelation&gt; findByUserId(Long userId);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 根据用户ID和乘客ID查找关系
+&nbsp;     */
+&nbsp;    UserPassengerRelation findByUserIdAndPassengerId(Long userId, Long passengerId);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 检查用户是否有指定的乘客关系
+&nbsp;     */
+&nbsp;    boolean existsByUserIdAndPassengerId(Long userId, Long passengerId);
+&nbsp;    
+&nbsp;    /**
+&nbsp;     * 统计用户关联的乘客数量
+&nbsp;     */
+&nbsp;    long countByUserId(Long userId);
+&nbsp;} 
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2025-07-19 00:00</div>
+</div>
+</body>
+</html>

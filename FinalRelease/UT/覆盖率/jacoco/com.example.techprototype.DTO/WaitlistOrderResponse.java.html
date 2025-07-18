@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WaitlistOrderResponse.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">TechPrototype</a> &gt; <a href="index.source.html" class="el_package">com.example.techprototype.DTO</a> &gt; <span class="el_source">WaitlistOrderResponse.java</span></div><h1>WaitlistOrderResponse.java</h1><pre class="source lang-java linenums">package com.example.techprototype.DTO;
+
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class WaitlistOrderResponse {
+    
+    private String status;
+    private String message;
+    private List&lt;WaitlistOrderInfo&gt; waitlistOrders;
+    
+    public static WaitlistOrderResponse success(List&lt;WaitlistOrderInfo&gt; waitlistOrders) {
+<span class="fc" id="L20">        return new WaitlistOrderResponse(&quot;SUCCESS&quot;, &quot;获取候补订单成功&quot;, waitlistOrders);</span>
+    }
+    
+    public static WaitlistOrderResponse failure(String message) {
+<span class="fc" id="L24">        return new WaitlistOrderResponse(&quot;FAILURE&quot;, message, null);</span>
+    }
+    
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class WaitlistOrderInfo {
+        private Long waitlistId;
+        private String orderNumber;
+        private LocalDateTime orderTime;
+        private BigDecimal totalAmount;
+        private LocalDateTime expireTime;
+        private Byte orderStatus;
+        private String orderStatusText;
+        private Integer trainId;
+        private String trainNumber;
+        private LocalDateTime departureDate;
+        private String departureTime;
+        private String arrivalTime;
+        private String departureStationName;
+        private String arrivalStationName;
+        private Integer ticketCount;
+    }
+} 
+ 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
