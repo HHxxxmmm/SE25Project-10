@@ -29,7 +29,7 @@ public class RedissonConfig {
 
         config.useSingleServer()
                 .setAddress("redis://" + redisHost + ":" + redisPort) // 使用注入的主机和端口
-                .setPassword(redisPassword) // 使用注入的密码
+//                .setPassword(redisPassword) // 使用注入的密码
                 .setDatabase(redisDatabase)
                 .setConnectionPoolSize(20)
                 .setConnectionMinimumIdleSize(5)
