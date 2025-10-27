@@ -22,7 +22,8 @@
   },
   "scripts": {
     "start": "set BROWSER=none&&react-scripts start",
-    "start:debug": "REACT_APP_API_URL=http://localhost:8080/api react-scripts start",
+    "//": "开发环境用http://localhost:8080/api，生产环境用http://115.120.206.98:8080/api",
+    "start:debug": "REACT_APP_API_URL=http://115.120.206.98:8080/api react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

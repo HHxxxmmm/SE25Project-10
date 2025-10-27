@@ -1,7 +1,11 @@
 import axios from 'axios';
 
 // 确保使用正确的后端API地址
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+
+//开发环境下
+//const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+//生产环境下
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://115.120.206.98:8080/api';
 
 // 配置axios实例
 const api = axios.create({

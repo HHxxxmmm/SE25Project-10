@@ -28,3 +28,4 @@ gen
 
 # VS Code project files
 .vscode/
+.VSCodeCounter/

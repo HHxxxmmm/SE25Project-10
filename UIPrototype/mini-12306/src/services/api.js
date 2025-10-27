@@ -1,5 +1,9 @@
 // API服务文件
-const API_BASE_URL = 'http://localhost:8080/api';
+
+//开发环境下
+//const API_BASE_URL = 'http://localhost:8080/api';
+//生产环境下
+const API_BASE_URL = 'http://115.120.206.98:8080/api';
 
 // 通用请求方法
 const request = async (url, options = {}) => {
