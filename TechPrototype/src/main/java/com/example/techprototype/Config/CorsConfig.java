@@ -22,6 +22,10 @@ public class CorsConfig {
         config.addAllowedOrigin("http://127.0.0.1:3000"); // 使用IP时的前端地址
         config.addAllowedOrigin("http://localhost:3001"); // 备用端口
         config.addAllowedOrigin("http://127.0.0.1:3001"); // 备用端口
+
+        // 添加ECS公网IP地址
+        config.addAllowedOrigin("http://115.120.206.98:8080"); // ECS公网IP和端口
+        config.addAllowedOrigin("http://115.120.206.98");      // 不加端口（如果将来用80端口）
         
         // 允许的头信息
         config.addAllowedHeader("*");
@@ -32,7 +36,8 @@ public class CorsConfig {
         // 暴露的响应头
         config.addExposedHeader("Authorization");
         config.addExposedHeader("Set-Cookie");
-        
+        config.addExposedHeader("Content-Disposition"); // 添加文件下载相关头部
+
         // 预检请求的有效期，单位：秒
         config.setMaxAge(3600L);
         
